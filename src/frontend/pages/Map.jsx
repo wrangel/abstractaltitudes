@@ -111,6 +111,7 @@ const MapPage = () => {
                 // mapId={import.meta.env.VITE_GOOGLE_MAP_ID}
                 disableDefaultUI={true}
                 gestureHandling="greedy"
+                mapTypeId="satellite"
                 style={{ height: "100%", width: "100%" }}
               >
                 {items.map((item) => (

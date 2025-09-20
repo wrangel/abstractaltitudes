@@ -22,6 +22,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.893.0
         version: 3.893.0
+      '@vis.gl/react-google-maps':
+        specifier: ^1.5.5
+        version: 1.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       compression:
         specifier: ^1.8.1
         version: 1.8.1
@@ -58,9 +61,6 @@ importers:
       panzoom:
         specifier: ^9.4.3
         version: 9.4.3
-      pigeon-maps:
-        specifier: ^0.22.1
-        version: 0.22.1(react@18.3.1)
       prop-types:
         specifier: ^15.8.1
         version: 15.8.1
@@ -111,8 +111,8 @@ importers:
         specifier: ^0.1.12
         version: 0.1.12
       exifreader:
-        specifier: ^4.31.2
-        version: 4.31.2
+        specifier: ^4.32.0
+        version: 4.32.0
       globals:
         specifier: ^16.4.0
         version: 16.4.0
@@ -1151,6 +1151,9 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
+  '@types/google.maps@3.58.1':
+    resolution: {integrity: sha512-X9QTSvGJ0nCfMzYOnaVs/k6/4L+7F5uCS+4iUmkLEls6J9S/Phv+m/i3mDeyc49ZBgwab3EFO1HEoBY7k98EGQ==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -1168,6 +1171,12 @@ packages:
 
   '@types/whatwg-url@11.0.5':
     resolution: {integrity: sha512-coYR071JRaHa+xoEvvYqvnIHaVqaYrLPbsufM9BF63HkwI5Lgmy2QR8Q5K/lYDYo5AK82wOvSOS0UsLTpTG7uQ==}
+
+  '@vis.gl/react-google-maps@1.5.5':
+    resolution: {integrity: sha512-LgHtK1AtE2/BN4dPoK05oWu0jWmeDdyX0Ffqi+mZc+M4apaHn2sUxxKXAxhPF90O9vcsiou/ntm6/XBWX+gpqw==}
+    peerDependencies:
+      react: '>=16.8.0 || ^19.0 || ^19.0.0-rc'
+      react-dom: '>=16.8.0 || ^19.0 || ^19.0.0-rc'
 
   '@vitejs/plugin-react@4.7.0':
     resolution: {integrity: sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA==}
@@ -1593,8 +1602,8 @@ packages:
   exif@0.6.0:
     resolution: {integrity: sha512-gEwM4uanNMfLnDNKclZ7jPEA99E3rpy4ntoS6QW8u6murZjl1o8qRaPdMoC46Syg3d9/QaET0bYKhWlTwJCPgg==}
 
-  exifreader@4.31.2:
-    resolution: {integrity: sha512-1NwFxGzoVyDDXpT4pw/gqQ10domJPOJFQHNhw7I4/qJZq1Rln0OlE7bfZLTM1gfxahvVV/pe9Dvsscda8h+27g==}
+  exifreader@4.32.0:
+    resolution: {integrity: sha512-sj1PzjpaPwSE/2MeUqoAYcfc2u7AZOGSby0FzmAkB4jjeCXgDryxzVgMwV+tJKGIkGdWkkWiUWoLSJoPHJ6V5Q==}
 
   express-rate-limit@8.1.0:
     resolution: {integrity: sha512-4nLnATuKupnmwqiJc27b4dCFmB/T60ExgmtDD7waf4LdrbJ8CPZzZRHYErDYNhoz+ql8fUdYwM/opf90PoPAQA==}
@@ -2245,11 +2254,6 @@ packages:
   picomatch@4.0.3:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
-
-  pigeon-maps@0.22.1:
-    resolution: {integrity: sha512-mVWxgpIyhAekITeJvDGlFAo/Ytm6Fg7prpDiAuQ0Z6cJ/LwpnS8F0sF+0TDqyJu7C/DDHupkstFTNoIRqhdP5A==}
-    peerDependencies:
-      react: '*'
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -4145,6 +4149,8 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
+  '@types/google.maps@3.58.1': {}
+
   '@types/json-schema@7.0.15': {}
 
   '@types/node@24.3.1':
@@ -4161,6 +4167,13 @@ snapshots:
   '@types/whatwg-url@11.0.5':
     dependencies:
       '@types/webidl-conversions': 7.0.3
+
+  '@vis.gl/react-google-maps@1.5.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@types/google.maps': 3.58.1
+      fast-deep-equal: 3.1.3
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   '@vitejs/plugin-react@4.7.0(vite@7.1.6(@types/node@24.3.1)(terser@5.44.0))':
     dependencies:
@@ -4741,7 +4754,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  exifreader@4.31.2:
+  exifreader@4.32.0:
     optionalDependencies:
       '@xmldom/xmldom': 0.9.8
 
@@ -5413,10 +5426,6 @@ snapshots:
   picomatch@2.3.1: {}
 
   picomatch@4.0.3: {}
-
-  pigeon-maps@0.22.1(react@18.3.1):
-    dependencies:
-      react: 18.3.1
 
   possible-typed-array-names@1.1.0: {}
 

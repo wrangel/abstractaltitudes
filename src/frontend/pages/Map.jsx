@@ -120,6 +120,7 @@ const MapPage = () => {
                     position={{ lat: item.latitude, lng: item.longitude }}
                     onClick={() => onItemClick(item)}
                     title={item.name || "Map marker"}
+                    color="#4DA6FF"
                   />
                 ))}
               </Map>

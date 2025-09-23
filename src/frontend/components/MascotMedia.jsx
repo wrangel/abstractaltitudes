@@ -8,7 +8,7 @@ const MascotMedia = (props) => (
     x="0px"
     y="0px"
     width="100%"
-    viewBox="0 0 1344 768"
+    viewBox="14 19 1328 554" // Cropped image
     enableBackground="new 0 0 1344 768"
     xmlSpace="preserve"
     {...props}

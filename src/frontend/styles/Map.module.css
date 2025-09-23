@@ -2,10 +2,13 @@
 
 /* Container holding the map */
 .MapContainer {
-  position: relative;
-  z-index: 800; /* Adjust overlay stacking as needed */
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100vh; /* Full viewport height */
+  height: 100vh; /* full viewport height */
+  margin: 0;
+  padding: 0;
 }
 
 /* Zoom controls or other controls can be styled if you add custom controls */

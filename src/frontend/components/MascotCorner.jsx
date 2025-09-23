@@ -1,9 +1,8 @@
 // src/frontend/components/MascotCorner.jsx
 
-import React, { memo } from "react";
+import { memo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import LazyImage from "./LazyImage";
-import mascotImage from "../assets/mascot.png";
+import MascotMedia from "./MascotMedia";
 import styles from "../styles/MascotCorner.module.css";
 
 const MascotCorner = () => {
@@ -18,13 +17,7 @@ const MascotCorner = () => {
       aria-label="Go to homepage"
       className={styles.mascotCornerLink}
     >
-      <LazyImage
-        src={mascotImage}
-        alt="Corporate mascot"
-        className={styles.mascotCorner}
-        draggable={false}
-        placeholderSrc=""
-      />
+      <MascotMedia className={styles.mascotCorner} />
     </Link>
   );
 };

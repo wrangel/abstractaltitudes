@@ -15,9 +15,12 @@
   --spacing-large: 2rem;
   --spacing-medium: 1rem;
   --spacing-small: 0.75rem;
-  --font-size-large: 2rem;
-  --font-size-medium: 1.5rem;
+  --font-size-large: 2.38rem;
+  --font-size-medium: calc(var(--font-size-large) * 0.84);
   --font-size-small: 1.25rem;
+  --font-weight: 300;
+
+  --mascot-color: rgba(255, 255, 255, 0.8);
 
   --spinner-size: 50px;
   --spinner-border: 3px;

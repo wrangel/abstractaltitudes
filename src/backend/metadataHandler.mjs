@@ -83,7 +83,7 @@ function processDocument(doc, presignedUrls) {
 function formatMetadata(doc) {
   const dateTime = new Date(doc.dateTime);
   const formattedDate = dateTime.toLocaleDateString("en-US", {
-    weekday: "long",
+    //weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -98,18 +98,17 @@ function formatMetadata(doc) {
 
   const road = doc.road ? doc.road.replace(/^,\s*/, "") : "";
   const formattedRoad = formatRoadWithLineBreaks(road, 29);
-  const location1 = `${doc.postalCode || ""} ${doc.location || ""}`.trim();
-  const location2 = `${doc.region || ""}, ${doc.country || ""}`.trim();
+  const location1 = `${doc.location || ""}, ${doc.region || ""}`.trim();
+  const location2 = `${doc.country || ""}`.trim();
 
   return [
     formattedDate,
     formattedTime,
-    `${doc.altitude ? doc.altitude.toFixed(1) : ""}m above sea level`,
+    `${doc.altitude ? doc.altitude.toFixed(0) : ""} meters a.s.l.`,
     formattedRoad,
     location1,
     location2,
-    `Author: ${doc.author || ""}`,
-    `Drone: ${doc.drone || ""}`,
+    `by ${doc.author || ""}`,
   ]
     .filter(Boolean)
     .join("\n");

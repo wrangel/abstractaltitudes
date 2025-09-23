@@ -20,6 +20,8 @@
   --font-size-small: 1.25rem;
   --font-weight: 300;
 
+  --mascot-color: rgba(255, 255, 255, 0.8);
+
   --spinner-size: 50px;
   --spinner-border: 3px;
   --spinner-color: rgba(255, 255, 255, 0.3);

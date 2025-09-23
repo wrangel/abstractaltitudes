@@ -13,6 +13,5 @@
   height: auto;
   z-index: 2500;
   user-select: none;
-  color: var(--text-color);
   /* pointer-events: auto by default because of link wrapper */
 }

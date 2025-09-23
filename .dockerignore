@@ -21,7 +21,6 @@ logs/
 material/
 src/management/
 build
-svgo.config.mjs
 
 # Frontend build output folders (if used locally during development)
 dist/

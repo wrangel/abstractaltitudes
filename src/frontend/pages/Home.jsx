@@ -8,7 +8,7 @@ import useWindowHeight from "../hooks/useWindowHeight";
 import LazyImage from "../components/LazyImage";
 import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
-import mascotImage from "../assets/mascot.png";
+import MascotMedia from "../components/MascotMedia";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -92,11 +92,9 @@ const Home = () => {
             }}
             style={{ cursor: "pointer" }}
           >
-            <LazyImage
-              src={mascotImage}
-              alt="Abstract Altitudes Mascot"
+            <MascotMedia
               className={styles.image}
-              placeholderSrc=""
+              aria-label="Abstract Altitudes Mascot"
             />
           </div>
         </div>

@@ -38,7 +38,6 @@ const PopupMetadata = ({
     }
   }, [isVisible]);
 
-  // Draggable popup logic keeping original smoothness approach
   const handleDragStart = (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -82,7 +81,7 @@ const PopupMetadata = ({
     };
 
     document.addEventListener(isTouch ? "touchmove" : "mousemove", onMove, {
-      passive: false, // changed to false for touchmove to avoid scroll during drag
+      passive: false,
     });
     document.addEventListener(isTouch ? "touchend" : "mouseup", onUp);
   };
@@ -117,20 +116,23 @@ const PopupMetadata = ({
       tabIndex={-1}
       aria-label="Metadata popup"
     >
-      <button
-        className={styles.dragPill}
+      <div
+        className={styles.dragPillWrapper}
         onClick={onClose}
         onTouchEnd={(e) => {
           e.preventDefault();
           onClose();
         }}
         aria-label="Close metadata popup"
-        type="button"
-      />
+        role="button"
+        tabIndex={0}
+      >
+        <button className={styles.dragPill} type="button" aria-hidden="true" />
+      </div>
+
       <div className={styles.content}>
         <pre>{metadata}</pre>
 
-        {/* Lazy load panorama image */}
         {isVisible && panoramaUrl && (
           <LazyImage
             src={panoramaUrl}

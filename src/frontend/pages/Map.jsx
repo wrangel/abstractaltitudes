@@ -1,3 +1,5 @@
+// src/frontend/pages/Map.js
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
@@ -82,7 +84,6 @@ const MapPage = () => {
     setView({ center, zoom });
   }, []);
 
-  // Use Vite env variable for Google Maps API key
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
   return (
@@ -98,21 +99,23 @@ const MapPage = () => {
       </Helmet>
       <LoadingErrorHandler isLoading={isLoading} error={error}>
         <ErrorBoundary>
+          {/* Container with application role and label */}
           <div
             className={styles.MapContainer}
             style={{ height: "100vh", width: "100vw" }}
+            role="application"
+            aria-label="Interactive aerial map displaying drone-captured images"
           >
             <APIProvider apiKey={apiKey}>
               <Map
                 center={view.center}
                 zoom={view.zoom}
                 onCameraChanged={onCameraChanged}
-                // You can provide a mapId if using styled maps, otherwise omit
-                // mapId={import.meta.env.VITE_GOOGLE_MAP_ID}
                 disableDefaultUI={true}
                 gestureHandling="greedy"
                 mapTypeId="satellite"
-                style={{ height: "100%", width: "100%" }}
+                aria-label="Satellite map of aerial images"
+                tabIndex={0} // enable keyboard focus on map
               >
                 {items.map((item) => (
                   <Marker
@@ -120,7 +123,9 @@ const MapPage = () => {
                     position={{ lat: item.latitude, lng: item.longitude }}
                     onClick={() => onItemClick(item)}
                     title={item.name || "Map marker"}
-                    color="#4DA6FF"
+                    aria-label={`Map marker for ${
+                      item.name || "Unnamed location"
+                    }`}
                   />
                 ))}
               </Map>
@@ -133,6 +138,12 @@ const MapPage = () => {
                 onClose={onClose}
                 onNext={onNext}
                 onPrevious={onPrevious}
+                // Add accessibility props to PopupViewer/modal
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Details for ${
+                  selectedItem?.name || "selected item"
+                }`}
               />
             )}
           </div>

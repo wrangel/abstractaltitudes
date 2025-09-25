@@ -38,6 +38,7 @@ const PopupMetadata = ({
     }
   }, [isVisible]);
 
+  // Draggable popup logic keeping original smoothness approach
   const handleDragStart = (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -45,8 +46,15 @@ const PopupMetadata = ({
     const popup = popupRef.current;
     if (!popup) return;
 
-    let baseLeft = popup.offsetLeft;
-    let baseTop = popup.offsetTop;
+    const startRect = popup.getBoundingClientRect();
+    const parentRect = popup.offsetParent.getBoundingClientRect();
+
+    let baseLeft = startRect.left - parentRect.left;
+    let baseTop = startRect.top - parentRect.top;
+
+    popup.style.transform = "none";
+    popup.style.left = `${baseLeft}px`;
+    popup.style.top = `${baseTop}px`;
 
     const isTouch = e.type === "touchstart";
     const pointer = isTouch ? e.touches[0] : e;
@@ -61,29 +69,35 @@ const PopupMetadata = ({
       baseTop += p.clientY - lastY;
       lastX = p.clientX;
       lastY = p.clientY;
-      setPopupPosition({ x: baseLeft, y: baseTop });
+      popup.style.left = `${baseLeft}px`;
+      popup.style.top = `${baseTop}px`;
     };
 
     const onUp = (ev) => {
       ev.stopPropagation();
       ev.preventDefault();
+      setPopupPosition({ x: baseLeft, y: baseTop });
       document.removeEventListener(isTouch ? "touchmove" : "mousemove", onMove);
       document.removeEventListener(isTouch ? "touchend" : "mouseup", onUp);
     };
 
     document.addEventListener(isTouch ? "touchmove" : "mousemove", onMove, {
-      passive: false,
+      passive: false, // changed to false for touchmove to avoid scroll during drag
     });
     document.addEventListener(isTouch ? "touchend" : "mouseup", onUp);
   };
 
   const style = {
-    position: "absolute",
-    left: popupPosition.x,
-    top: popupPosition.y,
+    ...(popupPosition.x === 0 && popupPosition.y === 0
+      ? {}
+      : {
+          transform: "none",
+          left: `${popupPosition.x}px`,
+          top: `${popupPosition.y}px`,
+          position: "absolute",
+        }),
     opacity: isVisible ? 1 : 0,
     pointerEvents: isVisible ? "auto" : "none",
-    transform: "none",
   };
 
   const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=${
@@ -103,23 +117,20 @@ const PopupMetadata = ({
       tabIndex={-1}
       aria-label="Metadata popup"
     >
-      <div
-        className={styles.dragPillWrapper}
+      <button
+        className={styles.dragPill}
         onClick={onClose}
         onTouchEnd={(e) => {
           e.preventDefault();
           onClose();
         }}
         aria-label="Close metadata popup"
-        role="button"
-        tabIndex={0}
-      >
-        <button className={styles.dragPill} type="button" aria-hidden="true" />
-      </div>
-
+        type="button"
+      />
       <div className={styles.content}>
         <pre>{metadata}</pre>
 
+        {/* Lazy load panorama image */}
         {isVisible && panoramaUrl && (
           <LazyImage
             src={panoramaUrl}

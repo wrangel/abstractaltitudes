@@ -45,15 +45,8 @@ const PopupMetadata = ({
     const popup = popupRef.current;
     if (!popup) return;
 
-    const startRect = popup.getBoundingClientRect();
-    const parentRect = popup.offsetParent.getBoundingClientRect();
-
-    let baseLeft = startRect.left - parentRect.left;
-    let baseTop = startRect.top - parentRect.top;
-
-    popup.style.transform = "none";
-    popup.style.left = `${baseLeft}px`;
-    popup.style.top = `${baseTop}px`;
+    let baseLeft = popup.offsetLeft;
+    let baseTop = popup.offsetTop;
 
     const isTouch = e.type === "touchstart";
     const pointer = isTouch ? e.touches[0] : e;
@@ -68,14 +61,12 @@ const PopupMetadata = ({
       baseTop += p.clientY - lastY;
       lastX = p.clientX;
       lastY = p.clientY;
-      popup.style.left = `${baseLeft}px`;
-      popup.style.top = `${baseTop}px`;
+      setPopupPosition({ x: baseLeft, y: baseTop });
     };
 
     const onUp = (ev) => {
       ev.stopPropagation();
       ev.preventDefault();
-      setPopupPosition({ x: baseLeft, y: baseTop });
       document.removeEventListener(isTouch ? "touchmove" : "mousemove", onMove);
       document.removeEventListener(isTouch ? "touchend" : "mouseup", onUp);
     };
@@ -87,16 +78,12 @@ const PopupMetadata = ({
   };
 
   const style = {
-    ...(popupPosition.x === 0 && popupPosition.y === 0
-      ? {}
-      : {
-          transform: "none",
-          left: `${popupPosition.x}px`,
-          top: `${popupPosition.y}px`,
-          position: "absolute",
-        }),
+    position: "absolute",
+    left: popupPosition.x,
+    top: popupPosition.y,
     opacity: isVisible ? 1 : 0,
     pointerEvents: isVisible ? "auto" : "none",
+    transform: "none",
   };
 
   const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=${

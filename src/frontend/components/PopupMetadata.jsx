@@ -88,14 +88,10 @@ const PopupMetadata = ({
   };
 
   const style = {
-    ...(popupPosition.x === 0 && popupPosition.y === 0
-      ? {}
-      : {
-          transform: "none",
-          left: `${popupPosition.x}px`,
-          top: `${popupPosition.y}px`,
-          position: "absolute",
-        }),
+    transform: "none",
+    left: `${popupPosition.x}px`,
+    top: `${popupPosition.y}px`,
+    position: "absolute",
     opacity: isVisible ? 1 : 0,
     pointerEvents: isVisible ? "auto" : "none",
   };

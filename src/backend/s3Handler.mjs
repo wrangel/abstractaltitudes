@@ -7,9 +7,7 @@ import { EXPIRATION_TIME } from "./constants.mjs";
 import { Island } from "./models/islandModel.mjs";
 import NodeCache from "node-cache";
 
-const BUCKET = process.env.AWS_BUCKET;
-const REGION = process.env.AWS_DEFAULT_REGION;
-const BASE_URL = `https://${BUCKET}.s3.${REGION}.amazonaws.com`;
+const BUCKET = process.env.AWS_BUCKET; // TODO Kill
 
 // Cache URLs for 5 minutes to avoid redundant signing
 const urlCache = new NodeCache({ stdTTL: 300 });
@@ -45,12 +43,12 @@ export async function getUrls() {
 
   const results = [];
   for (const { name, type } of docs) {
-    const thumbnailUrl = `${BASE_URL}/${name}/thumbnail.webp`;
+    const thumbnailUrl = `${BUNNYCDN_BASE_URL}/${name}/thumbnail.webp`;
     let actualUrl;
 
     if (type === "pano") {
       // Panorama type uses public URL to tiles folder
-      actualUrl = `${BASE_URL}/${name}/tiles`;
+      actualUrl = `${BUNNYCDN_BASE_URL}/${name}/tiles`;
     } else {
       // Other types get presigned URL for the primary webp image
       actualUrl = await signedUrl(`${name}/${name}.webp`);

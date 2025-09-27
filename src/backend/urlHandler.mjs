@@ -21,7 +21,7 @@ async function signedUrl(path) {
     process.env.BUNNYCDN_TOKEN_SECRET,
     300
   ); // 5 min expiry
-  const url = `${process.env.BUNNYCDN_BASE_URL}${path}${token}`;
+  const url = `${process.env.VITE_BUNNYCDN_BASE_URL}${path}${token}`;
 
   urlCache.set(path, url);
   return url;
@@ -38,12 +38,12 @@ export async function getUrls() {
 
   const results = [];
   for (const { name, type } of docs) {
-    const thumbnailUrl = `${process.env.BUNNYCDN_BASE_URL}/${name}/thumbnail.webp`;
+    const thumbnailUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/thumbnail.webp`;
     let actualUrl;
 
     if (type === "pano") {
       // Public pano content served by BunnyCDN URL directly
-      actualUrl = `${process.env.BUNNYCDN_BASE_URL}/${name}/tiles`;
+      actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
     } else {
       // Private content signed with BunnyCDN token URLs
       actualUrl = await signedUrl(`/${name}/${name}.webp`);

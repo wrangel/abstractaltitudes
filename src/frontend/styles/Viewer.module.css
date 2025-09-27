@@ -40,3 +40,7 @@
     ); /* Adjust font size for smaller screens */
   }
 }
+
+.viewer.hide-cursor {
+  cursor: none;
+}

@@ -106,12 +106,11 @@ const Home = () => {
                 { href: "https://github.com/wrangel ", label: "wrangel" },
                 { href: "https://www.dji.com ", label: "DJI" },
                 { href: "https://ptgui.com ", label: "PTGui Pro" },
+                { href: "https://www.marzipano.net/ ", label: "Marzipano" },
                 {
                   href: "https://www.adobe.com/products/photoshop-lightroom.html ",
                   label: "Adobe Lightroom",
                 },
-                { href: "https://www.marzipano.net/ ", label: "Marzipano" },
-                { href: "https://www.perplexity.ai/ ", label: "Perplexity AI" },
               ].map(({ href, label }) => (
                 <li key={label}>
                   <a href={href} target="_blank" rel="noopener noreferrer">

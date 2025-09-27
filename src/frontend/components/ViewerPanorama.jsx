@@ -1,5 +1,4 @@
 // src/frontend/components/ViewerPanorama.jsx
-
 import { useRef, useLayoutEffect, useState, memo } from "react";
 import PropTypes from "prop-types";
 import Marzipano from "marzipano";
@@ -7,21 +6,17 @@ import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
 
-/* ---- helpers ---- */
-// Probe for max cube map texture size on the current device
 function getMaxCubeMapSize() {
   try {
     const canvas = document.createElement("canvas");
     const gl =
       canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    if (!gl) return 2048; // fallback
-    return gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE);
+    return gl ? gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE) : 2048;
   } catch {
     return 2048;
   }
 }
 
-// Runtime check (feature detect, not UA sniff) for WebGL support
 function hasWebGL() {
   try {
     const canvas = document.createElement("canvas");
@@ -47,21 +42,21 @@ const ViewerPanorama = ({
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
 
-  // Only create viewer if WebGL is present
   useLayoutEffect(() => {
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
       setWebglAbsent(true);
-      if (onError) onError(new Error("WebGL not supported"));
+      onError?.(new Error("WebGL not supported"));
       return;
-    } else {
-      setWebglAbsent(false);
     }
 
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
+        // Register zoom methods here
+        scrollZoom: true, // enables mouse wheel zoom
+        pinchZoom: true, // enables touch pinch zoom
       },
       stage: {
         pixelRatio: window.devicePixelRatio || 1,
@@ -70,30 +65,40 @@ const ViewerPanorama = ({
       },
     });
 
-    // Configure controls for drag smoothing
     const controls = viewerRef.current.controls();
-    if (
-      controls &&
-      typeof controls.setFriction === "function" &&
-      typeof controls.setVelocityScale === "function"
-    ) {
-      controls.setFriction(0.15); // lower friction for smoother/slower drag
-      controls.setVelocityScale(0.25); // lower velocity scale for slower movement
-    } else {
-      // Fallback: direct access if available
-      const dragRotate = controls._dragRotate;
-      if (dragRotate) {
-        dragRotate.friction = 0.15;
-        dragRotate.velocityScale = 0.2;
-      }
-    }
+    controls.setFriction?.(0.15);
+    controls.setVelocityScale?.(0.25);
 
     const canvas = viewerRef.current.stage().domElement();
+    canvas.addEventListener(
+      "wheel",
+      (e) => {
+        const isPinchGesture =
+          e.ctrlKey ||
+          e.metaKey ||
+          e.deltaMode === 0 ||
+          Math.abs(e.deltaY) < 10;
+
+        if (isPinchGesture) {
+          e.preventDefault();
+          const view = viewerRef.current.view();
+          const zoomFactor = e.deltaY > 0 ? 1.05 : 0.95;
+          const newFov = Math.max(
+            (30 * Math.PI) / 180, // min zoom
+            Math.min((120 * Math.PI) / 180, view.fov() * zoomFactor) // max zoom
+          );
+          view.setFov(newFov);
+          view.update();
+        }
+      },
+      { passive: false }
+    );
+
     canvas.style.backgroundColor = "black";
     canvas.style.opacity = "1";
+    canvas.style.cursor = "default";
   }, [onError]);
 
-  // React to pano or view changes, only if WebGL is present
   useLayoutEffect(() => {
     if (!panoPath || !levels?.length || !viewerRef.current || webglAbsent)
       return;
@@ -110,33 +115,27 @@ const ViewerPanorama = ({
     });
 
     const geometry = new Marzipano.CubeGeometry(safeLevels);
-
     const source = Marzipano.ImageUrlSource.fromString(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
       { cubeMapPreviewUrl: `${panoPath}/preview.jpg` }
     );
 
-    if (onError) {
-      source.addEventListener("error", (err) => {
-        onError(err);
-        console.error(`Error loading panorama: ${err.message}`);
-      });
-    }
+    source.addEventListener("error", (err) => {
+      onError?.(err);
+      console.error(`Error loading panorama: ${err.message}`);
+    });
 
     const limiter = Marzipano.RectilinearView.limit.traditional(
       1024,
       (120 * Math.PI) / 180
     );
 
-    let viewParams = DEFAULT_VIEW;
-    if (
-      initialViewParameters &&
-      typeof initialViewParameters.yaw === "number" &&
-      typeof initialViewParameters.pitch === "number" &&
-      typeof initialViewParameters.fov === "number"
-    ) {
-      viewParams = initialViewParameters;
-    }
+    const viewParams =
+      typeof initialViewParameters?.yaw === "number" &&
+      typeof initialViewParameters?.pitch === "number" &&
+      typeof initialViewParameters?.fov === "number"
+        ? initialViewParameters
+        : DEFAULT_VIEW;
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
@@ -162,24 +161,17 @@ const ViewerPanorama = ({
       targetFov: Math.PI / 2,
     });
 
-    if (typeof viewerRef.current.setIdleMovement === "function") {
-      viewerRef.current.setIdleMovement(3000, autorotate);
-    } else {
-      viewerRef.current.startMovement(autorotate);
-    }
+    viewerRef.current.setIdleMovement?.(3000, autorotate);
 
     setLoaded(true);
-    if (onReady) onReady();
+    onReady?.();
   }, [panoPath, levels, initialViewParameters, onReady, onError, webglAbsent]);
 
-  // Clean up
   useLayoutEffect(() => {
     return () => {
-      if (viewerRef.current) {
-        viewerRef.current.destroy();
-        viewerRef.current = null;
-        sceneRef.current = null;
-      }
+      viewerRef.current?.destroy();
+      viewerRef.current = null;
+      sceneRef.current = null;
     };
   }, []);
 

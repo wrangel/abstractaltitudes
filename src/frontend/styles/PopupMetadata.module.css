@@ -15,8 +15,8 @@
   font-size: 0.9rem;
   font-family: var(--font-stack);
   text-shadow: var(--text-shadow-heavy);
-  cursor: grab; /* Indicate draggable area */
-  user-select: none; /* Prevent text selection on drag */
+  cursor: grab;
+  user-select: none;
   transition: transform var(--transition-duration) ease;
   will-change: transform;
 }
@@ -28,8 +28,8 @@
 
 .content {
   text-align: center;
-  padding-top: 14px; /* space for draggable pill */
-  user-select: text; /* allow text selection inside content */
+  padding-top: 14px;
+  user-select: text;
 }
 
 .maplink {
@@ -53,7 +53,29 @@
   border: none;
 }
 
-/* Draggable pill / close button */
+.thumbnailFullViewport {
+  will-change: opacity;
+}
+
+.panoramaImage,
+.mapIframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+}
+
+/* Wrapper for larger hit area */
+.dragPillWrapper {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 25px;
+  z-index: 2;
+}
+
+/* Visual pill remains small */
 .dragPill {
   position: absolute;
   top: 6px;
@@ -67,15 +89,5 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-}
-
-.thumbnailFullViewport {
-  will-change: opacity; /* keeps layer on GPU = zero repaint */
-}
-
-.panoramaImage,
-.mapIframe {
-  width: 100%;
-  aspect-ratio: 16 / 9; /* prevent layout shifts */
-  display: block;
+  z-index: 3;
 }

@@ -1,6 +1,6 @@
 // src/frontend/components/Viewer.jsx
 
-import React, {
+import {
   useState,
   useEffect,
   useRef,
@@ -13,12 +13,12 @@ import PropTypes from "prop-types";
 import NavigationMedia from "./NavigationMedia";
 import ViewerImage from "./ViewerImage";
 import PopupMetadata from "./PopupMetadata";
-// Lazy load ViewerPanorama for performance
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
+import useAutoHideCursor from "../hooks/useAutoHideCursor"; // <- Add this line
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
   return (
@@ -134,9 +134,12 @@ const Viewer = ({
     }
   }, []);
 
+  // Auto-hide cursor!
+  const hideCursor = useAutoHideCursor(viewerRef, 1000);
+
   return (
     <div
-      className={styles.viewer}
+      className={`${styles.viewer} ${hideCursor ? styles["hide-cursor"] : ""}`}
       ref={viewerRef}
       role="region"
       aria-label={`Media viewer for ${item.name || "item"}`}

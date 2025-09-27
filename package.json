@@ -13,8 +13,7 @@
     "prod": "./scripts/prod-build.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.895.0",
-    "@aws-sdk/s3-request-presigner": "^3.895.0",
+    "@aws-sdk/client-s3": "^3.896.0",
     "@vis.gl/react-google-maps": "^1.5.5",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -32,14 +31,14 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
-    "react-router-dom": "^7.9.1",
+    "react-router-dom": "^7.9.3",
     "swr": "^2.3.6",
     "web-vitals": "^2.1.4",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.895.0",
+    "@aws-sdk/lib-storage": "^3.896.0",
     "@vitejs/plugin-react": "^4.7.0",
     "adm-zip": "^0.5.16",
     "eslint": "^9.36.0",

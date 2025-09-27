@@ -38,19 +38,15 @@ export async function getUrls() {
 
   const results = [];
   for (const { name, type } of docs) {
-    console.log("====> ", name); ////// TODO
     const thumbnailUrl = `${process.env.BUNNYCDN_BASE_URL}/${name}/thumbnail.webp`;
-    console.log("thumb", thumbnailUrl); ////// TODO
     let actualUrl;
 
     if (type === "pano") {
       // Public pano content served by BunnyCDN URL directly
       actualUrl = `${process.env.BUNNYCDN_BASE_URL}/${name}/tiles`;
-      console.log("actual -- pan", actualUrl); ////// TODO
     } else {
       // Private content signed with BunnyCDN token URLs
       actualUrl = await signedUrl(`/${name}/${name}.webp`);
-      console.log("actual -- non-pan", actualUrl); ////// TODO
     }
 
     results.push({ name, type, urls: { thumbnailUrl, actualUrl } });

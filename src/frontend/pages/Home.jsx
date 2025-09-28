@@ -9,6 +9,7 @@ import LazyImage from "../components/LazyImage";
 import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
+import { buildQueryString } from "../components/buildQueryString";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -57,7 +58,10 @@ const Home = () => {
       {randomPano && (
         <div className={styles.backgroundWrapper}>
           <LazyImage
-            src={randomPano.thumbnailUrl}
+            // Use buildSrc here for the needed width, class, or both
+            src={buildQueryString(randomPano.thumbnailUrl, {
+              class: "thumbnail",
+            })}
             alt="Background panorama"
             className={styles.backgroundImage}
             placeholderSrc=""

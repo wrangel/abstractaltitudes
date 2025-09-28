@@ -1,9 +1,9 @@
-// src/frontend/components/buildSrc.jsx
+// src/frontend/components/buildQueryString.jsx
 
 // Creates query strings for thumnbnails and actual nonpano media
 const CDN_BASE = import.meta.env.VITE_BUNNYCDN_BASE_URL;
 
-export function buildSrc(
+export function buildQueryString(
   path,
   { width, height, class: cls } = {},
   needsToken = false

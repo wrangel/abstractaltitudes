@@ -22,19 +22,38 @@ import { buildQueryString } from "../components/buildQueryString";
  */
 const PortfolioGrid = ({ items, onItemClick }) => {
   const { isLoading, error } = useLoadingError(false);
+  const { w } = useViewportSize();
   const { columnWidth, columnGutter, rowGutter } = useResponsiveGridWithRatio(
     16,
     -2 / 16
   );
 
-  const renderItem = ({ data }) => (
-    <PortfolioItem
-      key={data.id}
-      item={data}
-      onItemClick={onItemClick}
-      useLazyImage={true}
-    />
-  );
+  const renderItem = ({ data }) => {
+    // Calculate height to preserve original aspect ratio from data
+    const originalWidth = data.originalWidth || 1; // fallback to 1 to avoid div by zero
+    const originalHeight = data.originalHeight || 1;
+
+    const width = Math.floor(columnWidth);
+    const height = Math.round((width * originalHeight) / originalWidth);
+
+    // Generate BunnyCDN optimized URL with dynamic width/height
+    const imageSrc = buildQueryString(data.thumbnailUrl, {
+      width,
+      height,
+    });
+
+    console.log(`Generating optimized URL for item ${data.id}:`, imageSrc);
+
+    // Pass new thumbnailUrl with optimized URL to PortfolioItem
+    return (
+      <PortfolioItem
+        key={data.id}
+        item={{ ...data, thumbnailUrl: imageSrc }}
+        onItemClick={onItemClick}
+        useLazyImage={true}
+      />
+    );
+  };
 
   return (
     <LoadingErrorHandler isLoading={isLoading} error={error}>

@@ -10,6 +10,7 @@ import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
 import { buildQueryString } from "../components/buildQueryString";
+import { useViewportSize } from "../hooks/useViewportSize";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Home = () => {
     window.innerHeight > window.innerWidth
   );
   const isVeryShort = useWindowHeight(360);
+  const { w, h } = useViewportSize();
 
   useEffect(() => {
     if (items.length > 0) {
@@ -58,9 +60,9 @@ const Home = () => {
       {randomPano && (
         <div className={styles.backgroundWrapper}>
           <LazyImage
-            // Use buildSrc here for the needed width, class, or both
             src={buildQueryString(randomPano.thumbnailUrl, {
-              class: "thumbnail",
+              width: w,
+              height: h,
             })}
             alt="Background panorama"
             className={styles.backgroundImage}

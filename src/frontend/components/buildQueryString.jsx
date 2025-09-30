@@ -10,25 +10,20 @@ export function buildQueryString(
 ) {
   const u = new URL(path, CDN_BASE);
 
-  // 1. explicit pixel size (overrides any class)
-  if (!u.pathname.endsWith("/thumbnail.webp")) {
-    if (width) u.searchParams.set("width", width);
-    if (height) u.searchParams.set("height", height);
+  // Always set width and height if provided
+  if (width) u.searchParams.set("width", width);
+  if (height) u.searchParams.set("height", height);
+
+  // Add class only if provided and NOT 'thumbnail'
+  if (cls && cls !== "thumbnail") {
+    u.searchParams.set("class", cls);
   }
 
-  // 2. automatic “thumbnail” class for thumbnail.webp
-  if (u.pathname.endsWith("/thumbnail.webp")) {
-    u.searchParams.set("class", "thumbnail");
-  }
-
-  // 3. allow caller to override/extend classes
-  if (cls) u.searchParams.set("class", cls);
-
-  // 4. sign private urls
+  // Sign private URLs if requested
   if (needsToken) {
     const token = generateBunnyToken(
       u.pathname + u.search,
-      process.env.BUNNYCDN_TOKEN_SECRET, // ← server-side only
+      process.env.BUNNYCDN_TOKEN_SECRET, // server-side only
       300
     );
     u.searchParams.set("token", token);

@@ -42,8 +42,6 @@ const PortfolioGrid = ({ items, onItemClick }) => {
       height,
     });
 
-    console.log(`Generating optimized URL for item ${data.id}:`, imageSrc);
-
     // Pass new thumbnailUrl with optimized URL to PortfolioItem
     return (
       <PortfolioItem

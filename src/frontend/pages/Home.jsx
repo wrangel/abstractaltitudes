@@ -31,6 +31,12 @@ const Home = () => {
     }
   }, [items]);
 
+  // Calculate optimal width and height taking the smaller of viewport and thumbnail sizes
+  const width =
+    randomPano && w ? Math.min(randomPano.thumbnailWidth || w, w) : w || 0;
+  const height =
+    randomPano && h ? Math.min(randomPano.thumbnailHeight || h, h) : h || 0;
+
   useEffect(() => {
     const handleResize = () =>
       setIsPortrait(window.innerHeight > window.innerWidth);
@@ -60,10 +66,7 @@ const Home = () => {
       {randomPano && (
         <div className={styles.backgroundWrapper}>
           <LazyImage
-            src={buildQueryString(randomPano.thumbnailUrl, {
-              width: w,
-              height: h,
-            })}
+            src={buildQueryString(randomPano.thumbnailUrl, { width, height })}
             alt="Background panorama"
             className={styles.backgroundImage}
             placeholderSrc=""

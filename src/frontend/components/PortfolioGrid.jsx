@@ -29,20 +29,29 @@ const PortfolioGrid = ({ items, onItemClick }) => {
   );
 
   const renderItem = ({ data }) => {
-    // Calculate height to preserve original aspect ratio from data
-    const originalWidth = data.originalWidth || 1; // fallback to 1 to avoid div by zero
+    // Responsive column width from grid layout
+    const width = Math.floor(columnWidth);
+
+    // Use original dimensions or fallback to 1 to avoid div by zero
+    const originalWidth = data.originalWidth || 1;
     const originalHeight = data.originalHeight || 1;
 
-    const width = Math.floor(columnWidth);
+    // Calculate proportional height for aspect ratio
     const height = Math.round((width * originalHeight) / originalWidth);
 
-    // Generate BunnyCDN optimized URL with dynamic width/height
+    // Limit requested image size to thumbnail actual size to avoid upscaling
+    const finalWidth = Math.min(width, data.thumbnailWidth || width);
+    const finalHeight = Math.min(height, data.thumbnailHeight || height);
+
+    // Build BunnyCDN URL requesting resized image for the calculated size
     const imageSrc = buildQueryString(data.thumbnailUrl, {
-      width,
-      height,
+      width: finalWidth,
+      height: finalHeight,
     });
 
-    // Pass new thumbnailUrl with optimized URL to PortfolioItem
+    console.log(imageSrc);
+
+    // Pass optimized thumbnail URL and original data to PortfolioItem
     return (
       <PortfolioItem
         key={data.id}

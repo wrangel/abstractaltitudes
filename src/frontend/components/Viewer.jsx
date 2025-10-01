@@ -18,7 +18,9 @@ import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
-import useAutoHideCursor from "../hooks/useAutoHideCursor"; // <- Add this line
+import useAutoHideCursor from "../hooks/useAutoHideCursor";
+import { useViewportSize } from "../hooks/useViewportSize";
+import { buildQueryString } from "../components/buildQueryString";
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
   return (
@@ -68,6 +70,20 @@ const Viewer = ({
   isNavigationMode,
   toggleMode,
 }) => {
+  const { w, h } = useViewportSize();
+
+  // Calculate resized actualUrl with min of viewport and original dimensions
+  const actualWidth = item.originalWidth || w;
+  const actualHeight = item.originalHeight || h;
+
+  const requestedWidth = Math.min(w, actualWidth);
+  const requestedHeight = Math.min(h, actualHeight);
+
+  const resizedActualUrl = buildQueryString(item.actualUrl, {
+    width: requestedWidth,
+    height: requestedHeight,
+  });
+
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const viewerRef = useRef(null);
@@ -149,7 +165,7 @@ const Viewer = ({
 
       <MediaContent
         key={item.id || item.actualUrl}
-        item={item}
+        item={{ ...item, actualUrl: resizedActualUrl }}
         isNavigationMode={isNavigationMode}
         onContentLoaded={handleContentLoaded}
       />

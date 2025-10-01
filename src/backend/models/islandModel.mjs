@@ -149,6 +149,20 @@ const islandSchema = new mongoose.Schema({
       fallbackOnly: { type: Boolean, default: false },
     },
   ],
+  /**
+   * Width of original.
+   */
+  originalWidth: {
+    type: Number,
+    required: true,
+  },
+  /**
+   * Height of original.
+   */
+  originalHeight: {
+    type: Number,
+    required: true,
+  },
 });
 
 export const Island = mongoose.model("Island", islandSchema);

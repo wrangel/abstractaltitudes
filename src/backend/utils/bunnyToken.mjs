@@ -1,60 +1,36 @@
 // src/backend/utils/bunnyToken.mjs
 
+// src/backend/utils/bunnyToken.mjs
 import NodeCache from "node-cache";
 import crypto from "crypto";
 import { URL } from "url";
 
-const urlCache = new NodeCache({ stdTTL: 300 }); // Cache URLs for 5 minutes
-
-function addCountries(url, allowed, blocked) {
-  let modifiedUrl = url;
-  if (allowed) {
-    const urlObj = new URL(modifiedUrl);
-    modifiedUrl +=
-      (urlObj.search === "" ? "?" : "&") + "token_countries=" + allowed;
-  }
-  if (blocked) {
-    const urlObj = new URL(modifiedUrl);
-    modifiedUrl +=
-      (urlObj.search === "" ? "?" : "&") + "token_countries_blocked=" + blocked;
-  }
-  return modifiedUrl;
-}
+const urlCache = new NodeCache({ stdTTL: 300 }); // 5-min cache
 
 export function generateBunnyToken(
-  fullUrl,
+  fullPath, // "/folder/file.webp?width=1421&height=206"
   secret,
   expires,
   userIp = "",
   pathAllowed = ""
 ) {
-  const urlWithCountries = addCountries(fullUrl, null, null); // adjust if country restrictions apply
-
-  const urlObj = new URL(urlWithCountries);
+  const urlObj = new URL(fullPath, "https://dummy"); // dummy base only for parsing
   const params = urlObj.searchParams;
 
-  if (pathAllowed) {
-    params.set("token_path", pathAllowed);
-  }
+  if (pathAllowed) params.set("token_path", pathAllowed);
 
-  // Sort params by key
+  // sort query params
   const sortedParams = new URLSearchParams([...params.entries()].sort());
 
-  // Build parameter string, skipping empty values
   let parameterString = "";
-  for (const [key, value] of sortedParams.entries()) {
-    if (value) {
-      if (parameterString.length) parameterString += "&";
-      parameterString += `${key}=${value}`;
-    }
+  for (const [k, v] of sortedParams.entries()) {
+    if (v) parameterString += (parameterString ? "&" : "") + `${k}=${v}`;
   }
 
-  // Signature base string
   const signaturePath = pathAllowed || decodeURIComponent(urlObj.pathname);
   const signatureBase =
     secret + signaturePath + expires + userIp + parameterString;
 
-  // Hash and encode token
   const hash = crypto
     .createHash("sha256")
     .update(signatureBase)
@@ -65,20 +41,17 @@ export function generateBunnyToken(
 }
 
 /**
- * Generates or retrieves a cached BunnyCDN token signed URL
+ * Cached helper that adds width/height params, signs, and returns full BunnyCDN URL.
  */
 export async function signedUrl(path, params = {}) {
   try {
-    // Construct base URL with params width/height
     const url = new URL(path, "https://dummybase");
     if (params.width) url.searchParams.set("width", params.width);
     if (params.height) url.searchParams.set("height", params.height);
 
     const fullPath = url.pathname + url.search;
 
-    if (urlCache.has(fullPath)) {
-      return urlCache.get(fullPath);
-    }
+    if (urlCache.has(fullPath)) return urlCache.get(fullPath);
 
     const expires = Math.floor(Date.now() / 1000) + 300; // 5 min expiry
     const { token } = generateBunnyToken(
@@ -87,21 +60,16 @@ export async function signedUrl(path, params = {}) {
       expires
     );
 
-    const baseUrl = process.env.VITE_BUNNYCDN_BASE_URL.replace(/\/$/, ""); // trim trailing slash
-
-    // Append token and expires to full path
+    const baseUrl = process.env.VITE_BUNNYCDN_BASE_URL.replace(/\/$/, "");
     const signedUrl = `${baseUrl}${fullPath}${
       fullPath.includes("?") ? "&" : "?"
     }token=${token}&expires=${expires}`;
 
-    console.debug(
-      `[signedUrl] Generated signed URL:\nUnsigned path: ${fullPath}\nSigned URL: ${signedUrl}`
-    );
-
+    console.debug(`[signedUrl] ${fullPath}  ->  ${signedUrl}`);
     urlCache.set(fullPath, signedUrl);
     return signedUrl;
-  } catch (error) {
-    console.error("[signedUrl] Error generating signed URL:", error);
-    throw error;
+  } catch (err) {
+    console.error("[signedUrl] error:", err);
+    throw err;
   }
 }

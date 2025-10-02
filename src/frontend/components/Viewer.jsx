@@ -8,6 +8,7 @@ import {
   memo,
   Suspense,
   lazy,
+  useMemo,
 } from "react";
 import PropTypes from "prop-types";
 import NavigationMedia from "./NavigationMedia";
@@ -80,10 +81,14 @@ const Viewer = ({
   const requestedHeight = Math.min(h, actualHeight);
 
   // Step 1: build unsigned resized URL
-  const resizedActualUrl = buildQueryStringWidthHeight(item.actualUrl, {
-    width: requestedWidth,
-    height: requestedHeight,
-  });
+  const resizedActualUrl = useMemo(
+    () =>
+      buildQueryStringWidthHeight(item.actualUrl, {
+        width: requestedWidth,
+        height: requestedHeight,
+      }),
+    [item.actualUrl, requestedWidth, requestedHeight]
+  );
 
   // Step 2: get signed URL async via hook
   const { signedUrl, error } = useSignedUrl(resizedActualUrl);

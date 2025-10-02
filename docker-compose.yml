@@ -32,6 +32,7 @@ services:
         VITE_API_URL: ${VITE_API_URL}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_MAPBOX_PUBLIC_TOKEN: ${VITE_MAPBOX_PUBLIC_TOKEN}
+        VITE_BUNNYCDN_BASE_URL: ${VITE_BUNNYCDN_BASE_URL}
       # Optional: Use build cache if BuildKit enabled
       # cache_from:
       #   - type=local,src=/tmp/.buildx-cache/frontend

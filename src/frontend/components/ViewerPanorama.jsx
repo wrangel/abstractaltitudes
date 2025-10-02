@@ -44,66 +44,64 @@ const ViewerPanorama = ({
   const [webglAbsent, setWebglAbsent] = useState(false);
 
   useLayoutEffect(() => {
-    if (!panoramaElement.current || viewerRef.current) return;
+    if (!panoramaElement.current || webglAbsent) return;
 
-    if (!hasWebGL()) {
-      setWebglAbsent(true);
-      onError?.(new Error("WebGL not supported"));
-      return;
+    // Create viewer if needed
+    if (!viewerRef.current) {
+      if (!hasWebGL()) {
+        setWebglAbsent(true);
+        onError?.(new Error("WebGL not supported"));
+        return;
+      }
+      viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
+        controls: {
+          mouseViewMode: "drag",
+          scrollZoom: true,
+          pinchZoom: true,
+        },
+        stage: {
+          pixelRatio: window.devicePixelRatio || 1,
+          preserveDrawingBuffer: false,
+          generateMipmaps: false,
+        },
+      });
+
+      const controls = viewerRef.current.controls();
+      controls.setFriction?.(0.15);
+      controls.setVelocityScale?.(0.25);
+
+      const canvas = viewerRef.current.stage().domElement();
+      canvas.addEventListener(
+        "wheel",
+        (e) => {
+          const isPinchGesture =
+            e.ctrlKey ||
+            e.metaKey ||
+            e.deltaMode === 0 ||
+            Math.abs(e.deltaY) < 10;
+          if (isPinchGesture) {
+            e.preventDefault();
+            const view = viewerRef.current.view();
+            const zoomFactor = e.deltaY > 0 ? 1.05 : 0.95;
+            const newFov = Math.max(
+              (30 * Math.PI) / 180,
+              Math.min((120 * Math.PI) / 180, view.fov() * zoomFactor)
+            );
+            view.setFov(newFov);
+            view.update();
+          }
+        },
+        { passive: false }
+      );
+
+      canvas.style.backgroundColor = "black";
+      canvas.style.opacity = "1";
+      canvas.style.cursor = "default";
     }
 
-    viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
-      controls: {
-        mouseViewMode: "drag",
-        // Register zoom methods here
-        scrollZoom: true, // enables mouse wheel zoom
-        pinchZoom: true, // enables touch pinch zoom
-      },
-      stage: {
-        pixelRatio: window.devicePixelRatio || 1,
-        preserveDrawingBuffer: false,
-        generateMipmaps: false,
-      },
-    });
+    if (!panoPath || !levels?.length) return;
 
-    const controls = viewerRef.current.controls();
-    controls.setFriction?.(0.15);
-    controls.setVelocityScale?.(0.25);
-
-    const canvas = viewerRef.current.stage().domElement();
-    canvas.addEventListener(
-      "wheel",
-      (e) => {
-        const isPinchGesture =
-          e.ctrlKey ||
-          e.metaKey ||
-          e.deltaMode === 0 ||
-          Math.abs(e.deltaY) < 10;
-
-        if (isPinchGesture) {
-          e.preventDefault();
-          const view = viewerRef.current.view();
-          const zoomFactor = e.deltaY > 0 ? 1.05 : 0.95;
-          const newFov = Math.max(
-            (30 * Math.PI) / 180, // min zoom
-            Math.min((120 * Math.PI) / 180, view.fov() * zoomFactor) // max zoom
-          );
-          view.setFov(newFov);
-          view.update();
-        }
-      },
-      { passive: false }
-    );
-
-    canvas.style.backgroundColor = "black";
-    canvas.style.opacity = "1";
-    canvas.style.cursor = "default";
-  }, [onError]);
-
-  useLayoutEffect(() => {
-    if (!panoPath || !levels?.length || !viewerRef.current || webglAbsent)
-      return;
-
+    // Prepare levels safely based on max cube map size
     const maxCubeSize = getMaxCubeMapSize();
     const safeLevels = levels.map((l) => {
       if (l.size <= maxCubeSize) return l;
@@ -132,21 +130,35 @@ const ViewerPanorama = ({
     );
 
     const viewParams =
-      typeof initialViewParameters?.yaw === "number" &&
-      typeof initialViewParameters?.pitch === "number" &&
-      typeof initialViewParameters?.fov === "number"
+      initialViewParameters?.yaw != null &&
+      initialViewParameters?.pitch != null &&
+      initialViewParameters?.fov != null
         ? initialViewParameters
         : DEFAULT_VIEW;
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
     if (sceneRef.current) {
-      sceneRef.current.setSource(source);
-      sceneRef.current.view().setYaw(viewParams.yaw);
-      sceneRef.current.view().setPitch(viewParams.pitch);
-      sceneRef.current.view().setFov(viewParams.fov);
-      sceneRef.current.view().update();
+      // Transition out old scene before destroying
+
+      sceneRef.current.switchTo(null, { transitionDuration: 500 });
+      setTimeout(() => {
+        if (sceneRef.current) {
+          sceneRef.current.destroy();
+          sceneRef.current = null;
+        }
+
+        sceneRef.current = viewerRef.current.createScene({
+          source,
+          geometry,
+          view,
+          pinFirstLevel: true,
+        });
+
+        sceneRef.current.switchTo({ transitionDuration: 1000 });
+      }, 600); // Slightly longer than transition duration
     } else {
+      // Initial scene creation
       sceneRef.current = viewerRef.current.createScene({
         source,
         geometry,
@@ -156,18 +168,20 @@ const ViewerPanorama = ({
       sceneRef.current.switchTo({ transitionDuration: 1000 });
     }
 
-    const autorotate = Marzipano.autorotate({
-      yawSpeed: 0.075,
-      targetPitch: 0,
-      targetFov: Math.PI / 2,
-    });
-
-    viewerRef.current.setIdleMovement?.(3000, autorotate);
+    viewerRef.current.setIdleMovement?.(
+      3000,
+      Marzipano.autorotate({
+        yawSpeed: 0.075,
+        targetPitch: 0,
+        targetFov: Math.PI / 2,
+      })
+    );
 
     setLoaded(true);
     onReady?.();
   }, [panoPath, levels, initialViewParameters, onReady, onError, webglAbsent]);
 
+  // Clean up on unmount
   useLayoutEffect(() => {
     return () => {
       viewerRef.current?.destroy();
@@ -193,8 +207,8 @@ const ViewerPanorama = ({
             style={{
               width: "100%",
               maxWidth: "1024px",
-              display: "block",
               margin: "0 auto",
+              display: "block",
             }}
           />
         )}

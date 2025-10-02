@@ -18,6 +18,7 @@ fi
 if [[ "$1" == "-u" ]]; then
     echo "📦 Updating dependencies..."
 
+    pnpm self-update
     pnpm update
     pnpm audit fix
     pnpm prune
@@ -32,7 +33,7 @@ node --env-file=.env ./src/backend/server.mjs &
 
 # Start the frontend Vite dev server
 echo "🚀 Starting Vite frontend on port 3000..."
-pnpm run frontend:dev &
+pnpm run frontend:dev
 
 # Wait for both processes to finish (Ctrl+C will kill both)
 wait

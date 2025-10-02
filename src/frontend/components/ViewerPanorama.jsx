@@ -1,4 +1,5 @@
 // src/frontend/components/ViewerPanorama.jsx
+
 import { useRef, useLayoutEffect, useState, memo } from "react";
 import PropTypes from "prop-types";
 import Marzipano from "marzipano";

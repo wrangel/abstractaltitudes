@@ -24,7 +24,7 @@
     "helmet": "^8.1.0",
     "marzipano": "^0.10.2",
     "masonic": "^4.1.0",
-    "mongoose": "^8.18.3",
+    "mongoose": "^8.19.0",
     "node-cache": "^5.1.2",
     "panzoom": "^9.4.3",
     "prop-types": "^15.8.1",

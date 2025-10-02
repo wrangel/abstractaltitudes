@@ -8,13 +8,11 @@ import {
   memo,
   Suspense,
   lazy,
-  useMemo,
 } from "react";
 import PropTypes from "prop-types";
 import NavigationMedia from "./NavigationMedia";
 import ViewerImage from "./ViewerImage";
 import PopupMetadata from "./PopupMetadata";
-const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 import ErrorBoundary from "./ErrorBoundary";
@@ -24,11 +22,13 @@ import { useViewportSize } from "../hooks/useViewportSize";
 import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useSignedUrl } from "../hooks/useUrlSigner";
 
+const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
+
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
-  return (
-    <ErrorBoundary>
-      {item.viewer === "pano" ? (
-        <Suspense fallback={<div>Loading panorama viewer...</div>}>
+  if (item.viewer === "pano") {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading panorama viewer…</div>}>
           <ViewerPanorama
             panoPath={item.panoPath}
             levels={item.levels}
@@ -37,15 +37,19 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
             onError={(err) => console.error("Panorama error:", err)}
           />
         </Suspense>
-      ) : (
-        <ViewerImage
-          actualUrl={item.actualUrl}
-          thumbnailUrl={item.thumbnailUrl}
-          name={item.name}
-          onLoad={onContentLoaded}
-          isNavigationMode={isNavigationMode}
-        />
-      )}
+      </ErrorBoundary>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <ViewerImage
+        actualUrl={item.actualUrl}
+        thumbnailUrl={item.thumbnailUrl}
+        name={item.name}
+        onLoad={onContentLoaded}
+        isNavigationMode={isNavigationMode}
+      />
     </ErrorBoundary>
   );
 });
@@ -80,18 +84,19 @@ const Viewer = ({
   const requestedWidth = Math.min(w, actualWidth);
   const requestedHeight = Math.min(h, actualHeight);
 
-  // Step 1: build unsigned resized URL
-  const resizedActualUrl = useMemo(
-    () =>
-      buildQueryStringWidthHeight(item.actualUrl, {
-        width: requestedWidth,
-        height: requestedHeight,
-      }),
-    [item.actualUrl, requestedWidth, requestedHeight]
-  );
+  // resize + sign only for images
+  const resizedActualUrl =
+    item.viewer === "img"
+      ? buildQueryStringWidthHeight(item.actualUrl, {
+          width: requestedWidth,
+          height: requestedHeight,
+        })
+      : item.actualUrl;
 
-  // Step 2: get signed URL async via hook
-  const { signedUrl, error } = useSignedUrl(resizedActualUrl);
+  const { signedUrl, error } =
+    item.viewer === "img"
+      ? useSignedUrl(resizedActualUrl)
+      : { signedUrl: null, error: null };
 
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,15 +164,10 @@ const Viewer = ({
     }
   }, []);
 
-  // Auto-hide cursor!
   const hideCursor = useAutoHideCursor(viewerRef, 1000);
 
-  // Optional: log URL signing errors for diagnostics
   useEffect(() => {
-    if (error) {
-      // Could show an error indicator or fallback UI here instead
-      console.error("Error fetching signed URL:", error);
-    }
+    if (error) console.error("Error fetching signed URL:", error);
   }, [error]);
 
   return (
@@ -180,10 +180,15 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
-      {/* Use signed URL if ready, otherwise fallback to resized unsigned URL */}
       <MediaContent
         key={item.id || item.actualUrl}
-        item={{ ...item, actualUrl: signedUrl || resizedActualUrl }}
+        item={{
+          ...item,
+          actualUrl:
+            item.viewer === "img"
+              ? signedUrl || resizedActualUrl
+              : item.actualUrl,
+        }}
         isNavigationMode={isNavigationMode}
         onContentLoaded={handleContentLoaded}
       />

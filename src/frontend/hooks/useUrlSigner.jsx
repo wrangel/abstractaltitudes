@@ -15,10 +15,6 @@ export function useSignedUrl(pathWithParams) {
 
     let isCanceled = false;
 
-    console.debug(
-      `[useSignedUrl] Requesting signed URL for: ${pathWithParams}`
-    ); // TODO
-
     buildQueryStringSign(pathWithParams)
       .then((url) => {
         if (!isCanceled) setSignedUrl(url);

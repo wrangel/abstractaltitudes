@@ -39,6 +39,10 @@ export async function signedUrl(path, params = {}) {
     fullPath.includes("?") ? "&" : "?"
   }token=${token}&expires=${expires}`;
 
+  console.debug(
+    `[signedUrl] Generated signed URL:\nUnsigned path: ${fullPath}\nSigned URL: ${signedUrl}`
+  ); // TODO
+
   urlCache.set(fullPath, signedUrl);
   return signedUrl;
 }

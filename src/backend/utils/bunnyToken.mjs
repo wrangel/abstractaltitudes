@@ -13,5 +13,5 @@ export function generateBunnyToken(path, secret, expirationSeconds) {
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-  return `?token=${safeHash}&expires=${expires}`;
+  return safeHash;
 }

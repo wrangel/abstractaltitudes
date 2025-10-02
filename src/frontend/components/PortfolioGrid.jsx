@@ -6,7 +6,7 @@ import PortfolioItem from "./PortfolioItem";
 import { useLoadingError } from "../hooks/useLoadingError";
 import { useResponsiveGridWithRatio } from "../hooks/useResponsiveGridWithRatio";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryStringWidthHeight } from "../components/buildQueryStringWidthHeight";
+import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 
 /**
  * PortfolioGrid component renders a masonry grid layout of portfolio items using Masonic.

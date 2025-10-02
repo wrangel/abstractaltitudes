@@ -9,7 +9,7 @@ import LazyImage from "../components/LazyImage";
 import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
-import { buildQueryStringWidthHeight } from "../components/buildQueryStringWidthHeight";
+import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useViewportSize } from "../hooks/useViewportSize";
 
 const Home = () => {

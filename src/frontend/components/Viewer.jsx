@@ -20,7 +20,8 @@ import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryStringWidthHeight } from "../components/buildQueryStringWidthHeight";
+import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
+import { useSignedUrl } from "../hooks/useUrlSigner";
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
   return (
@@ -72,17 +73,20 @@ const Viewer = ({
 }) => {
   const { w, h } = useViewportSize();
 
-  // Calculate resized actualUrl with min of viewport and original dimensions
   const actualWidth = item.originalWidth || w;
   const actualHeight = item.originalHeight || h;
 
   const requestedWidth = Math.min(w, actualWidth);
   const requestedHeight = Math.min(h, actualHeight);
 
+  // Step 1: build unsigned resized URL
   const resizedActualUrl = buildQueryStringWidthHeight(item.actualUrl, {
     width: requestedWidth,
     height: requestedHeight,
   });
+
+  // Step 2: get signed URL async via hook
+  const { signedUrl, error } = useSignedUrl(resizedActualUrl);
 
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -153,6 +157,14 @@ const Viewer = ({
   // Auto-hide cursor!
   const hideCursor = useAutoHideCursor(viewerRef, 1000);
 
+  // Optional: log URL signing errors for diagnostics
+  useEffect(() => {
+    if (error) {
+      // Could show an error indicator or fallback UI here instead
+      console.error("Error fetching signed URL:", error);
+    }
+  }, [error]);
+
   return (
     <div
       className={`${styles.viewer} ${hideCursor ? styles["hide-cursor"] : ""}`}
@@ -163,9 +175,10 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
+      {/* Use signed URL if ready, otherwise fallback to resized unsigned URL */}
       <MediaContent
         key={item.id || item.actualUrl}
-        item={{ ...item, actualUrl: resizedActualUrl }}
+        item={{ ...item, actualUrl: signedUrl || resizedActualUrl }}
         isNavigationMode={isNavigationMode}
         onContentLoaded={handleContentLoaded}
       />

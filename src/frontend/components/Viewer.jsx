@@ -20,7 +20,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryString } from "../components/buildQueryString";
+import { buildQueryStringWidthHeight } from "../components/buildQueryStringWidthHeight";
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
   return (
@@ -79,7 +79,7 @@ const Viewer = ({
   const requestedWidth = Math.min(w, actualWidth);
   const requestedHeight = Math.min(h, actualHeight);
 
-  const resizedActualUrl = buildQueryString(item.actualUrl, {
+  const resizedActualUrl = buildQueryStringWidthHeight(item.actualUrl, {
     width: requestedWidth,
     height: requestedHeight,
   });

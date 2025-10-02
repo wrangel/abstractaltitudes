@@ -9,7 +9,7 @@ import LazyImage from "../components/LazyImage";
 import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
-import { buildQueryString } from "../components/buildQueryString";
+import { buildQueryStringWidthHeight } from "../components/buildQueryStringWidthHeight";
 import { useViewportSize } from "../hooks/useViewportSize";
 
 const Home = () => {
@@ -66,7 +66,10 @@ const Home = () => {
       {randomPano && (
         <div className={styles.backgroundWrapper}>
           <LazyImage
-            src={buildQueryString(randomPano.thumbnailUrl, { width, height })}
+            src={buildQueryStringWidthHeight(randomPano.thumbnailUrl, {
+              width,
+              height,
+            })}
             alt="Background panorama"
             className={styles.backgroundImage}
             placeholderSrc=""

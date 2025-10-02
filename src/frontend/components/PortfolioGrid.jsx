@@ -6,7 +6,7 @@ import PortfolioItem from "./PortfolioItem";
 import { useLoadingError } from "../hooks/useLoadingError";
 import { useResponsiveGridWithRatio } from "../hooks/useResponsiveGridWithRatio";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryString } from "../components/buildQueryString";
+import { buildQueryStringWidthHeight } from "../components/buildQueryStringWidthHeight";
 
 /**
  * PortfolioGrid component renders a masonry grid layout of portfolio items using Masonic.
@@ -44,7 +44,7 @@ const PortfolioGrid = ({ items, onItemClick }) => {
     const finalHeight = Math.min(height, data.thumbnailHeight || height);
 
     // Build BunnyCDN URL requesting resized image for the calculated size
-    const imageSrc = buildQueryString(data.thumbnailUrl, {
+    const imageSrc = buildQueryStringWidthHeight(data.thumbnailUrl, {
       width: finalWidth,
       height: finalHeight,
     });

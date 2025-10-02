@@ -14,37 +14,48 @@ const urlCache = new NodeCache({ stdTTL: 300 }); // Cache URLs for 5 minutes
  * @returns {Promise<string>} - BunnyCDN signed URL string
  */
 export async function signedUrl(path, params = {}) {
-  // Build full URL path with query string for signing
-  const url = new URL(path, "https://dummybase"); // dummy base just for URL parsing
+  try {
+    // Build full URL path with query string for signing
+    const url = new URL(path, "https://dummybase"); // dummy base just for URL parsing
 
-  if (params.width) url.searchParams.set("width", params.width);
-  if (params.height) url.searchParams.set("height", params.height);
+    if (params.width) url.searchParams.set("width", params.width);
+    if (params.height) url.searchParams.set("height", params.height);
 
-  const fullPath = url.pathname + url.search;
+    const fullPath = url.pathname + url.search;
 
-  if (urlCache.has(fullPath)) {
-    return urlCache.get(fullPath);
+    if (urlCache.has(fullPath)) {
+      const cached = urlCache.get(fullPath);
+      console.debug(`[signedUrl] Cache hit for: ${fullPath} => ${cached}`);
+      return cached;
+    }
+
+    const expires = Math.floor(Date.now() / 1000) + 300; // 5 minutes expiry
+
+    // Call your existing generateBunnyToken function which returns {token, expires,...}
+    const { token } = generateBunnyToken(
+      fullPath,
+      process.env.BUNNYCDN_TOKEN_SECRET,
+      expires
+    );
+
+    const baseUrl = process.env.VITE_BUNNYCDN_BASE_URL.replace(/\/$/, ""); // trim trailing slash
+
+    // Append token and expires to full path
+    const signedUrl = `${baseUrl}${fullPath}${
+      fullPath.includes("?") ? "&" : "?"
+    }token=${token}&expires=${expires}`;
+
+    console.debug(
+      `[signedUrl] Generated signed URL:\nUnsigned path: ${fullPath}\nSigned URL: ${signedUrl}`
+    );
+
+    urlCache.set(fullPath, signedUrl);
+
+    return signedUrl;
+  } catch (error) {
+    console.error("[signedUrl] Error generating signed URL:", error);
+    throw error;
   }
-
-  const expires = Math.floor(Date.now() / 1000) + 300; // 5 minutes expiry
-  const token = generateBunnyToken(
-    fullPath,
-    process.env.BUNNYCDN_TOKEN_SECRET,
-    expires
-  );
-
-  const baseUrl = process.env.VITE_BUNNYCDN_BASE_URL.replace(/\/$/, ""); // trim trailing slash
-  // Append token and expires to full path
-  const signedUrl = `${baseUrl}${fullPath}${
-    fullPath.includes("?") ? "&" : "?"
-  }token=${token}&expires=${expires}`;
-
-  console.debug(
-    `[signedUrl] Generated signed URL:\nUnsigned path: ${fullPath}\nSigned URL: ${signedUrl}`
-  ); // TODO
-
-  urlCache.set(fullPath, signedUrl);
-  return signedUrl;
 }
 
 /**

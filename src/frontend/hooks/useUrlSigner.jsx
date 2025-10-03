@@ -3,30 +3,23 @@
 import { useState, useEffect } from "react";
 import { buildQueryStringSign } from "../utils/buildQueryStringSign.jsx";
 
-export function useSignedUrl(pathWithParams) {
-  const [signedUrl, setSignedUrl] = useState(null);
+export function useSignedUrl(url, skip = false) {
+  const [signedUrl, setSigned] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!pathWithParams) {
-      setSignedUrl(null);
-      return;
-    }
+    if (skip || !url) return; // ← do nothing when skipped
 
-    let isCanceled = false;
+    let aborted = false;
+    setError(null);
 
-    buildQueryStringSign(pathWithParams)
-      .then((url) => {
-        if (!isCanceled) setSignedUrl(url);
-      })
-      .catch((err) => {
-        if (!isCanceled) setError(err);
-      });
+    fetch(`/api/sign-url?url=${encodeURIComponent(url)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data) => !aborted && setSigned(data.signedUrl))
+      .catch((e) => !aborted && setError(e));
 
-    return () => {
-      isCanceled = true;
-    };
-  }, [pathWithParams]);
+    return () => (aborted = true);
+  }, [url, skip]);
 
-  return { signedUrl, error };
+  return { signedUrl: skip ? url : signedUrl, error };
 }

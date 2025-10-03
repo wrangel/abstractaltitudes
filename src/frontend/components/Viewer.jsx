@@ -93,10 +93,11 @@ const Viewer = ({
         })
       : item.actualUrl;
 
-  const { signedUrl, error } =
-    item.viewer === "img"
-      ? useSignedUrl(resizedActualUrl)
-      : { signedUrl: null, error: null };
+  /* 1.  always call the hook – pass skip flag when not needed */
+  const { signedUrl, error } = useSignedUrl(
+    resizedActualUrl,
+    /* skip = */ item.viewer !== "img"
+  );
 
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

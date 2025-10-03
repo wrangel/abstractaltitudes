@@ -14,7 +14,6 @@ import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
 
-/* ---------- helpers ---------- */
 function getMaxCubeMapSize() {
   try {
     const canvas = document.createElement("canvas");
@@ -38,7 +37,6 @@ function hasWebGL() {
   }
 }
 
-/* ---------- component ---------- */
 const ViewerPanorama = forwardRef(function ViewerPanorama(
   { panoPath, levels, initialViewParameters, onReady, onError },
   ref
@@ -49,7 +47,18 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
 
-  /* ---------- 1.  create viewer once ---------- */
+  const autorotateActive = useRef(false);
+  const lastFrameTime = useRef(performance.now());
+
+  function rotateFrame(now) {
+    if (!autorotateActive.current || !sceneRef.current) return;
+    const delta = (now - lastFrameTime.current) / 1000;
+    lastFrameTime.current = now;
+    const view = sceneRef.current.view();
+    view.setYaw(view.yaw() + 0.075 * delta);
+    requestAnimationFrame(rotateFrame);
+  }
+
   useLayoutEffect(() => {
     if (!panoramaElement.current || viewerRef.current) return;
 
@@ -95,7 +104,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
             Math.min((120 * Math.PI) / 180, view.fov() * zoomFactor)
           );
           view.setFov(newFov);
-          view.update();
         }
       },
       { passive: false }
@@ -106,7 +114,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     canvas.style.cursor = "default";
   }, [onError]);
 
-  /* ---------- 2.  create / replace scene only when panorama changes ---------- */
   useLayoutEffect(() => {
     if (!viewerRef.current || !panoPath || !levels?.length || webglAbsent)
       return;
@@ -129,8 +136,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     );
 
     source.addEventListener("error", (err) => {
+      console.error("Tile loading error:", err);
       onError?.(err);
-      console.error(`Error loading panorama: ${err.message}`);
     });
 
     const limiter = Marzipano.RectilinearView.limit.traditional(
@@ -138,7 +145,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       (120 * Math.PI) / 180
     );
 
-    // preserve current view if scene already exists
     const previousView = sceneRef.current?.view();
     const viewParams = previousView
       ? {
@@ -158,20 +164,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
-    /* ---------- smooth autorotate ---------- */
-    let last = performance.now();
-    const rotate = () => {
-      if (!sceneRef.current) return;
-      const now = performance.now();
-      const delta = (now - last) / 1000; // seconds
-      last = now;
-      const view = sceneRef.current.view();
-      view.setYaw(view.yaw() + 0.075 * delta);
-      view.update();
-    };
-    viewerRef.current.addEventListener("viewChange", rotate);
-    // keep the handler around so we can remove it later
-    viewerRef.current._autorotateHandler = rotate;
+    autorotateActive.current = true;
+    lastFrameTime.current = performance.now();
+    requestAnimationFrame(rotateFrame);
 
     setLoaded(true);
     onReady?.();
@@ -182,7 +177,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     };
   }, [panoPath, levels, webglAbsent]);
 
-  /* ---------- 3.  apply new initial view without recreating scene ---------- */
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
@@ -191,7 +185,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     v.setFov(initialViewParameters.fov ?? Math.PI / 4);
   }, [initialViewParameters]);
 
-  /* ---------- 4.  expose imperative methods ---------- */
   useImperativeHandle(
     ref,
     () => ({
@@ -202,26 +195,19 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           .setParameters({ yaw, pitch, fov }, { duration });
       },
       stopAutoRotate: () => {
-        if (viewerRef.current?._autorotateHandler) {
-          viewerRef.current.removeEventListener(
-            "viewChange",
-            viewerRef.current._autorotateHandler
-          );
-        }
+        autorotateActive.current = false;
       },
       startAutoRotate: () => {
-        if (viewerRef.current?._autorotateHandler) {
-          viewerRef.current.addEventListener(
-            "viewChange",
-            viewerRef.current._autorotateHandler
-          );
+        if (!autorotateActive.current) {
+          autorotateActive.current = true;
+          lastFrameTime.current = performance.now();
+          requestAnimationFrame(rotateFrame);
         }
       },
     }),
     []
   );
 
-  /* ---------- 5.  clean up viewer on unmount ---------- */
   useLayoutEffect(
     () => () => {
       viewerRef.current?.destroy();
@@ -231,7 +217,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     []
   );
 
-  /* ---------- 6.  fallback for no WebGL ---------- */
   if (webglAbsent) {
     return (
       <div className={styles.ViewerPanoramaFallback}>
@@ -258,7 +243,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     );
   }
 
-  /* ---------- 7.  panorama container ---------- */
   return (
     <div
       ref={panoramaElement}

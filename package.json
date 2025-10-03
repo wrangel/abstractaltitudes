@@ -38,7 +38,7 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.901.0",
+    "@aws-sdk/lib-storage": "^3.903.0",
     "@vitejs/plugin-react": "^4.7.0",
     "adm-zip": "^0.5.16",
     "eslint": "^9.36.0",

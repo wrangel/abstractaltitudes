@@ -1,9 +1,13 @@
 /* src/frontend/styles/Navigation.module.css */
 
+:root {
+  --control-right: 1rem; /* or 2rem */
+}
+
 .fabContainer {
   position: fixed;
   bottom: var(--spacing-large);
-  right: var(--spacing-large);
+  right: var(--control-right);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -92,7 +96,7 @@
 }
 
 .rightArrow {
-  right: 1rem;
+  right: var(--control-right);
 }
 
 /* Responsive small devices */

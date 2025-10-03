@@ -1,4 +1,5 @@
 // src/frontend/components/ViewerPanorama.jsx
+
 import {
   useRef,
   useLayoutEffect,
@@ -157,15 +158,20 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
-    // autorotate
-    viewerRef.current.setIdleMovement(
-      3000,
-      Marzipano.autorotate({
-        yawSpeed: 0.075,
-        targetPitch: 0,
-        targetFov: Math.PI / 2,
-      })
-    );
+    /* ---------- smooth autorotate ---------- */
+    let last = performance.now();
+    const rotate = () => {
+      if (!sceneRef.current) return;
+      const now = performance.now();
+      const delta = (now - last) / 1000; // seconds
+      last = now;
+      const view = sceneRef.current.view();
+      view.setYaw(view.yaw() + 0.075 * delta);
+      view.update();
+    };
+    viewerRef.current.addEventListener("viewChange", rotate);
+    // keep the handler around so we can remove it later
+    viewerRef.current._autorotateHandler = rotate;
 
     setLoaded(true);
     onReady?.();
@@ -195,16 +201,22 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           .view()
           .setParameters({ yaw, pitch, fov }, { duration });
       },
-      stopAutoRotate: () => viewerRef.current?.setIdleMovement(0),
-      startAutoRotate: () =>
-        viewerRef.current?.setIdleMovement(
-          3000,
-          Marzipano.autorotate({
-            yawSpeed: 0.075,
-            targetPitch: 0,
-            targetFov: Math.PI / 2,
-          })
-        ),
+      stopAutoRotate: () => {
+        if (viewerRef.current?._autorotateHandler) {
+          viewerRef.current.removeEventListener(
+            "viewChange",
+            viewerRef.current._autorotateHandler
+          );
+        }
+      },
+      startAutoRotate: () => {
+        if (viewerRef.current?._autorotateHandler) {
+          viewerRef.current.addEventListener(
+            "viewChange",
+            viewerRef.current._autorotateHandler
+          );
+        }
+      },
     }),
     []
   );

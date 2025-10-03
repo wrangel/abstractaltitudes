@@ -72,8 +72,9 @@
   transition: background-color 0.3s ease;
   z-index: 1200;
   box-shadow: var(--overlay-box-shadow);
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
+  padding: 0.6rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -128,4 +129,16 @@
     top: auto;
     left: var(--spacing-small);
   }
+}
+
+.fabContainer::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: var(--control-right);
+  width: 1px;
+  background: rgba(255, 255, 255, 0.08); /* soft white line */
+  pointer-events: none;
+  z-index: 900;
 }

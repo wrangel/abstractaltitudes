@@ -129,16 +129,23 @@ const ViewerPanorama = ({
       (120 * Math.PI) / 180
     );
 
-    const viewParams =
-      typeof initialViewParameters?.yaw === "number" &&
-      typeof initialViewParameters?.pitch === "number" &&
-      typeof initialViewParameters?.fov === "number"
-        ? initialViewParameters
-        : DEFAULT_VIEW;
+    // 🧠 Preserve current view if available
+    const previousView = sceneRef.current?.view();
+    const viewParams = previousView
+      ? {
+          yaw: previousView.yaw(),
+          pitch: previousView.pitch(),
+          fov: previousView.fov(),
+        }
+      : typeof initialViewParameters?.yaw === "number" &&
+        typeof initialViewParameters?.pitch === "number" &&
+        typeof initialViewParameters?.fov === "number"
+      ? initialViewParameters
+      : DEFAULT_VIEW;
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
-    // ✅ Always recreate the scene
+    // ✅ Always recreate the scene, but preserve view
     sceneRef.current = viewerRef.current.createScene({
       source,
       geometry,

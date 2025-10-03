@@ -1,11 +1,19 @@
 // src/frontend/components/ViewerPanorama.jsx
-import { useRef, useLayoutEffect, useState, memo } from "react";
+import {
+  useRef,
+  useLayoutEffect,
+  useState,
+  memo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import PropTypes from "prop-types";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
 
+/* ---------- helpers ---------- */
 function getMaxCubeMapSize() {
   try {
     const canvas = document.createElement("canvas");
@@ -29,19 +37,18 @@ function hasWebGL() {
   }
 }
 
-const ViewerPanorama = ({
-  panoPath,
-  levels,
-  initialViewParameters,
-  onReady,
-  onError,
-}) => {
+/* ---------- component ---------- */
+const ViewerPanorama = forwardRef(function ViewerPanorama(
+  { panoPath, levels, initialViewParameters, onReady, onError },
+  ref
+) {
   const panoramaElement = useRef(null);
   const viewerRef = useRef(null);
   const sceneRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
 
+  /* ---------- 1.  create viewer once ---------- */
   useLayoutEffect(() => {
     if (!panoramaElement.current || viewerRef.current) return;
 
@@ -98,8 +105,9 @@ const ViewerPanorama = ({
     canvas.style.cursor = "default";
   }, [onError]);
 
+  /* ---------- 2.  create / replace scene only when panorama changes ---------- */
   useLayoutEffect(() => {
-    if (!panoPath || !levels?.length || !viewerRef.current || webglAbsent)
+    if (!viewerRef.current || !panoPath || !levels?.length || webglAbsent)
       return;
 
     const maxCubeSize = getMaxCubeMapSize();
@@ -129,7 +137,7 @@ const ViewerPanorama = ({
       (120 * Math.PI) / 180
     );
 
-    // 🧠 Preserve current view if available
+    // preserve current view if scene already exists
     const previousView = sceneRef.current?.view();
     const viewParams = previousView
       ? {
@@ -137,15 +145,10 @@ const ViewerPanorama = ({
           pitch: previousView.pitch(),
           fov: previousView.fov(),
         }
-      : typeof initialViewParameters?.yaw === "number" &&
-        typeof initialViewParameters?.pitch === "number" &&
-        typeof initialViewParameters?.fov === "number"
-      ? initialViewParameters
-      : DEFAULT_VIEW;
+      : initialViewParameters || DEFAULT_VIEW;
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
-    // ✅ Always recreate the scene, but preserve view
     sceneRef.current = viewerRef.current.createScene({
       source,
       geometry,
@@ -154,26 +157,69 @@ const ViewerPanorama = ({
     });
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
-    const autorotate = Marzipano.autorotate({
-      yawSpeed: 0.075,
-      targetPitch: 0,
-      targetFov: Math.PI / 2,
-    });
-
-    viewerRef.current.setIdleMovement?.(3000, autorotate);
+    // autorotate
+    viewerRef.current.setIdleMovement(
+      3000,
+      Marzipano.autorotate({
+        yawSpeed: 0.075,
+        targetPitch: 0,
+        targetFov: Math.PI / 2,
+      })
+    );
 
     setLoaded(true);
     onReady?.();
-  }, [panoPath, levels, initialViewParameters, onReady, onError, webglAbsent]);
 
-  useLayoutEffect(() => {
     return () => {
+      viewerRef.current?.destroyScene(sceneRef.current);
+      sceneRef.current = null;
+    };
+  }, [panoPath, levels, webglAbsent]);
+
+  /* ---------- 3.  apply new initial view without recreating scene ---------- */
+  useLayoutEffect(() => {
+    if (!sceneRef.current || !initialViewParameters) return;
+    const v = sceneRef.current.view();
+    v.setYaw(initialViewParameters.yaw ?? 0);
+    v.setPitch(initialViewParameters.pitch ?? 0);
+    v.setFov(initialViewParameters.fov ?? Math.PI / 4);
+  }, [initialViewParameters]);
+
+  /* ---------- 4.  expose imperative methods ---------- */
+  useImperativeHandle(
+    ref,
+    () => ({
+      lookAt: ({ yaw, pitch, fov, duration = 600 } = {}) => {
+        if (!sceneRef.current) return;
+        sceneRef.current
+          .view()
+          .setParameters({ yaw, pitch, fov }, { duration });
+      },
+      stopAutoRotate: () => viewerRef.current?.setIdleMovement(0),
+      startAutoRotate: () =>
+        viewerRef.current?.setIdleMovement(
+          3000,
+          Marzipano.autorotate({
+            yawSpeed: 0.075,
+            targetPitch: 0,
+            targetFov: Math.PI / 2,
+          })
+        ),
+    }),
+    []
+  );
+
+  /* ---------- 5.  clean up viewer on unmount ---------- */
+  useLayoutEffect(
+    () => () => {
       viewerRef.current?.destroy();
       viewerRef.current = null;
       sceneRef.current = null;
-    };
-  }, []);
+    },
+    []
+  );
 
+  /* ---------- 6.  fallback for no WebGL ---------- */
   if (webglAbsent) {
     return (
       <div className={styles.ViewerPanoramaFallback}>
@@ -200,6 +246,7 @@ const ViewerPanorama = ({
     );
   }
 
+  /* ---------- 7.  panorama container ---------- */
   return (
     <div
       ref={panoramaElement}
@@ -210,7 +257,7 @@ const ViewerPanorama = ({
       style={{ backgroundColor: loaded ? undefined : "black" }}
     />
   );
-};
+});
 
 ViewerPanorama.propTypes = {
   panoPath: PropTypes.string.isRequired,

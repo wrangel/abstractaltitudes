@@ -72,9 +72,6 @@
   transition: background-color 0.3s ease;
   z-index: 1200;
   box-shadow: var(--overlay-box-shadow);
-  width: 52px;
-  height: 52px;
-  padding: 0.6rem;
   display: flex;
   justify-content: center;
   align-items: center;

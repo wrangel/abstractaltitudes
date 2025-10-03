@@ -4,6 +4,10 @@ import fs from "fs/promises";
 import path from "path";
 import logger from "../../backend/utils/logger.mjs";
 import {
+  THUMBNAIL_WIDTH,
+  THUMBNAIL_HEIGHT,
+  THUMBNAIL_QUALITY,
+  THUMBNAIL_FILENAME,
   MODIFIED_FOLDER,
   ORIGINAL_FOLDER,
   S3_FOLDER,
@@ -111,10 +115,6 @@ export async function handleImage(originalFolderPath, newName) {
         await hrImage.webp({ lossless: true }).toFile(losslessWebpPath);
 
         // Write thumbnail WebP file
-        const THUMBNAIL_QUALITY = 80;
-        const THUMBNAIL_WIDTH = 2000;
-        const THUMBNAIL_HEIGHT = 1300;
-        const THUMBNAIL_FILENAME = "thumbnail.webp";
         const thumbnailWebpPath = path.join(s3Path, THUMBNAIL_FILENAME);
 
         const tnImage = image
@@ -140,5 +140,9 @@ export async function handleImage(originalFolderPath, newName) {
     }
   }
 
-  return newFolderPath;
+  return {
+    newFolderPath,
+    originalWidth: metadata.width,
+    originalHeight: metadata.height,
+  };
 }

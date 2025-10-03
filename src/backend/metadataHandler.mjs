@@ -1,5 +1,6 @@
 // src/backend/metadataHandler.mjs
 
+import { THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT } from "./constants.mjs";
 import logger from "./utils/logger.mjs";
 
 /**
@@ -64,6 +65,10 @@ function processDocument(doc, presignedUrls) {
     latitude: doc.latitude,
     longitude: doc.longitude,
     thumbnailUrl: urls.thumbnailUrl,
+    originalWidth: doc.originalWidth || null,
+    originalHeight: doc.originalHeight || null,
+    thumbnailWidth: THUMBNAIL_WIDTH,
+    thumbnailHeight: THUMBNAIL_HEIGHT,
     ...(isPano ? { panoPath: urls.actualUrl } : { actualUrl: urls.actualUrl }),
     initialViewParameters: {
       yaw: initialViewParameters.yaw,

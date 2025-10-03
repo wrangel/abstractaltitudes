@@ -59,6 +59,11 @@ export async function orchestrate() {
         // Branch handling based on media type
         if (mediaType === "hdr" || mediaType === "wide_angle") {
           await handleImage(newFolderPath, newName);
+          const imageData = await handleImage(newFolderPath, newName);
+          if (imageData) {
+            processed.metadata.originalWidth = imageData.originalWidth;
+            processed.metadata.originalHeight = imageData.originalHeight;
+          }
         } else if (mediaType === "pano") {
           panoExtraProps = await handlePano(newFolderPath, newName);
         } else {

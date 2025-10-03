@@ -13,18 +13,22 @@ import PropTypes from "prop-types";
 import NavigationMedia from "./NavigationMedia";
 import ViewerImage from "./ViewerImage";
 import PopupMetadata from "./PopupMetadata";
-const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
-import useAutoHideCursor from "../hooks/useAutoHideCursor"; // <- Add this line
+import useAutoHideCursor from "../hooks/useAutoHideCursor";
+import { useViewportSize } from "../hooks/useViewportSize";
+import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
+import { useSignedUrl } from "../hooks/useUrlSigner";
+
+const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
-  return (
-    <ErrorBoundary>
-      {item.viewer === "pano" ? (
-        <Suspense fallback={<div>Loading panorama viewer...</div>}>
+  if (item.viewer === "pano") {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading panorama viewer…</div>}>
           <ViewerPanorama
             panoPath={item.panoPath}
             levels={item.levels}
@@ -33,15 +37,19 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
             onError={(err) => console.error("Panorama error:", err)}
           />
         </Suspense>
-      ) : (
-        <ViewerImage
-          actualUrl={item.actualUrl}
-          thumbnailUrl={item.thumbnailUrl}
-          name={item.name}
-          onLoad={onContentLoaded}
-          isNavigationMode={isNavigationMode}
-        />
-      )}
+      </ErrorBoundary>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <ViewerImage
+        actualUrl={item.actualUrl}
+        thumbnailUrl={item.thumbnailUrl}
+        name={item.name}
+        onLoad={onContentLoaded}
+        isNavigationMode={isNavigationMode}
+      />
     </ErrorBoundary>
   );
 });
@@ -68,6 +76,29 @@ const Viewer = ({
   isNavigationMode,
   toggleMode,
 }) => {
+  const { w, h } = useViewportSize();
+
+  const actualWidth = item.originalWidth || w;
+  const actualHeight = item.originalHeight || h;
+
+  const requestedWidth = Math.min(w, actualWidth);
+  const requestedHeight = Math.min(h, actualHeight);
+
+  // resize + sign only for images
+  const resizedActualUrl =
+    item.viewer === "img"
+      ? buildQueryStringWidthHeight(item.actualUrl, {
+          width: requestedWidth,
+          height: requestedHeight,
+        })
+      : item.actualUrl;
+
+  /* 1.  always call the hook – pass skip flag when not needed */
+  const { signedUrl, error } = useSignedUrl(
+    resizedActualUrl,
+    /* skip = */ item.viewer !== "img"
+  );
+
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const viewerRef = useRef(null);
@@ -134,8 +165,11 @@ const Viewer = ({
     }
   }, []);
 
-  // Auto-hide cursor!
   const hideCursor = useAutoHideCursor(viewerRef, 1000);
+
+  useEffect(() => {
+    if (error) console.error("Error fetching signed URL:", error);
+  }, [error]);
 
   return (
     <div
@@ -149,7 +183,13 @@ const Viewer = ({
 
       <MediaContent
         key={item.id || item.actualUrl}
-        item={item}
+        item={{
+          ...item,
+          actualUrl:
+            item.viewer === "img"
+              ? signedUrl || resizedActualUrl
+              : item.actualUrl,
+        }}
         isNavigationMode={isNavigationMode}
         onContentLoaded={handleContentLoaded}
       />

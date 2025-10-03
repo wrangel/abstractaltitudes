@@ -9,8 +9,9 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import logger from "./utils/logger.mjs";
-import combinedDataRoute from "./routes/combinedDataRoute.mjs";
 import { connectDB, closeDB } from "./utils/mongodbConnection.mjs";
+import combinedDataRoute from "./routes/combinedDataRoute.mjs";
+import bunnySignRoute from "./routes/bunnySignRoute.mjs";
 
 // ---- Environment variable validation ----
 const requiredEnvVars = [
@@ -118,6 +119,8 @@ app.get("/api/test-mongo", async (req, res) => {
     res.status(500).json({ error: "MongoDB connection test failed" });
   }
 });
+
+app.use("/api", bunnySignRoute);
 
 // ---- Catch-all SPA fallback for unknown paths ----
 const generalLimiter = rateLimit({

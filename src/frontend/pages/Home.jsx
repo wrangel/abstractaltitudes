@@ -9,6 +9,8 @@ import LazyImage from "../components/LazyImage";
 import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
+import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
+import { useViewportSize } from "../hooks/useViewportSize";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ const Home = () => {
     window.innerHeight > window.innerWidth
   );
   const isVeryShort = useWindowHeight(360);
+  const { w, h } = useViewportSize();
 
   useEffect(() => {
     if (items.length > 0) {
@@ -27,6 +30,12 @@ const Home = () => {
       }
     }
   }, [items]);
+
+  // Calculate optimal width and height taking the smaller of viewport and thumbnail sizes
+  const width =
+    randomPano && w ? Math.min(randomPano.thumbnailWidth || w, w) : w || 0;
+  const height =
+    randomPano && h ? Math.min(randomPano.thumbnailHeight || h, h) : h || 0;
 
   useEffect(() => {
     const handleResize = () =>
@@ -57,7 +66,10 @@ const Home = () => {
       {randomPano && (
         <div className={styles.backgroundWrapper}>
           <LazyImage
-            src={randomPano.thumbnailUrl}
+            src={buildQueryStringWidthHeight(randomPano.thumbnailUrl, {
+              width,
+              height,
+            })}
             alt="Background panorama"
             className={styles.backgroundImage}
             placeholderSrc=""

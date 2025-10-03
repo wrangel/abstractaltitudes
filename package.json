@@ -51,7 +51,7 @@
     "node-fetch": "^3.3.2",
     "rollup-plugin-visualizer": "^6.0.4",
     "sharp": "^0.34.4",
-    "vite": "^7.1.8",
+    "vite": "^7.1.9",
     "vite-plugin-eslint": "^1.8.1"
   },
   "pnpm": {

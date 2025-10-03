@@ -106,9 +106,16 @@ const NavigationMedia = memo(
                 viewBox="0 0 24 24"
                 width="20"
                 height="20"
-                fill="currentColor"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <path d="M7 7H5v6h2V7h6V5H7v2zm10 0v6h2V7h-6V5h4v2zm-10 10v-6H5v6h6v2H7v-2zm10-6v6h-6v2h6v-2h2v-6h-2z" />
+                <path d="M4 8V4h4" />
+                <path d="M20 8V4h-4" />
+                <path d="M4 16v4h4" />
+                <path d="M20 16v4h-4" />
               </svg>
             </button>
 

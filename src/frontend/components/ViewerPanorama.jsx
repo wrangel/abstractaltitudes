@@ -13,6 +13,7 @@ import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
+const AUTO_ROTATE_DELAY = 3000; // milliseconds
 
 function getMaxCubeMapSize() {
   try {
@@ -164,12 +165,15 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
-    autorotateActive.current = true;
-    lastFrameTime.current = performance.now();
-    requestAnimationFrame(rotateFrame);
-
     setLoaded(true);
     onReady?.();
+
+    // Delay autorotate start
+    setTimeout(() => {
+      autorotateActive.current = true;
+      lastFrameTime.current = performance.now();
+      requestAnimationFrame(rotateFrame);
+    }, AUTO_ROTATE_DELAY);
 
     return () => {
       viewerRef.current?.destroyScene(sceneRef.current);
@@ -197,11 +201,13 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       stopAutoRotate: () => {
         autorotateActive.current = false;
       },
-      startAutoRotate: () => {
+      startAutoRotate: (delay = AUTO_ROTATE_DELAY) => {
         if (!autorotateActive.current) {
-          autorotateActive.current = true;
-          lastFrameTime.current = performance.now();
-          requestAnimationFrame(rotateFrame);
+          setTimeout(() => {
+            autorotateActive.current = true;
+            lastFrameTime.current = performance.now();
+            requestAnimationFrame(rotateFrame);
+          }, delay);
         }
       },
     }),

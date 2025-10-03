@@ -54,9 +54,8 @@ const ViewerPanorama = ({
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
-        // Register zoom methods here
-        scrollZoom: true, // enables mouse wheel zoom
-        pinchZoom: true, // enables touch pinch zoom
+        scrollZoom: true,
+        pinchZoom: true,
       },
       stage: {
         pixelRatio: window.devicePixelRatio || 1,
@@ -84,8 +83,8 @@ const ViewerPanorama = ({
           const view = viewerRef.current.view();
           const zoomFactor = e.deltaY > 0 ? 1.05 : 0.95;
           const newFov = Math.max(
-            (30 * Math.PI) / 180, // min zoom
-            Math.min((120 * Math.PI) / 180, view.fov() * zoomFactor) // max zoom
+            (30 * Math.PI) / 180,
+            Math.min((120 * Math.PI) / 180, view.fov() * zoomFactor)
           );
           view.setFov(newFov);
           view.update();
@@ -139,21 +138,14 @@ const ViewerPanorama = ({
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
-    if (sceneRef.current) {
-      sceneRef.current.setSource(source);
-      sceneRef.current.view().setYaw(viewParams.yaw);
-      sceneRef.current.view().setPitch(viewParams.pitch);
-      sceneRef.current.view().setFov(viewParams.fov);
-      sceneRef.current.view().update();
-    } else {
-      sceneRef.current = viewerRef.current.createScene({
-        source,
-        geometry,
-        view,
-        pinFirstLevel: true,
-      });
-      sceneRef.current.switchTo({ transitionDuration: 1000 });
-    }
+    // ✅ Always recreate the scene
+    sceneRef.current = viewerRef.current.createScene({
+      source,
+      geometry,
+      view,
+      pinFirstLevel: true,
+    });
+    sceneRef.current.switchTo({ transitionDuration: 1000 });
 
     const autorotate = Marzipano.autorotate({
       yawSpeed: 0.075,

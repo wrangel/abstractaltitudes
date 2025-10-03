@@ -1,6 +1,6 @@
 // src/frontend/components/NavigationMedia.jsx
 
-import React, { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import styles from "../styles/Navigation.module.css";
 
 const NavigationMedia = memo(
@@ -60,7 +60,15 @@ const NavigationMedia = memo(
                 onClick={onPrevious}
                 type="button"
               >
-                ←
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                >
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                </svg>
               </button>
             )}
             {!isLast && (
@@ -70,7 +78,15 @@ const NavigationMedia = memo(
                 onClick={onNext}
                 type="button"
               >
-                →
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                >
+                  <path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+                </svg>
               </button>
             )}
           </>
@@ -84,7 +100,16 @@ const NavigationMedia = memo(
               aria-label="Enter full screen"
               type="button"
             >
-              Full
+              {/* Fullscreen icon (orthogonal corners) */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <path d="M7 7H5v6h2V7h6V5H7v2zm10 0v6h2V7h-6V5h4v2zm-10 10v-6H5v6h6v2H7v-2zm10-6v6h-6v2h6v-2h2v-6h-2z" />
+              </svg>
             </button>
 
             <button
@@ -93,28 +118,65 @@ const NavigationMedia = memo(
               aria-label="Toggle metadata panel"
               type="button"
             >
-              Info
+              {/* Info icon */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <path d="M11 7h2v2h-2zm0 4h2v6h-2z" />
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20c-4.41 0-8-3.59-8-8s3.59-8 
+                        8-8 8 3.59 8 8-3.59 8-8 8z"
+                />
+              </svg>
             </button>
 
             <button
-              className={`${styles.fab}`}
+              className={styles.fab}
               onClick={handleClose}
               aria-label="Close media navigation"
               type="button"
             >
-              Close
+              {/* Close (X) icon */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="currentColor"
+              >
+                <path
+                  d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 
+                        12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z"
+                />
+              </svg>
             </button>
           </div>
         )}
 
         {isFullscreen && (
           <button
-            className={`${styles.fab}`}
+            className={styles.fab}
             onClick={handleClose}
             aria-label="Exit full screen and close"
             type="button"
           >
-            Close
+            {/* Close icon only */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="currentColor"
+            >
+              <path
+                d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 
+                      12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z"
+              />
+            </svg>
           </button>
         )}
       </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
-import { APIProvider, Map, Marker } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 
 import LoadingErrorHandler from "../components/LoadingErrorHandler";
 import PopupViewer from "../components/PopupViewer";
@@ -32,10 +32,8 @@ const MapPage = () => {
   const onNext = useCallback(handleNextItem, [handleNextItem]);
   const onPrevious = useCallback(handlePreviousItem, [handlePreviousItem]);
 
-  // Calculate map view based on item coordinates
   const calculateBounds = (items) => {
     if (!items.length) return { center: { lat: 0, lng: 0 }, zoom: 2 };
-
     let minLat = items[0].latitude,
       maxLat = items[0].latitude,
       minLng = items[0].longitude,
@@ -78,7 +76,6 @@ const MapPage = () => {
     if (itemsError) setErrorMessage(itemsError);
   }, [isItemsLoading, itemsError, stopLoading, setErrorMessage]);
 
-  // Handle map camera changes (zoom, pan)
   const onCameraChanged = useCallback((event) => {
     const { center, zoom } = event.detail;
     setView({ center, zoom });
@@ -99,7 +96,6 @@ const MapPage = () => {
       </Helmet>
       <LoadingErrorHandler isLoading={isLoading} error={error}>
         <ErrorBoundary>
-          {/* Container with application role and label */}
           <div
             className={styles.MapContainer}
             style={{ height: "100vh", width: "100vw" }}
@@ -114,15 +110,17 @@ const MapPage = () => {
                 disableDefaultUI={true}
                 gestureHandling="greedy"
                 mapTypeId="satellite"
+                mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID} // for advanced markers
                 aria-label="Satellite map of aerial images"
-                tabIndex={0} // enable keyboard focus on map
+                tabIndex={0}
               >
                 {items.map((item) => (
-                  <Marker
+                  <AdvancedMarker
                     key={item.id}
                     position={{ lat: item.latitude, lng: item.longitude }}
-                    onClick={() => onItemClick(item)}
                     title={item.name || "Map marker"}
+                    clickable={true}
+                    onClick={() => onItemClick(item)}
                     aria-label={`Map marker for ${
                       item.name || "Unnamed location"
                     }`}
@@ -138,7 +136,6 @@ const MapPage = () => {
                 onClose={onClose}
                 onNext={onNext}
                 onPrevious={onPrevious}
-                // Add accessibility props to PopupViewer/modal
                 role="dialog"
                 aria-modal="true"
                 aria-label={`Details for ${

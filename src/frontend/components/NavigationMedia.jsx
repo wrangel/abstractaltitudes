@@ -135,9 +135,9 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                width="18"
-                height="18"
+                viewBox="2 2 20 20" // ← inset viewBox
+                width="20"
+                height="20"
                 fill="currentColor"
               >
                 <path d="M11 7h2v2h-2zm0 4h2v6h-2z" />

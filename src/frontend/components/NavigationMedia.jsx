@@ -56,7 +56,7 @@ const NavigationMedia = memo(
         {/* ← and → arrows for media navigation */}
         {isNavigationMode && !isFullscreen && (
           <>
-            {/* ← Previous media arrow */}
+            {/* ← Left arrow */}
             {!isFirst && (
               <button
                 className={`${styles.fabButton} ${styles.leftArrow}`}
@@ -66,17 +66,21 @@ const NavigationMedia = memo(
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  width="22"
-                  height="22"
+                  width="16"
+                  height="16"
                   fill="currentColor"
+                  class="bi bi-arrow-left"
+                  viewBox="0 0 16 16"
                 >
-                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"
+                  />
                 </svg>
               </button>
             )}
 
-            {/* → Next media arrow */}
+            {/* → Right arrow */}
             {!isLast && (
               <button
                 className={`${styles.fabButton} ${styles.rightArrow}`}
@@ -86,12 +90,16 @@ const NavigationMedia = memo(
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  width="22"
-                  height="22"
+                  width="16"
+                  height="16"
                   fill="currentColor"
+                  class="bi bi-arrow-right"
+                  viewBox="0 0 16 16"
                 >
-                  <path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"
+                  />
                 </svg>
               </button>
             )}
@@ -110,19 +118,13 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-fullscreen"
+                viewBox="0 0 16 16"
               >
-                <path d="M4 8V4h4" />
-                <path d="M20 8V4h-4" />
-                <path d="M4 16v4h4" />
-                <path d="M20 16v4h-4" />
+                <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
               </svg>
             </button>
 
@@ -135,18 +137,14 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="22"
-                height="22"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-info-circle"
+                viewBox="0 0 16 16"
               >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12" y2="8" />
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
               </svg>
             </button>
 
@@ -159,12 +157,13 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                width="22"
-                height="22"
+                width="16"
+                height="16"
                 fill="currentColor"
+                class="bi bi-x-lg"
+                viewBox="0 0 16 16"
               >
-                <path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z" />
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
               </svg>
             </button>
           </div>
@@ -180,19 +179,13 @@ const NavigationMedia = memo(
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              width="16"
+              height="16"
+              fill="currentColor"
+              class="bi bi-fullscreen-exit"
+              viewBox="0 0 16 16"
             >
-              <path d="M9 9H5v4" />
-              <path d="M15 9h4v4" />
-              <path d="M9 15H5v-4" />
-              <path d="M15 15h4v-4" />
+              <path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5m5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 4.5v-4a.5.5 0 0 1 .5-.5M0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5m10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0z" />
             </svg>
           </button>
         )}

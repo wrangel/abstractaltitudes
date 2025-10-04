@@ -1,97 +1,92 @@
 /* src/frontend/styles/Navigation.module.css */
 
+:root {
+  --control-right: 1rem;
+  --icon-size-default: 20px;
+  --icon-size-arrow: 22px;
+}
+
 .fabContainer {
   position: fixed;
   bottom: var(--spacing-large);
-  right: var(--spacing-large);
+  right: var(--control-right);
   display: flex;
-  flex-direction: column; /* keep vertical stacking for other fab groups if needed */
+  flex-direction: column;
   align-items: flex-end;
   z-index: 1100;
 }
 
 .fabMenu {
   display: flex;
-  flex-direction: column; /* vertical by default */
+  flex-direction: column;
   gap: var(--spacing-small);
 }
 
-/* ----------  FAB buttons  ---------- */
-.fab {
-  font-family: var(--font-stack);
-  text-shadow: var(--text-shadow-heavy);
-  background-color: var(
-    --overlay-bg-light
-  ); /* same as arrows and footer overlays */
+/* Shared FAB + Arrow button style */
+.fabButton {
+  width: 44px;
+  height: 44px;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
   color: #fff;
   border: none;
-  border-radius: var(--overlay-border-radius);
-  padding: 0.5rem 1rem;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   transition: background-color var(--transition-duration);
-  font-size: 1rem;
   box-shadow: var(--overlay-box-shadow);
   user-select: none;
-  width: auto;
-  height: auto;
-  min-width: 50px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.fab:hover {
+/* Default icon size */
+.fabButton svg {
+  width: var(--icon-size-default);
+  height: var(--icon-size-default);
+  pointer-events: none;
+}
+
+/* Larger arrow icons */
+.leftArrow svg,
+.rightArrow svg {
+  width: var(--icon-size-arrow);
+  height: var(--icon-size-arrow);
+}
+
+/* Hover and focus states */
+.fabButton:hover {
   background-color: var(--fab-hover-color);
 }
 
-.fab:focus {
+.fabButton:focus {
   outline: none;
 }
 
-.fab.active {
+.fabButton.active {
   background-color: var(--fab-active-color);
 }
 
-/* ----------  arrows  ---------- */
-.leftArrow,
+/* Arrow positioning */
+.leftArrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  left: var(--control-right);
+  z-index: 1200;
+}
+
 .rightArrow {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--overlay-bg-light);
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: var(--overlay-border-radius);
-  transition: background-color 0.3s ease;
+  right: var(--control-right);
   z-index: 1200;
-  user-select: none;
-
-  font-family: var(--font-stack);
-  text-shadow: var(--text-shadow-heavy);
-  box-shadow: var(--overlay-box-shadow);
-
-  min-width: 40px;
-  text-align: center;
-  box-sizing: border-box;
 }
 
-.leftArrow:hover,
-.rightArrow:hover {
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.leftArrow {
-  left: 1rem;
-}
-
-.rightArrow {
-  right: 1rem;
-}
-
-/* ---------- Unified Responsive Fix for small portrait & landscape phones ---------- */
+/* Responsive tweaks */
 @media (max-width: 600px), (max-height: 600px) {
   .fabContainer {
     bottom: var(--spacing-small);
@@ -99,19 +94,18 @@
   }
 
   .fabMenu {
-    flex-direction: row; /* horizontal on small screen widths OR small heights */
+    flex-direction: row;
     gap: 0.5rem;
   }
 
-  .fab {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.9rem;
-    min-width: 40px;
+  .fabButton {
+    width: 40px;
+    height: 40px;
+    padding: 0.4rem;
   }
 
-  /* Move arrows above FAB horizontal buttons to avoid overlap */
   .rightArrow {
-    bottom: 4.5rem; /* adjust as needed */
+    bottom: 4.5rem;
     top: auto;
     right: var(--spacing-small);
   }
@@ -121,4 +115,17 @@
     top: auto;
     left: var(--spacing-small);
   }
+}
+
+/* Optional guide line */
+.fabContainer::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: var(--control-right);
+  width: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 900;
 }

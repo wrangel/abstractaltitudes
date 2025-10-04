@@ -30,7 +30,7 @@ const NavigationPages = memo(({ onNavigate }) => {
         {buttons.map(({ label, path }) => (
           <button
             key={path}
-            className={`${styles.fab} ${
+            className={`${styles.fabButton} ${
               location.pathname === path ? styles.active : ""
             }`}
             onClick={() => onNavigate(path)}

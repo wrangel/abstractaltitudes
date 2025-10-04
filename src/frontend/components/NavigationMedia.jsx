@@ -3,19 +3,21 @@
 import { memo, useState, useEffect } from "react";
 import styles from "../styles/Navigation.module.css";
 
+// Media navigation component with fullscreen and metadata controls
 const NavigationMedia = memo(
   ({
-    onClose,
-    onPrevious,
-    onNext,
-    onToggleMetadata,
-    isNavigationMode,
-    onToggleFullScreen,
-    isFirst,
-    isLast,
+    onClose, // Callback to close the media view
+    onPrevious, // Callback to go to previous media
+    onNext, // Callback to go to next media
+    onToggleMetadata, // Callback to toggle metadata panel
+    isNavigationMode, // Whether navigation arrows should be shown
+    onToggleFullScreen, // Callback to enter fullscreen
+    isFirst, // Whether current media is the first
+    isLast, // Whether current media is the last
   }) => {
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    // Track fullscreen state
     useEffect(() => {
       const handleFullscreenChange = () => {
         setIsFullscreen(!!document.fullscreenElement);
@@ -30,6 +32,7 @@ const NavigationMedia = memo(
       };
     }, []);
 
+    // Handle close button behavior (exit fullscreen or close)
     const handleClose = () => {
       if (isFullscreen) {
         document.exitFullscreen().catch((err) => {
@@ -50,8 +53,10 @@ const NavigationMedia = memo(
         role="navigation"
         aria-label="Media navigation controls"
       >
+        {/* ← and → arrows for media navigation */}
         {isNavigationMode && !isFullscreen && (
           <>
+            {/* ← Previous media arrow */}
             {!isFirst && (
               <button
                 className={`${styles.fabButton} ${styles.leftArrow}`}
@@ -62,14 +67,16 @@ const NavigationMedia = memo(
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
+                  width="22"
+                  height="22"
                   fill="currentColor"
                 >
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
                 </svg>
               </button>
             )}
+
+            {/* → Next media arrow */}
             {!isLast && (
               <button
                 className={`${styles.fabButton} ${styles.rightArrow}`}
@@ -80,8 +87,8 @@ const NavigationMedia = memo(
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
+                  width="22"
+                  height="22"
                   fill="currentColor"
                 >
                   <path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z" />
@@ -91,8 +98,10 @@ const NavigationMedia = memo(
           </>
         )}
 
+        {/* FAB menu with fullscreen, metadata, and close buttons */}
         {!isFullscreen && (
           <div className={styles.fabMenu}>
+            {/* [ ] Fullscreen toggle button */}
             <button
               className={styles.fabButton}
               onClick={onToggleFullScreen}
@@ -101,9 +110,9 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
+                viewBox="0 0 20 20"
+                width="18"
+                height="18"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
@@ -117,6 +126,7 @@ const NavigationMedia = memo(
               </svg>
             </button>
 
+            {/* i Metadata toggle button */}
             <button
               className={styles.fabButton}
               onClick={onToggleMetadata}
@@ -125,9 +135,9 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
+                viewBox="0 0 20 20"
+                width="18"
+                height="18"
                 fill="currentColor"
               >
                 <path d="M11 7h2v2h-2zm0 4h2v6h-2z" />
@@ -135,6 +145,7 @@ const NavigationMedia = memo(
               </svg>
             </button>
 
+            {/* x Close button */}
             <button
               className={styles.fabButton}
               onClick={handleClose}
@@ -143,9 +154,9 @@ const NavigationMedia = memo(
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
+                viewBox="0 0 20 20"
+                width="22"
+                height="22"
                 fill="currentColor"
               >
                 <path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z" />
@@ -154,6 +165,7 @@ const NavigationMedia = memo(
           </div>
         )}
 
+        {/* x Close button in fullscreen mode */}
         {isFullscreen && (
           <button
             className={styles.fabButton}
@@ -163,7 +175,7 @@ const NavigationMedia = memo(
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
+              viewBox="0 0 20 20"
               width="20"
               height="20"
               fill="currentColor"

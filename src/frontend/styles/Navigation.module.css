@@ -2,6 +2,8 @@
 
 :root {
   --control-right: 1rem;
+  --icon-size-default: 20px;
+  --icon-size-arrow: 22px;
 }
 
 .fabContainer {
@@ -36,22 +38,35 @@
   transition: background-color var(--transition-duration);
   box-shadow: var(--overlay-box-shadow);
   user-select: none;
-  font-size: 0.875rem; /* slightly smaller than 1rem */
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
+/* Default icon size */
 .fabButton svg {
-  width: 20px;
-  height: 20px;
+  width: var(--icon-size-default);
+  height: var(--icon-size-default);
   pointer-events: none;
 }
 
+/* Larger arrow icons */
+.leftArrow svg,
+.rightArrow svg {
+  width: var(--icon-size-arrow);
+  height: var(--icon-size-arrow);
+}
+
+/* Hover and focus states */
 .fabButton:hover {
   background-color: var(--fab-hover-color);
 }
 
 .fabButton:focus {
   outline: none;
+}
+
+.fabButton.active {
+  background-color: var(--fab-active-color);
 }
 
 /* Arrow positioning */
@@ -113,8 +128,4 @@
   background: rgba(255, 255, 255, 0.08);
   pointer-events: none;
   z-index: 900;
-}
-
-.fabButton.active {
-  background-color: var(--fab-active-color);
 }

@@ -34,7 +34,7 @@ const NavigationMedia = memo(
       if (isFullscreen) {
         document.exitFullscreen().catch((err) => {
           console.error(
-            `Error attempting to exit full-screen mode: ${err.message} (${err.name})`
+            `Error exiting fullscreen: ${err.message} (${err.name})`
           );
         });
       } else {
@@ -47,7 +47,6 @@ const NavigationMedia = memo(
         className={`${styles.fabContainer} ${
           isFullscreen ? styles.fullscreen : ""
         }`}
-        style={{ zIndex: 1100 }}
         role="navigation"
         aria-label="Media navigation controls"
       >
@@ -55,7 +54,7 @@ const NavigationMedia = memo(
           <>
             {!isFirst && (
               <button
-                className={styles.leftArrow}
+                className={`${styles.fabButton} ${styles.leftArrow}`}
                 aria-label="Previous media"
                 onClick={onPrevious}
                 type="button"
@@ -63,8 +62,8 @@ const NavigationMedia = memo(
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   fill="currentColor"
                 >
                   <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
@@ -73,7 +72,7 @@ const NavigationMedia = memo(
             )}
             {!isLast && (
               <button
-                className={styles.rightArrow}
+                className={`${styles.fabButton} ${styles.rightArrow}`}
                 aria-label="Next media"
                 onClick={onNext}
                 type="button"
@@ -81,8 +80,8 @@ const NavigationMedia = memo(
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   fill="currentColor"
                 >
                   <path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z" />
@@ -95,12 +94,11 @@ const NavigationMedia = memo(
         {!isFullscreen && (
           <div className={styles.fabMenu}>
             <button
-              className={styles.fab}
+              className={styles.fabButton}
               onClick={onToggleFullScreen}
               aria-label="Enter full screen"
               type="button"
             >
-              {/* Fullscreen icon (orthogonal corners) */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -108,9 +106,9 @@ const NavigationMedia = memo(
                 height="20"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
                 <path d="M4 8V4h4" />
                 <path d="M20 8V4h-4" />
@@ -120,12 +118,11 @@ const NavigationMedia = memo(
             </button>
 
             <button
-              className={styles.fab}
+              className={styles.fabButton}
               onClick={onToggleMetadata}
               aria-label="Toggle metadata panel"
               type="button"
             >
-              {/* Info icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -134,20 +131,16 @@ const NavigationMedia = memo(
                 fill="currentColor"
               >
                 <path d="M11 7h2v2h-2zm0 4h2v6h-2z" />
-                <path
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20c-4.41 0-8-3.59-8-8s3.59-8 
-                        8-8 8 3.59 8 8-3.59 8-8 8z"
-                />
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
               </svg>
             </button>
 
             <button
-              className={styles.fab}
+              className={styles.fabButton}
               onClick={handleClose}
               aria-label="Close media navigation"
               type="button"
             >
-              {/* Close (X) icon */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -155,10 +148,7 @@ const NavigationMedia = memo(
                 height="20"
                 fill="currentColor"
               >
-                <path
-                  d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 
-                        12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z"
-                />
+                <path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z" />
               </svg>
             </button>
           </div>
@@ -166,23 +156,19 @@ const NavigationMedia = memo(
 
         {isFullscreen && (
           <button
-            className={styles.fab}
+            className={styles.fabButton}
             onClick={handleClose}
             aria-label="Exit full screen and close"
             type="button"
           >
-            {/* Close icon only */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
-              width="24"
-              height="24"
+              width="20"
+              height="20"
               fill="currentColor"
             >
-              <path
-                d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 
-                      12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z"
-              />
+              <path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z" />
             </svg>
           </button>
         )}

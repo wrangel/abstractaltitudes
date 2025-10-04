@@ -1,7 +1,7 @@
 /* src/frontend/styles/Navigation.module.css */
 
 :root {
-  --control-right: 1rem; /* or 2rem */
+  --control-right: 1rem;
 }
 
 .fabContainer {
@@ -20,84 +20,56 @@
   gap: var(--spacing-small);
 }
 
-/* FAB buttons */
-.fab {
+/* Shared FAB + Arrow button style */
+.fabButton {
+  width: 44px;
+  height: 44px;
+  padding: 0.5rem;
+  border-radius: 4px;
   background: rgba(0, 0, 0, 0.4);
   color: #fff;
   border: none;
-  border-radius: 4px;
-  padding: 0.5rem;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   transition: background-color var(--transition-duration);
-  font-size: 1rem;
   box-shadow: var(--overlay-box-shadow);
   user-select: none;
-  width: 44px;
-  height: 44px;
 }
 
-.fab svg {
+.fabButton svg {
   width: 20px;
   height: 20px;
   pointer-events: none;
 }
 
-.fab:hover {
+.fabButton:hover {
   background-color: var(--fab-hover-color);
 }
 
-.fab:focus {
+.fabButton:focus {
   outline: none;
 }
 
-.fab.active {
-  background-color: var(--fab-active-color);
+/* Arrow positioning */
+.leftArrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  left: var(--control-right);
+  z-index: 1200;
 }
 
-/* Arrows */
-.leftArrow,
 .rightArrow {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.4);
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.3s ease;
-  z-index: 1200;
-  box-shadow: var(--overlay-box-shadow);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.leftArrow svg,
-.rightArrow svg {
-  width: 20px;
-  height: 20px;
-  pointer-events: none;
-}
-
-.leftArrow:hover,
-.rightArrow:hover {
-  background: rgba(0, 0, 0, 0.55);
-}
-
-.leftArrow {
-  left: 1rem;
-}
-
-.rightArrow {
   right: var(--control-right);
+  z-index: 1200;
 }
 
-/* Responsive small devices */
+/* Responsive tweaks */
 @media (max-width: 600px), (max-height: 600px) {
   .fabContainer {
     bottom: var(--spacing-small);
@@ -109,7 +81,7 @@
     gap: 0.5rem;
   }
 
-  .fab {
+  .fabButton {
     width: 40px;
     height: 40px;
     padding: 0.4rem;
@@ -128,6 +100,7 @@
   }
 }
 
+/* Optional guide line */
 .fabContainer::before {
   content: "";
   position: fixed;
@@ -135,7 +108,7 @@
   bottom: 0;
   right: var(--control-right);
   width: 1px;
-  background: rgba(255, 255, 255, 0.08); /* soft white line */
+  background: rgba(255, 255, 255, 0.08);
   pointer-events: none;
   z-index: 900;
 }

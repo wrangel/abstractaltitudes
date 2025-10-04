@@ -31,11 +31,20 @@ const Home = () => {
     }
   }, [items]);
 
-  // Calculate optimal width and height taking the smaller of viewport and thumbnail sizes
+  // Device pixel ratio with extra multiplier for sharper image (max capped)
+  const baseDpr =
+    typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  const maxMultiplier = 2; // can increase to 3 for even sharper but heavier images
+  const dpr = Math.min(baseDpr * 2, maxMultiplier);
+
   const width =
-    randomPano && w ? Math.min(randomPano.thumbnailWidth || w, w) : w || 0;
+    randomPano && w
+      ? Math.min((randomPano.thumbnailWidth || w) * dpr, w * dpr)
+      : w * dpr || 0;
   const height =
-    randomPano && h ? Math.min(randomPano.thumbnailHeight || h, h) : h || 0;
+    randomPano && h
+      ? Math.min((randomPano.thumbnailHeight || h) * dpr, h * dpr)
+      : h * dpr || 0;
 
   useEffect(() => {
     const handleResize = () =>

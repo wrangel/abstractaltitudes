@@ -170,7 +170,7 @@ const NavigationMedia = memo(
           </div>
         )}
 
-        {/* x Close button in fullscreen mode */}
+        {/* ⊗ Inverse fullscreen-style close icon */}
         {isFullscreen && (
           <button
             className={styles.fabButton}
@@ -180,12 +180,19 @@ const NavigationMedia = memo(
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              width="20"
-              height="20"
-              fill="currentColor"
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.7 4.29 12 10.59l6.29-6.3z" />
+              <path d="M9 9H5v4" />
+              <path d="M15 9h4v4" />
+              <path d="M9 15H5v-4" />
+              <path d="M15 15h4v-4" />
             </svg>
           </button>
         )}

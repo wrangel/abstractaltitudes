@@ -31,12 +31,9 @@ const Home = () => {
     }
   }, [items]);
 
-  // Device pixel ratio with extra multiplier for sharper image (max capped)
-  const baseDpr =
-    typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  const maxMultiplier = 2; // can increase to 3 for even sharper but heavier images
-  const dpr = Math.min(baseDpr * 2, maxMultiplier);
-
+  // Device pixel ratio adjustment for sharp Home background (Retina/hi-DPI screens)
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  // Use the higher resolution only for homepage background
   const width =
     randomPano && w
       ? Math.min((randomPano.thumbnailWidth || w) * dpr, w * dpr)

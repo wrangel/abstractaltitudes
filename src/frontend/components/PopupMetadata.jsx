@@ -116,6 +116,7 @@ const PopupMetadata = ({
       <button
         className={styles.closeIcon}
         onClick={onClose}
+        onTouchStart={(e) => e.stopPropagation()}
         aria-label="Close metadata popup"
         type="button"
       >

@@ -28,7 +28,7 @@
 
 .content {
   text-align: center;
-  padding-top: 14px;
+  padding-top: 28px;
   user-select: text;
 }
 
@@ -67,7 +67,8 @@
 .closeIcon {
   position: absolute;
   top: 6px;
-  right: 6px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 36px;
   height: 36px;
   background: rgba(0, 0, 0, 0.4);

@@ -1,183 +1,278 @@
 // src/frontend/components/PopupMetadata.jsx
 
-import { useState, useEffect, useRef } from "react";
+import {
+  useRef,
+  useLayoutEffect,
+  useState,
+  memo,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import PropTypes from "prop-types";
-import LazyImage from "./LazyImage";
-import styles from "../styles/PopupMetadata.module.css";
+import Marzipano, { PinchZoomControlMethod } from "marzipano";
+import styles from "../styles/ViewerPanorama.module.css";
 
-const PopupMetadata = ({
-  metadata,
-  latitude,
-  longitude,
-  panoramaUrl,
-  panoramaThumbUrl,
-  onClose,
-  isVisible,
-}) => {
-  const zoomLevel = 13;
-  const [isBelowThreshold, setIsBelowThreshold] = useState(false);
-  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
-  const popupRef = useRef(null);
-  const triggerRef = useRef(null);
+const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
+const AUTO_ROTATE_DELAY = 3000;
 
-  useEffect(() => {
-    const handleResize = () => setIsBelowThreshold(window.innerHeight < 500);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+function getMaxCubeMapSize() {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    return gl ? gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE) : 2048;
+  } catch {
+    return 2048;
+  }
+}
+
+function hasWebGL() {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+const ViewerPanorama = forwardRef(function ViewerPanorama(
+  { panoPath, levels, initialViewParameters, onReady, onError },
+  ref
+) {
+  const panoramaElement = useRef(null);
+  const viewerRef = useRef(null);
+  const sceneRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+  const [webglAbsent, setWebglAbsent] = useState(false);
+  const autorotateRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!panoramaElement.current || viewerRef.current) return;
+
+    if (!hasWebGL()) {
+      setWebglAbsent(true);
+      onError?.(new Error("WebGL not supported"));
+      return;
+    }
+
+    viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
+      controls: {
+        mouseViewMode: "drag",
+        scrollZoom: true,
+        pinchZoom: true,
+      },
+      stage: {
+        pixelRatio: window.devicePixelRatio || 1,
+        preserveDrawingBuffer: false,
+        generateMipmaps: false,
+      },
+    });
+
+    const controls = viewerRef.current.controls();
+
+    // ✅ Register pinch zoom explicitly
+    const pinchZoom = new PinchZoomControlMethod();
+    controls.registerMethod("pinchZoom", pinchZoom, true);
+
+    // Autorotate pause/resume
+    controls.addEventListener("dragStart", () => {
+      viewerRef.current.stopMovement();
+    });
+    controls.addEventListener("dragEnd", () => {
+      if (autorotateRef.current) {
+        viewerRef.current.setIdleMovement(
+          AUTO_ROTATE_DELAY,
+          autorotateRef.current
+        );
+        viewerRef.current.startMovement(autorotateRef.current);
+      }
+    });
+
+    const canvas = viewerRef.current.stage().domElement();
+
+    // 🧪 Bonus: Gesture logging for debugging
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length > 1) {
+        console.log("Pinch gesture started with", e.touches.length, "touches");
+      }
+    });
+    canvas.addEventListener("gesturestart", (e) => {
+      console.log("Gesture start scale:", e.scale);
+    });
+
+    canvas.style.backgroundColor = "black";
+    canvas.style.opacity = "1";
+    canvas.style.cursor = "default";
+
+    autorotateRef.current = Marzipano.autorotate({
+      yawSpeed: 0.05,
+      targetPitch: 0,
+    });
+  }, [onError]);
+
+  useLayoutEffect(() => {
+    if (!viewerRef.current || !panoPath || !levels?.length || webglAbsent)
+      return;
+
+    const maxSize = getMaxCubeMapSize();
+    const safeLevels = levels.map((l) => {
+      if (l.size <= maxSize) return l;
+      const ratio = maxSize / l.size;
+      return {
+        ...l,
+        size: maxSize,
+        tileSize: Math.max(1, Math.floor(l.tileSize * ratio)),
+      };
+    });
+
+    const geometry = new Marzipano.CubeGeometry(safeLevels);
+    const source = Marzipano.ImageUrlSource.fromString(
+      `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
+      { cubeMapPreviewUrl: `${panoPath}/preview.jpg` }
+    );
+
+    source.addEventListener("error", (err) => {
+      console.error("Tile load error:", err);
+      onError?.(err);
+    });
+
+    const limiter = Marzipano.RectilinearView.limit.traditional(
+      1024,
+      (120 * Math.PI) / 180
+    );
+
+    const previousView = sceneRef.current?.view();
+    const viewParams = previousView
+      ? {
+          yaw: previousView.yaw(),
+          pitch: previousView.pitch(),
+          fov: previousView.fov(),
+        }
+      : DEFAULT_VIEW;
+
+    const view = new Marzipano.RectilinearView(viewParams, limiter);
+
+    sceneRef.current = viewerRef.current.createScene({
+      source,
+      geometry,
+      view,
+      pinFirstLevel: true,
+    });
+    sceneRef.current.switchTo({ transitionDuration: 1000 });
+
+    setLoaded(true);
+    onReady?.();
+
+    if (viewerRef.current && autorotateRef.current) {
+      viewerRef.current.setIdleMovement(
+        AUTO_ROTATE_DELAY,
+        autorotateRef.current
+      );
+      viewerRef.current.startMovement(autorotateRef.current);
+    }
+
+    return () => {
+      viewerRef.current?.destroyScene(sceneRef.current);
+      sceneRef.current = null;
+    };
+  }, [panoPath, levels, webglAbsent]);
+
+  useLayoutEffect(() => {
+    if (!sceneRef.current || !initialViewParameters) return;
+    const v = sceneRef.current.view();
+    v.setYaw(initialViewParameters.yaw ?? 0);
+    v.setPitch(initialViewParameters.pitch ?? 0);
+    v.setFov(initialViewParameters.fov ?? Math.PI / 4);
+  }, [initialViewParameters]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      lookAt: ({ yaw, pitch, fov, duration = 600 } = {}) => {
+        if (!sceneRef.current) return;
+        sceneRef.current
+          .view()
+          .setParameters({ yaw, pitch, fov }, { duration });
+      },
+      stopAutoRotate: () => {
+        viewerRef.current?.stopMovement();
+      },
+      startAutoRotate: () => {
+        if (viewerRef.current && autorotateRef.current) {
+          viewerRef.current.setIdleMovement(
+            AUTO_ROTATE_DELAY,
+            autorotateRef.current
+          );
+          viewerRef.current.startMovement(autorotateRef.current);
+        }
+      },
+    }),
+    []
+  );
+
+  useLayoutEffect(() => {
+    return () => {
+      viewerRef.current?.destroy();
+      viewerRef.current = null;
+      sceneRef.current = null;
+    };
   }, []);
 
-  useEffect(() => {
-    if (isVisible) {
-      triggerRef.current = document.activeElement;
-      popupRef.current?.focus();
-    } else {
-      if (triggerRef.current && document.activeElement !== triggerRef.current) {
-        triggerRef.current.focus();
-      }
-    }
-  }, [isVisible]);
-
-  // Draggable popup logic keeping original smoothness approach
-  const handleDragStart = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    const popup = popupRef.current;
-    if (!popup) return;
-
-    const startRect = popup.getBoundingClientRect();
-    const parentRect = popup.offsetParent.getBoundingClientRect();
-
-    let baseLeft = startRect.left - parentRect.left;
-    let baseTop = startRect.top - parentRect.top;
-
-    popup.style.transform = "none";
-    popup.style.left = `${baseLeft}px`;
-    popup.style.top = `${baseTop}px`;
-
-    const isTouch = e.type === "touchstart";
-    const pointer = isTouch ? e.touches[0] : e;
-    let lastX = pointer.clientX;
-    let lastY = pointer.clientY;
-
-    const onMove = (ev) => {
-      ev.stopPropagation();
-      ev.preventDefault();
-      const p = isTouch ? ev.touches[0] : ev;
-      baseLeft += p.clientX - lastX;
-      baseTop += p.clientY - lastY;
-      lastX = p.clientX;
-      lastY = p.clientY;
-      popup.style.left = `${baseLeft}px`;
-      popup.style.top = `${baseTop}px`;
-    };
-
-    const onUp = (ev) => {
-      ev.stopPropagation();
-      ev.preventDefault();
-      setPopupPosition({ x: baseLeft, y: baseTop });
-      document.removeEventListener(isTouch ? "touchmove" : "mousemove", onMove);
-      document.removeEventListener(isTouch ? "touchend" : "mouseup", onUp);
-    };
-
-    document.addEventListener(isTouch ? "touchmove" : "mousemove", onMove, {
-      passive: false, // changed to false for touchmove to avoid scroll during drag
-    });
-    document.addEventListener(isTouch ? "touchend" : "mouseup", onUp);
-  };
-
-  const style = {
-    transform: "none",
-    left: `${popupPosition.x}px`,
-    top: `${popupPosition.y}px`,
-    position: "absolute",
-    opacity: isVisible ? 1 : 0,
-    pointerEvents: isVisible ? "auto" : "none",
-  };
-
-  const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=${
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  }&q=${latitude},${longitude}&zoom=${zoomLevel}&maptype=satellite`;
-  const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}&zoom=${zoomLevel}&maptype=satellite`;
+  if (webglAbsent) {
+    return (
+      <div className={styles.ViewerPanoramaFallback}>
+        <p>
+          This device's browser does not support high-performance 360°
+          panoramas. Try Chrome for best results.
+        </p>
+        {panoPath && (
+          <img
+            src={`${panoPath}/preview.jpg`}
+            alt="Panorama preview"
+            className={styles.staticPreview}
+            style={{
+              width: "100%",
+              maxWidth: "1024px",
+              display: "block",
+              margin: "0 auto",
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
-      className={styles.PopupMetadata}
-      ref={popupRef}
-      style={style}
-      onMouseDown={handleDragStart}
-      onTouchStart={handleDragStart}
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
-      aria-label="Metadata popup"
-    >
-      <button
-        className={styles.closeIcon}
-        onClick={onClose}
-        onTouchStart={(e) => e.stopPropagation()}
-        aria-label="Close metadata popup"
-        type="button"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          fill="currentColor"
-          className="bi bi-x-lg"
-          viewBox="0 0 16 16"
-        >
-          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
-        </svg>
-      </button>
-      <div className={styles.content}>
-        <pre>{metadata}</pre>
-
-        {/* Lazy load panorama image */}
-        {isVisible && panoramaUrl && (
-          <LazyImage
-            src={panoramaUrl}
-            placeholderSrc={panoramaThumbUrl}
-            alt="Panorama view"
-            className={styles.panoramaImage}
-          />
-        )}
-
-        {isVisible &&
-          (isBelowThreshold ? (
-            <a
-              href={googleMapsLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.maplink}
-            >
-              View on map
-            </a>
-          ) : (
-            <iframe
-              className={styles.mapIframe}
-              width="100%"
-              style={{ height: "50vh" }}
-              src={googleMapsUrl}
-              title={`Map location at latitude ${latitude} and longitude ${longitude}`}
-              allowFullScreen
-              loading="lazy"
-            />
-          ))}
-      </div>
-    </div>
+      ref={panoramaElement}
+      className={styles.ViewerPanorama}
+      role="application"
+      aria-label="360 degree panorama viewer"
+      tabIndex={0}
+      style={{ backgroundColor: loaded ? undefined : "black" }}
+    />
   );
+});
+
+ViewerPanorama.propTypes = {
+  panoPath: PropTypes.string.isRequired,
+  levels: PropTypes.arrayOf(
+    PropTypes.shape({
+      tileSize: PropTypes.number.isRequired,
+      size: PropTypes.number.isRequired,
+      fallbackOnly: PropTypes.bool,
+    })
+  ).isRequired,
+  initialViewParameters: PropTypes.shape({
+    yaw: PropTypes.number,
+    pitch: PropTypes.number,
+    fov: PropTypes.number,
+  }),
+  onReady: PropTypes.func,
+  onError: PropTypes.func,
 };
 
-PopupMetadata.propTypes = {
-  metadata: PropTypes.string.isRequired,
-  latitude: PropTypes.number.isRequired,
-  longitude: PropTypes.number.isRequired,
-  panoramaUrl: PropTypes.string,
-  panoramaThumbUrl: PropTypes.string,
-  onClose: PropTypes.func.isRequired,
-  isVisible: PropTypes.bool.isRequired,
-};
-
-export default PopupMetadata;
+export default memo(ViewerPanorama);

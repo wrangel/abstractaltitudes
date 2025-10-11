@@ -22,9 +22,23 @@ import { useViewportSize } from "../hooks/useViewportSize";
 import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useSignedUrl } from "../hooks/useUrlSigner";
 
+function isValidPanoItem(item) {
+  return item.panoPath && Array.isArray(item.levels) && item.levels.length > 0;
+}
+
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
+  if (item.viewer === "pano" && !isValidPanoItem(item)) {
+    return (
+      <div
+        role="alert"
+        style={{ color: "red", padding: "2rem", background: "#fff" }}
+      >
+        Panorama data is missing or incomplete.
+      </div>
+    );
+  }
   if (item.viewer === "pano") {
     return (
       <ErrorBoundary>
@@ -134,7 +148,7 @@ const Viewer = ({
   }, [showMetadata, onClose]);
 
   useEffect(() => {
-    if (item.viewer === "pano") return;
+    if (item.viewer === "pano" && !isValidPanoItem(item)) return;
 
     const handleArrowKeys = (event) => {
       if (event.key === "ArrowLeft") {

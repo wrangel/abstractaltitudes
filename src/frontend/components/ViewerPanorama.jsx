@@ -1,3 +1,5 @@
+// src/frontend/components/ViewerPanorama.jsx
+
 import {
   useRef,
   useLayoutEffect,
@@ -11,7 +13,6 @@ import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
-
 const AUTO_ROTATE_DELAY = 3000; // ms
 
 function getMaxCubeMapSize() {
@@ -46,10 +47,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const sceneRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
-  const autorotateRef = useRef(null); // for autorotate control
+  const autorotateRef = useRef(null);
 
-  /* --- Initialize viewer once --- */
   useLayoutEffect(() => {
+    // Only initialize once
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
@@ -73,12 +74,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     const controls = viewerRef.current.controls();
 
-    // Pause autorotate on drag start
     controls.addEventListener("dragStart", () => {
-      viewerRef.current.stopMovement(); // immediately stop autorotate
+      viewerRef.current.stopMovement();
     });
 
-    // Resume autorotate after drag
     controls.addEventListener("dragEnd", () => {
       if (autorotateRef.current) {
         viewerRef.current.setIdleMovement(
@@ -90,10 +89,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const canvas = viewerRef.current.stage().domElement();
-    // Optional: handle zooming with mouse wheel
-    // ... (your existing wheel event code) ...
-
-    // Style
     canvas.style.backgroundColor = "black";
     canvas.style.opacity = "1";
     canvas.style.cursor = "default";
@@ -101,14 +96,22 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     // Create autorotate movement
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
-      targetPitch: 0, // horizon level
+      targetPitch: 0,
     });
   }, [onError]);
 
-  /* --- Scene creation / update --- */
   useLayoutEffect(() => {
-    if (!viewerRef.current || !panoPath || !levels?.length || webglAbsent)
+    // Defensive: only proceed if all required props are present
+    if (
+      !viewerRef.current ||
+      !panoPath ||
+      !levels ||
+      !Array.isArray(levels) ||
+      !levels.length ||
+      webglAbsent
+    ) {
       return;
+    }
 
     const maxSize = getMaxCubeMapSize();
     const safeLevels = levels.map((l) => {
@@ -122,6 +125,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const geometry = new Marzipano.CubeGeometry(safeLevels);
+
     const source = Marzipano.ImageUrlSource.fromString(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
       { cubeMapPreviewUrl: `${panoPath}/preview.jpg` }
@@ -136,17 +140,16 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       1024,
       (120 * Math.PI) / 180
     );
-    const previousView = sceneRef.current?.view();
 
+    const previousView = sceneRef.current?.view();
     const viewParams = previousView
       ? {
           yaw: previousView.yaw(),
           pitch: previousView.pitch(),
           fov: previousView.fov(),
         }
-      : { yaw: 0, pitch: 0, fov: Math.PI / 4 };
+      : { ...DEFAULT_VIEW };
 
-    // Create view
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
     sceneRef.current = viewerRef.current.createScene({
@@ -155,12 +158,12 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       view,
       pinFirstLevel: true,
     });
+
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
     setLoaded(true);
     onReady?.();
 
-    // Start autorotate with horizon target
     if (viewerRef.current && autorotateRef.current) {
       viewerRef.current.setIdleMovement(
         AUTO_ROTATE_DELAY,
@@ -175,16 +178,14 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     };
   }, [panoPath, levels, webglAbsent]);
 
-  /* --- Set initial view --- */
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
-    v.setYaw(initialViewParameters.yaw ?? 0);
-    v.setPitch(initialViewParameters.pitch ?? 0);
-    v.setFov(initialViewParameters.fov ?? Math.PI / 4);
+    v.setYaw(initialViewParameters.yaw ?? DEFAULT_VIEW.yaw);
+    v.setPitch(initialViewParameters.pitch ?? DEFAULT_VIEW.pitch);
+    v.setFov(initialViewParameters.fov ?? DEFAULT_VIEW.fov);
   }, [initialViewParameters]);
 
-  /* --- Expose controls --- */
   useImperativeHandle(
     ref,
     () => ({
@@ -195,7 +196,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           .setParameters({ yaw, pitch, fov }, { duration });
       },
       stopAutoRotate: () => {
-        viewerRef.current?.stopMovement(); // disables both autorotate and manual controls
+        viewerRef.current?.stopMovement();
       },
       startAutoRotate: () => {
         if (viewerRef.current && autorotateRef.current) {
@@ -210,8 +211,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     []
   );
 
-  /* --- Cleanup --- */
   useLayoutEffect(() => {
+    // Cleanup
     return () => {
       viewerRef.current?.destroy();
       viewerRef.current = null;
@@ -219,27 +220,29 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     };
   }, []);
 
-  /* --- Render fallback --- */
   if (webglAbsent) {
     return (
-      <div className={styles.ViewerPanoramaFallback}>
-        <p>
-          This device's browser does not support high-performance 360°
-          panoramas. Try Chrome for best results.
-        </p>
-        {panoPath && (
-          <img
-            src={`${panoPath}/preview.jpg`}
-            alt="Panorama preview"
-            className={styles.staticPreview}
-            style={{
-              width: "100%",
-              maxWidth: "1024px",
-              display: "block",
-              margin: "0 auto",
-            }}
-          />
-        )}
+      <div className={styles.errorOverlay}>
+        <div className={styles.errorMessage}>
+          <h1>WebGL unsupported</h1>
+          <p>
+            This device's browser does not support high-performance 360°
+            panoramas. Try Chrome for best results.
+          </p>
+          {panoPath && (
+            <img
+              src={`${panoPath}/preview.jpg`}
+              alt="Panorama preview"
+              className={styles.thumbnail}
+              style={{
+                width: "100%",
+                maxWidth: "1024px",
+                display: "block",
+                margin: "0 auto",
+              }}
+            />
+          )}
+        </div>
       </div>
     );
   }
@@ -272,6 +275,14 @@ ViewerPanorama.propTypes = {
   }),
   onReady: PropTypes.func,
   onError: PropTypes.func,
+};
+
+ViewerPanorama.defaultProps = {
+  panoPath: "",
+  levels: [],
+  initialViewParameters: DEFAULT_VIEW,
+  onReady: undefined,
+  onError: undefined,
 };
 
 export default memo(ViewerPanorama);

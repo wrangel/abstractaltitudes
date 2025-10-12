@@ -8,8 +8,8 @@ import {
   memo,
   Suspense,
   lazy,
+  useMemo,
 } from "react";
-import PropTypes from "prop-types";
 import NavigationMedia from "./NavigationMedia";
 import ViewerImage from "./ViewerImage";
 import PopupMetadata from "./PopupMetadata";
@@ -23,23 +23,28 @@ import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeigh
 import { useSignedUrl } from "../hooks/useUrlSigner";
 
 function isValidPanoItem(item) {
-  return item.panoPath && Array.isArray(item.levels) && item.levels.length > 0;
+  return (
+    item.viewer === "pano" &&
+    item.panoPath &&
+    Array.isArray(item.levels) &&
+    item.levels.length > 0
+  );
 }
 
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
-  if (item.viewer === "pano" && !isValidPanoItem(item)) {
-    return (
-      <div
-        role="alert"
-        style={{ color: "red", padding: "2rem", background: "#fff" }}
-      >
-        Panorama data is missing or incomplete.
-      </div>
-    );
-  }
   if (item.viewer === "pano") {
+    if (!isValidPanoItem(item)) {
+      return (
+        <div
+          role="alert"
+          style={{ color: "red", padding: "2rem", background: "#fff" }}
+        >
+          Panorama data is missing or incomplete.
+        </div>
+      );
+    }
     return (
       <ErrorBoundary>
         <Suspense fallback={<div>Loading panorama viewer…</div>}>
@@ -68,20 +73,6 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
   );
 });
 
-MediaContent.propTypes = {
-  item: PropTypes.shape({
-    viewer: PropTypes.oneOf(["pano", "img"]).isRequired,
-    panoPath: PropTypes.string,
-    actualUrl: PropTypes.string,
-    levels: PropTypes.array,
-    initialViewParameters: PropTypes.object,
-    thumbnailUrl: PropTypes.string,
-    name: PropTypes.string,
-  }).isRequired,
-  isNavigationMode: PropTypes.bool.isRequired,
-  onContentLoaded: PropTypes.func.isRequired,
-};
-
 const Viewer = ({
   item,
   onClose,
@@ -107,7 +98,6 @@ const Viewer = ({
         })
       : item.actualUrl;
 
-  /* 1.  always call the hook – pass skip flag when not needed */
   const { signedUrl, error } = useSignedUrl(
     resizedActualUrl,
     /* skip = */ item.viewer !== "img"
@@ -161,7 +151,6 @@ const Viewer = ({
     };
 
     document.addEventListener("keydown", handleArrowKeys);
-
     return () => {
       document.removeEventListener("keydown", handleArrowKeys);
     };
@@ -185,6 +174,14 @@ const Viewer = ({
     if (error) console.error("Error fetching signed URL:", error);
   }, [error]);
 
+  // keep original panorama object intact, only patch images
+  const mediaItem = useMemo(() => {
+    if (item.viewer === "img") {
+      return { ...item, actualUrl: signedUrl || resizedActualUrl };
+    }
+    return item;
+  }, [item, signedUrl, resizedActualUrl]);
+
   return (
     <div
       className={`${styles.viewer} ${hideCursor ? styles["hide-cursor"] : ""}`}
@@ -196,14 +193,8 @@ const Viewer = ({
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
       <MediaContent
-        key={item.id || item.actualUrl}
-        item={{
-          ...item,
-          actualUrl:
-            item.viewer === "img"
-              ? signedUrl || resizedActualUrl
-              : item.actualUrl,
-        }}
+        key={mediaItem.id}
+        item={mediaItem}
         isNavigationMode={isNavigationMode}
         onContentLoaded={handleContentLoaded}
       />

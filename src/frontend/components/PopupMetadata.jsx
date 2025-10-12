@@ -8,7 +8,6 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import PropTypes from "prop-types";
 import Marzipano, { PinchZoomControlMethod } from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
@@ -256,23 +255,5 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     />
   );
 });
-
-ViewerPanorama.propTypes = {
-  panoPath: PropTypes.string.isRequired,
-  levels: PropTypes.arrayOf(
-    PropTypes.shape({
-      tileSize: PropTypes.number.isRequired,
-      size: PropTypes.number.isRequired,
-      fallbackOnly: PropTypes.bool,
-    })
-  ).isRequired,
-  initialViewParameters: PropTypes.shape({
-    yaw: PropTypes.number,
-    pitch: PropTypes.number,
-    fov: PropTypes.number,
-  }),
-  onReady: PropTypes.func,
-  onError: PropTypes.func,
-};
 
 export default memo(ViewerPanorama);

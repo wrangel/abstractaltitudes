@@ -8,7 +8,6 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import PropTypes from "prop-types";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
@@ -42,6 +41,14 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   { panoPath, levels, initialViewParameters, onReady, onError },
   ref
 ) {
+  /* ----------  last debug line – delete after smoke-test ---------- */
+  console.log("ViewerPanorama – received props:", {
+    panoPath,
+    levels,
+    initialViewParameters,
+  });
+  /* ---------------------------------------------------------------- */
+
   const panoramaElement = useRef(null);
   const viewerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -49,8 +56,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const [webglAbsent, setWebglAbsent] = useState(false);
   const autorotateRef = useRef(null);
 
+  /* -------------------------------------------------
+   1.  Viewer creation (once, after DOM exists)
+   ------------------------------------------------- */
   useLayoutEffect(() => {
-    // Only initialize once
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
@@ -100,8 +109,11 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
   }, [onError]);
 
+  /* -------------------------------------------------
+   2.  Scene creation / update
+   ------------------------------------------------- */
   useLayoutEffect(() => {
-    // Defensive: only proceed if all required props are present
+    if (!panoramaElement.current) return;
     if (
       !viewerRef.current ||
       !panoPath ||
@@ -148,7 +160,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           pitch: previousView.pitch(),
           fov: previousView.fov(),
         }
-      : { ...DEFAULT_VIEW };
+      : { ...DEFAULT_VIEW, ...initialViewParameters };
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
@@ -176,8 +188,11 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       viewerRef.current?.destroyScene(sceneRef.current);
       sceneRef.current = null;
     };
-  }, [panoPath, levels, webglAbsent]);
+  }, [panoPath, levels, webglAbsent, initialViewParameters, onReady, onError]);
 
+  /* -------------------------------------------------
+   3.  View-parameter sync
+   ------------------------------------------------- */
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
@@ -186,6 +201,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     v.setFov(initialViewParameters.fov ?? DEFAULT_VIEW.fov);
   }, [initialViewParameters]);
 
+  /* -------------------------------------------------
+   4.  Imperative API
+   ------------------------------------------------- */
   useImperativeHandle(
     ref,
     () => ({
@@ -211,8 +229,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     []
   );
 
+  /* -------------------------------------------------
+   5.  Cleanup
+   ------------------------------------------------- */
   useLayoutEffect(() => {
-    // Cleanup
     return () => {
       viewerRef.current?.destroy();
       viewerRef.current = null;
@@ -220,6 +240,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     };
   }, []);
 
+  /* -------------------------------------------------
+   6.  Render
+   ------------------------------------------------- */
   if (webglAbsent) {
     return (
       <div className={styles.errorOverlay}>
@@ -258,31 +281,5 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     />
   );
 });
-
-ViewerPanorama.propTypes = {
-  panoPath: PropTypes.string.isRequired,
-  levels: PropTypes.arrayOf(
-    PropTypes.shape({
-      tileSize: PropTypes.number.isRequired,
-      size: PropTypes.number.isRequired,
-      fallbackOnly: PropTypes.bool,
-    })
-  ).isRequired,
-  initialViewParameters: PropTypes.shape({
-    yaw: PropTypes.number,
-    pitch: PropTypes.number,
-    fov: PropTypes.number,
-  }),
-  onReady: PropTypes.func,
-  onError: PropTypes.func,
-};
-
-ViewerPanorama.defaultProps = {
-  panoPath: "",
-  levels: [],
-  initialViewParameters: DEFAULT_VIEW,
-  onReady: undefined,
-  onError: undefined,
-};
 
 export default memo(ViewerPanorama);

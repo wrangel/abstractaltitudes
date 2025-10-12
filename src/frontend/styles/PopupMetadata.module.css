@@ -21,7 +21,7 @@
   will-change: transform;
 }
 
-.PopupMetadata:active {
+.PopupMetaactive {
   cursor: grabbing;
   user-select: none;
 }

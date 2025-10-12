@@ -1,3 +1,5 @@
+// src/frontend/components/ViewerPanorama.jsx
+
 import {
   useRef,
   useLayoutEffect,
@@ -6,12 +8,10 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import PropTypes from "prop-types";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
-
 const AUTO_ROTATE_DELAY = 3000; // ms
 
 function getMaxCubeMapSize() {
@@ -46,9 +46,11 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const sceneRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
-  const autorotateRef = useRef(null); // for autorotate control
+  const autorotateRef = useRef(null);
 
-  /* --- Initialize viewer once --- */
+  /* -------------------------------------------------
+   1.  Viewer creation (once, after DOM exists)
+   ------------------------------------------------- */
   useLayoutEffect(() => {
     if (!panoramaElement.current || viewerRef.current) return;
 
@@ -73,12 +75,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     const controls = viewerRef.current.controls();
 
-    // Pause autorotate on drag start
     controls.addEventListener("dragStart", () => {
-      viewerRef.current.stopMovement(); // immediately stop autorotate
+      viewerRef.current.stopMovement();
     });
 
-    // Resume autorotate after drag
     controls.addEventListener("dragEnd", () => {
       if (autorotateRef.current) {
         viewerRef.current.setIdleMovement(
@@ -90,10 +90,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const canvas = viewerRef.current.stage().domElement();
-    // Optional: handle zooming with mouse wheel
-    // ... (your existing wheel event code) ...
-
-    // Style
     canvas.style.backgroundColor = "black";
     canvas.style.opacity = "1";
     canvas.style.cursor = "default";
@@ -101,14 +97,25 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     // Create autorotate movement
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
-      targetPitch: 0, // horizon level
+      targetPitch: 0,
     });
   }, [onError]);
 
-  /* --- Scene creation / update --- */
+  /* -------------------------------------------------
+   2.  Scene creation / update
+   ------------------------------------------------- */
   useLayoutEffect(() => {
-    if (!viewerRef.current || !panoPath || !levels?.length || webglAbsent)
+    if (!panoramaElement.current) return;
+    if (
+      !viewerRef.current ||
+      !panoPath ||
+      !levels ||
+      !Array.isArray(levels) ||
+      !levels.length ||
+      webglAbsent
+    ) {
       return;
+    }
 
     const maxSize = getMaxCubeMapSize();
     const safeLevels = levels.map((l) => {
@@ -122,6 +129,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const geometry = new Marzipano.CubeGeometry(safeLevels);
+
     const source = Marzipano.ImageUrlSource.fromString(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
       { cubeMapPreviewUrl: `${panoPath}/preview.jpg` }
@@ -136,17 +144,16 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       1024,
       (120 * Math.PI) / 180
     );
-    const previousView = sceneRef.current?.view();
 
+    const previousView = sceneRef.current?.view();
     const viewParams = previousView
       ? {
           yaw: previousView.yaw(),
           pitch: previousView.pitch(),
           fov: previousView.fov(),
         }
-      : { yaw: 0, pitch: 0, fov: Math.PI / 4 };
+      : { ...DEFAULT_VIEW, ...initialViewParameters };
 
-    // Create view
     const view = new Marzipano.RectilinearView(viewParams, limiter);
 
     sceneRef.current = viewerRef.current.createScene({
@@ -155,12 +162,12 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       view,
       pinFirstLevel: true,
     });
+
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
     setLoaded(true);
     onReady?.();
 
-    // Start autorotate with horizon target
     if (viewerRef.current && autorotateRef.current) {
       viewerRef.current.setIdleMovement(
         AUTO_ROTATE_DELAY,
@@ -173,18 +180,22 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       viewerRef.current?.destroyScene(sceneRef.current);
       sceneRef.current = null;
     };
-  }, [panoPath, levels, webglAbsent]);
+  }, [panoPath, levels, webglAbsent, initialViewParameters, onReady, onError]);
 
-  /* --- Set initial view --- */
+  /* -------------------------------------------------
+   3.  View-parameter sync
+   ------------------------------------------------- */
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
-    v.setYaw(initialViewParameters.yaw ?? 0);
-    v.setPitch(initialViewParameters.pitch ?? 0);
-    v.setFov(initialViewParameters.fov ?? Math.PI / 4);
+    v.setYaw(initialViewParameters.yaw ?? DEFAULT_VIEW.yaw);
+    v.setPitch(initialViewParameters.pitch ?? DEFAULT_VIEW.pitch);
+    v.setFov(initialViewParameters.fov ?? DEFAULT_VIEW.fov);
   }, [initialViewParameters]);
 
-  /* --- Expose controls --- */
+  /* -------------------------------------------------
+   4.  Imperative API
+   ------------------------------------------------- */
   useImperativeHandle(
     ref,
     () => ({
@@ -195,7 +206,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           .setParameters({ yaw, pitch, fov }, { duration });
       },
       stopAutoRotate: () => {
-        viewerRef.current?.stopMovement(); // disables both autorotate and manual controls
+        viewerRef.current?.stopMovement();
       },
       startAutoRotate: () => {
         if (viewerRef.current && autorotateRef.current) {
@@ -210,7 +221,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     []
   );
 
-  /* --- Cleanup --- */
+  /* -------------------------------------------------
+   5.  Cleanup
+   ------------------------------------------------- */
   useLayoutEffect(() => {
     return () => {
       viewerRef.current?.destroy();
@@ -219,27 +232,32 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     };
   }, []);
 
-  /* --- Render fallback --- */
+  /* -------------------------------------------------
+   6.  Render
+   ------------------------------------------------- */
   if (webglAbsent) {
     return (
-      <div className={styles.ViewerPanoramaFallback}>
-        <p>
-          This device's browser does not support high-performance 360°
-          panoramas. Try Chrome for best results.
-        </p>
-        {panoPath && (
-          <img
-            src={`${panoPath}/preview.jpg`}
-            alt="Panorama preview"
-            className={styles.staticPreview}
-            style={{
-              width: "100%",
-              maxWidth: "1024px",
-              display: "block",
-              margin: "0 auto",
-            }}
-          />
-        )}
+      <div className={styles.errorOverlay}>
+        <div className={styles.errorMessage}>
+          <h1>WebGL unsupported</h1>
+          <p>
+            This device's browser does not support high-performance 360°
+            panoramas. Try Chrome for best results.
+          </p>
+          {panoPath && (
+            <img
+              src={`${panoPath}/preview.jpg`}
+              alt="Panorama preview"
+              className={styles.thumbnail}
+              style={{
+                width: "100%",
+                maxWidth: "1024px",
+                display: "block",
+                margin: "0 auto",
+              }}
+            />
+          )}
+        </div>
       </div>
     );
   }
@@ -255,23 +273,5 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     />
   );
 });
-
-ViewerPanorama.propTypes = {
-  panoPath: PropTypes.string.isRequired,
-  levels: PropTypes.arrayOf(
-    PropTypes.shape({
-      tileSize: PropTypes.number.isRequired,
-      size: PropTypes.number.isRequired,
-      fallbackOnly: PropTypes.bool,
-    })
-  ).isRequired,
-  initialViewParameters: PropTypes.shape({
-    yaw: PropTypes.number,
-    pitch: PropTypes.number,
-    fov: PropTypes.number,
-  }),
-  onReady: PropTypes.func,
-  onError: PropTypes.func,
-};
 
 export default memo(ViewerPanorama);

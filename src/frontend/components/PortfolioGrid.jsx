@@ -28,6 +28,9 @@ const PortfolioGrid = ({ items, onItemClick }) => {
     -2 / 16
   );
 
+  // Get device pixel ratio for sharp thumbnails on high-DPI screens
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+
   const renderItem = ({ data }) => {
     // Responsive column width from grid layout
     const width = Math.floor(columnWidth);
@@ -43,10 +46,14 @@ const PortfolioGrid = ({ items, onItemClick }) => {
     const finalWidth = Math.min(width, data.thumbnailWidth || width);
     const finalHeight = Math.min(height, data.thumbnailHeight || height);
 
-    // Build BunnyCDN URL requesting resized image for the calculated size
+    // Multiply by dpr for crisp thumbnails
+    const requestedWidth = Math.round(finalWidth * dpr);
+    const requestedHeight = Math.round(finalHeight * dpr);
+
+    // Build BunnyCDN URL requesting resized image for the calculated and DPI-scaled size
     const imageSrc = buildQueryStringWidthHeight(data.thumbnailUrl, {
-      width: finalWidth,
-      height: finalHeight,
+      width: requestedWidth,
+      height: requestedHeight,
     });
 
     // Pass optimized thumbnail URL and original data to PortfolioItem

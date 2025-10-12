@@ -31,11 +31,17 @@ const Home = () => {
     }
   }, [items]);
 
-  // Calculate optimal width and height taking the smaller of viewport and thumbnail sizes
+  // Device pixel ratio adjustment for sharp Home background (Retina/hi-DPI screens)
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  // Use the higher resolution only for homepage background
   const width =
-    randomPano && w ? Math.min(randomPano.thumbnailWidth || w, w) : w || 0;
+    randomPano && w
+      ? Math.min((randomPano.thumbnailWidth || w) * dpr, w * dpr)
+      : w * dpr || 0;
   const height =
-    randomPano && h ? Math.min(randomPano.thumbnailHeight || h, h) : h || 0;
+    randomPano && h
+      ? Math.min((randomPano.thumbnailHeight || h) * dpr, h * dpr)
+      : h * dpr || 0;
 
   useEffect(() => {
     const handleResize = () =>

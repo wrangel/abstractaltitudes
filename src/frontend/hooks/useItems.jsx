@@ -50,6 +50,7 @@ export const useItems = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
+
       setItems((prev) => (isSameArray(prev, data) ? prev : [...data]));
       cachedItems = [...data];
       cacheTimestamp = Date.now();

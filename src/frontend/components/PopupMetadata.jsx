@@ -27,6 +27,7 @@ const PopupMetadata = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Focus management when popup opens/closes for accessibility
   useEffect(() => {
     if (isVisible) {
       triggerRef.current = document.activeElement;
@@ -38,7 +39,7 @@ const PopupMetadata = ({
     }
   }, [isVisible]);
 
-  // Draggable popup logic keeping original smoothness approach
+  // Draggable popup handlers
   const handleDragStart = (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -82,7 +83,7 @@ const PopupMetadata = ({
     };
 
     document.addEventListener(isTouch ? "touchmove" : "mousemove", onMove, {
-      passive: false, // changed to false for touchmove to avoid scroll during drag
+      passive: false,
     });
     document.addEventListener(isTouch ? "touchend" : "mouseup", onUp);
   };
@@ -130,10 +131,10 @@ const PopupMetadata = ({
           <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
         </svg>
       </button>
+
       <div className={styles.content}>
         <pre>{metadata}</pre>
 
-        {/* Lazy load panorama image */}
         {isVisible && panoramaUrl && (
           <LazyImage
             src={panoramaUrl}

@@ -1,107 +1,183 @@
 // src/frontend/components/PopupMetadata.jsx
 
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
+import LazyImage from "./LazyImage";
 import styles from "../styles/PopupMetadata.module.css";
 
-/**
- * PopupMetadata shows static metadata in a modal popup.
- *
- * Props:
- * - metadata { title, description, attributes }  (object)
- *   OR a plain string (treated as description)
- * - latitude: number (optional)
- * - longitude: number (optional)
- * - previewUrl: string (optional static preview image)
- * - isVisible: boolean (controls display)
- * - onClose: function (called to close popup)
- */
 const PopupMetadata = ({
-  metadata = {},
+  metadata,
   latitude,
   longitude,
-  previewUrl,
-  isVisible,
+  panoramaUrl,
+  panoramaThumbUrl,
   onClose,
+  isVisible,
 }) => {
-  // Hide if isVisible is false
-  if (!isVisible) return null;
+  const zoomLevel = 13;
+  const [isBelowThreshold, setIsBelowThreshold] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const popupRef = useRef(null);
+  const triggerRef = useRef(null);
 
-  // Normalise: string -> { description: string }
-  const meta =
-    typeof metadata === "string" ? { description: metadata } : metadata || {};
+  useEffect(() => {
+    const handleResize = () => setIsBelowThreshold(window.innerHeight < 500);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  // Coordinate formatter
-  const formatCoords = (lat, lng) =>
-    lat != null && lng != null ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : null;
+  // Focus management when popup opens/closes for accessibility
+  useEffect(() => {
+    if (isVisible) {
+      triggerRef.current = document.activeElement;
+      popupRef.current?.focus();
+    } else {
+      if (triggerRef.current && document.activeElement !== triggerRef.current) {
+        triggerRef.current.focus();
+      }
+    }
+  }, [isVisible]);
 
-  // Render attributes as table rows
-  const renderAttributes = (attributes) =>
-    attributes && typeof attributes === "object" ? (
-      <table className={styles.attributesTable}>
-        <tbody>
-          {Object.entries(attributes).map(([key, value]) => (
-            <tr key={key}>
-              <td className={styles.attrKey}>{key}</td>
-              <td className={styles.attrValue}>{String(value)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    ) : null;
+  // Draggable popup handlers
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const popup = popupRef.current;
+    if (!popup) return;
+
+    const startRect = popup.getBoundingClientRect();
+    const parentRect = popup.offsetParent.getBoundingClientRect();
+
+    let baseLeft = startRect.left - parentRect.left;
+    let baseTop = startRect.top - parentRect.top;
+
+    popup.style.transform = "none";
+    popup.style.left = `${baseLeft}px`;
+    popup.style.top = `${baseTop}px`;
+
+    const isTouch = e.type === "touchstart";
+    const pointer = isTouch ? e.touches[0] : e;
+    let lastX = pointer.clientX;
+    let lastY = pointer.clientY;
+
+    const onMove = (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const p = isTouch ? ev.touches[0] : ev;
+      baseLeft += p.clientX - lastX;
+      baseTop += p.clientY - lastY;
+      lastX = p.clientX;
+      lastY = p.clientY;
+      popup.style.left = `${baseLeft}px`;
+      popup.style.top = `${baseTop}px`;
+    };
+
+    const onUp = (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      setPopupPosition({ x: baseLeft, y: baseTop });
+      document.removeEventListener(isTouch ? "touchmove" : "mousemove", onMove);
+      document.removeEventListener(isTouch ? "touchend" : "mouseup", onUp);
+    };
+
+    document.addEventListener(isTouch ? "touchmove" : "mousemove", onMove, {
+      passive: false,
+    });
+    document.addEventListener(isTouch ? "touchend" : "mouseup", onUp);
+  };
+
+  const style = {
+    transform: "none",
+    left: `${popupPosition.x}px`,
+    top: `${popupPosition.y}px`,
+    position: "absolute",
+    opacity: isVisible ? 1 : 0,
+    pointerEvents: isVisible ? "auto" : "none",
+  };
+
+  const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=${
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  }&q=${latitude},${longitude}&zoom=${zoomLevel}&maptype=satellite`;
+  const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}&zoom=${zoomLevel}&maptype=satellite`;
 
   return (
     <div
-      className={styles.overlay}
+      className={styles.PopupMetadata}
+      ref={popupRef}
+      style={style}
+      onMouseDown={handleDragStart}
+      onTouchStart={handleDragStart}
       role="dialog"
       aria-modal="true"
       tabIndex={-1}
+      aria-label="Metadata popup"
     >
-      <div className={styles.container}>
-        <button
-          className={styles.closeButton}
-          type="button"
-          aria-label="Close metadata modal"
-          onClick={onClose}
+      <button
+        className={styles.closeIcon}
+        onClick={onClose}
+        aria-label="Close metadata popup"
+        type="button"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="currentColor"
+          className="bi bi-x-lg"
+          viewBox="0 0 16 16"
         >
-          ×
-        </button>
-        <h2 className={styles.title}>{meta.title || "Metadata"}</h2>
-        {previewUrl && (
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className={styles.previewImage}
-            style={{ width: "100%", maxWidth: "400px", margin: "0 0 1rem 0" }}
+          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" />
+        </svg>
+      </button>
+
+      <div className={styles.content}>
+        <pre>{metadata}</pre>
+
+        {isVisible && panoramaUrl && (
+          <LazyImage
+            src={panoramaUrl}
+            placeholderSrc={panoramaThumbUrl}
+            alt="Panorama view"
+            className={styles.panoramaImage}
           />
         )}
-        {meta.description && (
-          <p className={styles.description}>{meta.description}</p>
-        )}
-        {renderAttributes(meta.attributes)}
-        {latitude != null && longitude != null && (
-          <div className={styles.coordinates}>
-            <strong>Coordinates:</strong> {formatCoords(latitude, longitude)}
-          </div>
-        )}
+
+        {isVisible &&
+          (isBelowThreshold ? (
+            <a
+              href={googleMapsLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.maplink}
+            >
+              View on map
+            </a>
+          ) : (
+            <iframe
+              className={styles.mapIframe}
+              width="100%"
+              style={{ height: "50vh" }}
+              src={googleMapsUrl}
+              title={`Map location at latitude ${latitude} and longitude ${longitude}`}
+              allowFullScreen
+              loading="lazy"
+            />
+          ))}
       </div>
     </div>
   );
 };
 
 PopupMetadata.propTypes = {
-  metadata: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.shape({
-      title: PropTypes.string,
-      description: PropTypes.string,
-      attributes: PropTypes.object,
-    }),
-  ]),
-  latitude: PropTypes.number,
-  longitude: PropTypes.number,
-  previewUrl: PropTypes.string,
-  isVisible: PropTypes.bool.isRequired,
+  metadata: PropTypes.string.isRequired,
+  latitude: PropTypes.number.isRequired,
+  longitude: PropTypes.number.isRequired,
+  panoramaUrl: PropTypes.string,
+  panoramaThumbUrl: PropTypes.string,
   onClose: PropTypes.func.isRequired,
+  isVisible: PropTypes.bool.isRequired,
 };
 
 export default PopupMetadata;

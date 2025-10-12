@@ -21,14 +21,14 @@
   will-change: transform;
 }
 
-.PopupMetadata:active {
+.PopupMetaactive {
   cursor: grabbing;
   user-select: none;
 }
 
 .content {
   text-align: center;
-  padding-top: 28px;
+  padding-top: 14px;
   user-select: text;
 }
 
@@ -67,8 +67,7 @@
 .closeIcon {
   position: absolute;
   top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 6px;
   width: 36px;
   height: 36px;
   background: rgba(0, 0, 0, 0.4);

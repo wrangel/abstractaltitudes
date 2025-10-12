@@ -25,7 +25,6 @@ export async function signedUrl(path, params = {}) {
 
     if (urlCache.has(fullPath)) {
       const cached = urlCache.get(fullPath);
-      console.debug(`[signedUrl] Cache hit for: ${fullPath} => ${cached}`);
       return cached;
     }
 
@@ -44,10 +43,6 @@ export async function signedUrl(path, params = {}) {
     const signedUrl = `${baseUrl}${fullPath}${
       fullPath.includes("?") ? "&" : "?"
     }token=${token}&expires=${expires}`;
-
-    console.debug(
-      `[signedUrl] Generated signed URL:\nUnsigned path: ${fullPath}\nSigned URL: ${signedUrl}`
-    );
 
     urlCache.set(fullPath, signedUrl);
 

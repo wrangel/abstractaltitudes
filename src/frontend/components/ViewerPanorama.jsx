@@ -41,14 +41,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   { panoPath, levels, initialViewParameters, onReady, onError },
   ref
 ) {
-  /* ----------  last debug line – delete after smoke-test ---------- */
-  console.log("ViewerPanorama – received props:", {
-    panoPath,
-    levels,
-    initialViewParameters,
-  });
-  /* ---------------------------------------------------------------- */
-
   const panoramaElement = useRef(null);
   const viewerRef = useRef(null);
   const sceneRef = useRef(null);

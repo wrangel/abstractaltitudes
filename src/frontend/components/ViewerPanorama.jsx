@@ -63,8 +63,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
-        scrollZoom: true,
-        pinchZoom: true,
+        scrollZoom: false, // we handle wheel ourselves
+        pinchZoom: true, // keeps Hammer recogniser active
       },
       stage: {
         pixelRatio: window.devicePixelRatio || 1,
@@ -74,11 +74,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const controls = viewerRef.current.controls();
-
-    controls.addEventListener("dragStart", () => {
-      viewerRef.current.stopMovement();
-    });
-
+    controls.addEventListener("dragStart", () =>
+      viewerRef.current.stopMovement()
+    );
     controls.addEventListener("dragEnd", () => {
       if (autorotateRef.current) {
         viewerRef.current.setIdleMovement(
@@ -94,7 +92,25 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     canvas.style.opacity = "1";
     canvas.style.cursor = "default";
 
-    // Create autorotate movement
+    // pinch / track-pad zoom via wheel event
+    canvas.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault(); // stop page scroll / browser zoom
+        const view = sceneRef.current?.view();
+        if (!view) return;
+
+        const delta = e.deltaY > 0 ? 1.1 : 0.9; // zoom factor
+        const newFov = Math.max(
+          Math.PI / 6,
+          Math.min(Math.PI / 1.5, view.fov() * delta)
+        );
+        view.setFov(newFov, { duration: 120 });
+      },
+      { passive: false }
+    );
+
+    // autorotate movement
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
       targetPitch: 0,
@@ -129,7 +145,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const geometry = new Marzipano.CubeGeometry(safeLevels);
-
     const source = Marzipano.ImageUrlSource.fromString(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
       { cubeMapPreviewUrl: `${panoPath}/preview.jpg` }
@@ -144,7 +159,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       1024,
       (120 * Math.PI) / 180
     );
-
     const previousView = sceneRef.current?.view();
     const viewParams = previousView
       ? {
@@ -155,14 +169,12 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       : { ...DEFAULT_VIEW, ...initialViewParameters };
 
     const view = new Marzipano.RectilinearView(viewParams, limiter);
-
     sceneRef.current = viewerRef.current.createScene({
       source,
       geometry,
       view,
       pinFirstLevel: true,
     });
-
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
     setLoaded(true);
@@ -205,9 +217,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           .view()
           .setParameters({ yaw, pitch, fov }, { duration });
       },
-      stopAutoRotate: () => {
-        viewerRef.current?.stopMovement();
-      },
+      stopAutoRotate: () => viewerRef.current?.stopMovement(),
       startAutoRotate: () => {
         if (viewerRef.current && autorotateRef.current) {
           viewerRef.current.setIdleMovement(

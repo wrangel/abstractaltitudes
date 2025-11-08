@@ -1,6 +1,5 @@
 // src/frontend/App.jsx
 
-import "./styles/Global.css";
 import React, { Suspense, lazy } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";

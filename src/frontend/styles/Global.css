@@ -1,27 +1,41 @@
-/* src/frontend/styles/Global.css */
+/* src/frontend/styles/Global.css
+   Inter Variable tuned to feel like Helvetica Neue
+*/
 
 :root {
+  /* Colors & spacing */
   --background-color: black;
   --text-color: white;
   --gutter-size: 20px;
   --transition-duration: 0.3s;
-  --font-family: "Helvetica Neue";
 
+  /* Cross-platform stack (Inter first) */
+  --font-stack: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+
+  /* Core design colors */
   --primary-color: #4da6ff;
   --primary-color-dark: #3b8cc2;
   --error-border-color: #f44336;
   --error-bg-color: #ffe6e6;
   --error-text-color: #f44336;
+
+  /* Spacing */
   --spacing-large: 2rem;
   --spacing-medium: 1rem;
   --spacing-small: 0.75rem;
+
+  /* Typography */
   --font-size-large: 2.38rem;
   --font-size-medium: calc(var(--font-size-large) * 0.84);
   --font-size-small: 1.25rem;
-  --font-weight: 300;
 
+  /* Inter Variable tuning */
+  --body-wght: 315; /* usable range: 305–350 */
+  --track-tight: -0.005em;
   --mascot-color: rgba(255, 255, 255, 0.8);
 
+  /* Interface bits */
   --spinner-size: 50px;
   --spinner-border: 3px;
   --spinner-color: rgba(255, 255, 255, 0.3);
@@ -46,55 +60,75 @@
   --link-color: #00f;
 
   --panorama-bg-color: black;
-  --thumbnail-opacity: 0.5;
 
-  --fab-active-color: rgba(60, 60, 60, 0.9); /* Active grey color */
-  --fab-hover-color: rgba(60, 60, 60, 0.8); /* Slightly darker grey on hover */
+  --fab-active-color: rgba(60, 60, 60, 0.9);
+  --fab-hover-color: rgba(60, 60, 60, 0.8);
 
   --adjustment-height: 15px;
   --max-width-popup: 280px;
 
-  /* reusable shadow + font */
+  /* Shadows & overlays */
   --text-shadow-heavy: 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6),
     0 0 20px rgba(0, 0, 0, 0.4);
-
-  --font-stack: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, sans-serif;
-
   --overlay-bg-light: rgba(0, 0, 0, 0.3);
   --overlay-bg-medium: rgba(0, 0, 0, 0.35);
   --overlay-bg-heavy: rgba(0, 0, 0, 0.7);
   --overlay-border-radius: 0.5rem;
-
   --overlay-box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
-  --text-shadow-heavy: 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(0, 0, 0, 0.4);
-
-  /* visually hide the accessibility "Skip to main content" link */
-  a[href="#main-content"] {
-    position: absolute;
-    left: -10000px;
-    top: auto;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-  }
 }
 
+/* Accessibility skip link */
+a[href="#main-content"] {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Typography & base layout */
 body {
   background-color: var(--background-color);
   color: var(--text-color);
   margin: 0;
   padding: 0;
+
   font-family: var(--font-stack);
+  font-weight: var(--body-wght);
+  font-optical-sizing: auto;
+  font-variation-settings: "opsz" 14;
+  letter-spacing: var(--track-tight);
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
 }
 
+/* Headings */
+h1,
+h2 {
+  font-weight: 600;
+  font-variation-settings: "wght" 600, "opsz" 20;
+  letter-spacing: -0.01em;
+}
+
+h3,
+h4 {
+  font-weight: 00;
+  font-variation-settings: "wght" 500, "opsz" 18;
+  letter-spacing: -0.008em;
+}
+
+/* Inline code */
 code {
   font-family: var(--font-stack);
+  font-weight: 500;
+  font-variation-settings: "wght" 500, "opsz" 12;
 }
 
+/* Animations */
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -104,6 +138,7 @@ code {
   }
 }
 
+/* Accessibility utility */
 .visually-hidden {
   position: absolute !important;
   width: 1px;

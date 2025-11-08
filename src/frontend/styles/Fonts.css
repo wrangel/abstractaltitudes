@@ -1,9 +1,0 @@
-/* src/frontend/styles/Fonts.css */
-
-@font-face {
-  font-family: "Inter";
-  src: url("/fonts/Inter-Variable.woff2") format("woff2-variations");
-  font-weight: 100 900; /* full axis */
-  font-style: normal;
-  font-display: swap; /* fast paint; swap when loaded */
-}

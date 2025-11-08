@@ -31,7 +31,7 @@
   --font-size-small: 1.25rem;
 
   /* Inter Variable tuning */
-  --body-wght: 315; /* usable range: 305–350 */
+  --body-wght: 150;
   --track-tight: -0.005em;
   --mascot-color: rgba(255, 255, 255, 0.8);
 
@@ -110,14 +110,14 @@ body {
 h1,
 h2 {
   font-weight: 600;
-  font-variation-settings: "wght" 600, "opsz" 20;
+  font-variation-settings: "wght" 150, "opsz" 20;
   letter-spacing: -0.01em;
 }
 
 h3,
 h4 {
   font-weight: 00;
-  font-variation-settings: "wght" 500, "opsz" 18;
+  font-variation-settings: "wght" 150, "opsz" 18;
   letter-spacing: -0.008em;
 }
 
@@ -125,7 +125,7 @@ h4 {
 code {
   font-family: var(--font-stack);
   font-weight: 500;
-  font-variation-settings: "wght" 500, "opsz" 12;
+  font-variation-settings: "wght" 150, "opsz" 12;
 }
 
 /* Animations */

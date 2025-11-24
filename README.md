@@ -114,8 +114,9 @@ Create the two env-files in the root (see table above) and fill in the values.
 Management helpers:
 
 ```bash
-pnpm run manage keep-books   # sync DB ↔ S3 metadata
-pnpm run manage upload-media # ingest new imagery
+pnpm manage keep-books   # sync DB ↔ S3 metadata
+pnpm manage upload-media # ingest new imagery
+pnpm manage upload-media -n # ingest new imagery, but do not upload it neither to AWS nor Mongo db
 ```
 
 ## Media Upload Folder Layout

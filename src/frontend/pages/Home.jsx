@@ -11,6 +11,22 @@ import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
 import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useViewportSize } from "../hooks/useViewportSize";
+import PopupViewer from "../components/PopupViewer";
+
+/**
+ * Generates a cryptographically secure random integer index from 0 (inclusive) to max (exclusive).
+ *
+ * Uses the browser's Crypto API (window.crypto.getRandomValues) to generate a cryptographically strong random number,
+ * then reduces it modulo the provided max to fit the array index range.
+ *
+ * @param {number} max - The upper limit (exclusive) for the generated random index.
+ * @returns {number} A random integer between 0 (inclusive) and max (exclusive).
+ */
+function getSecureRandomIndex(max) {
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  return array[0] % max;
+}
 
 const Home = () => {
   const navigate = useNavigate();
@@ -22,18 +38,25 @@ const Home = () => {
   const isVeryShort = useWindowHeight(360);
   const { w, h } = useViewportSize();
 
+  // Media items containing pano or img viewer types
+  const mediaItems = items.filter(
+    (item) => item.viewer === "pano" || item.viewer === "img"
+  );
+
+  // State for viewer open and current viewed index
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(null);
+
   useEffect(() => {
     if (items.length > 0) {
       const panoItems = items.filter((item) => item.viewer === "pano");
       if (panoItems.length > 0) {
-        setRandomPano(panoItems[Math.floor(Math.random() * panoItems.length)]);
+        setRandomPano(panoItems[getSecureRandomIndex(panoItems.length)]);
       }
     }
   }, [items]);
 
-  // Device pixel ratio adjustment for sharp Home background (Retina/hi-DPI screens)
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  // Use the higher resolution only for homepage background
   const width =
     randomPano && w
       ? Math.min((randomPano.thumbnailWidth || w) * dpr, w * dpr)
@@ -50,11 +73,30 @@ const Home = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleImageClick = () => {
-    requestAnimationFrame(() => {
-      const randomPage = Math.random() < 0.5 ? "/grid" : "/map";
-      navigate(randomPage);
-    });
+  // Open viewer with random media item
+  const openRandomViewer = () => {
+    if (mediaItems.length > 0) {
+      const randomIdx = getSecureRandomIndex(mediaItems.length);
+      setCurrentIndex(randomIdx);
+      setIsViewerOpen(true);
+    }
+  };
+
+  // Close viewer and return home
+  const closeViewer = () => {
+    setIsViewerOpen(false);
+    setCurrentIndex(null);
+    navigate("/");
+  };
+
+  // Navigate to next item, wrap around
+  const handleNextItem = () => {
+    setCurrentIndex((prev) => (prev + 1) % mediaItems.length);
+  };
+
+  // Navigate to previous item, wrap around
+  const handlePreviousItem = () => {
+    setCurrentIndex((prev) => (prev === 0 ? mediaItems.length - 1 : prev - 1));
   };
 
   return (
@@ -83,6 +125,16 @@ const Home = () => {
         </div>
       )}
 
+      {isViewerOpen && currentIndex !== null && (
+        <PopupViewer
+          item={mediaItems[currentIndex]}
+          isOpen={isViewerOpen}
+          onClose={closeViewer}
+          onNext={handleNextItem}
+          onPrevious={handlePreviousItem}
+        />
+      )}
+
       <div
         className={`${styles.Home} ${isPortrait ? styles.portraitLayout : ""} ${
           isVeryShort ? styles.veryShortViewport : ""
@@ -98,15 +150,14 @@ const Home = () => {
             <h2>Abstract Altitudes</h2>
           </div>
 
-          {/* Flexbox wrapper to center mascot image */}
           <div
             className={styles.imageCenterWrapper}
-            onClick={handleImageClick}
+            onClick={openRandomViewer}
             role="button"
             tabIndex={0}
-            aria-label="View random portfolio page"
+            aria-label="View random portfolio image or panorama"
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") handleImageClick();
+              if (e.key === "Enter" || e.key === " ") openRandomViewer();
             }}
             style={{ cursor: "pointer" }}
           >

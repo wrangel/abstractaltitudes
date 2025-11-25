@@ -11,7 +11,7 @@ import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
 import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useViewportSize } from "../hooks/useViewportSize";
-import Viewer from "../components/Viewer";
+import PopupViewer from "../components/PopupViewer";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -111,12 +111,12 @@ const Home = () => {
       )}
 
       {isViewerOpen && currentIndex !== null && (
-        <Viewer
+        <PopupViewer
           item={mediaItems[currentIndex]}
+          isOpen={isViewerOpen}
           onClose={closeViewer}
           onNext={handleNextItem}
           onPrevious={handlePreviousItem}
-          isNavigationMode={true}
         />
       )}
 

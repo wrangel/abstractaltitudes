@@ -11,6 +11,7 @@ import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
 import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useViewportSize } from "../hooks/useViewportSize";
+import Viewer from "../components/Viewer";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -22,6 +23,15 @@ const Home = () => {
   const isVeryShort = useWindowHeight(360);
   const { w, h } = useViewportSize();
 
+  // Media items containing pano or img viewer types
+  const mediaItems = items.filter(
+    (item) => item.viewer === "pano" || item.viewer === "img"
+  );
+
+  // State for viewer open and current viewed index
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(null);
+
   useEffect(() => {
     if (items.length > 0) {
       const panoItems = items.filter((item) => item.viewer === "pano");
@@ -31,9 +41,7 @@ const Home = () => {
     }
   }, [items]);
 
-  // Device pixel ratio adjustment for sharp Home background (Retina/hi-DPI screens)
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  // Use the higher resolution only for homepage background
   const width =
     randomPano && w
       ? Math.min((randomPano.thumbnailWidth || w) * dpr, w * dpr)
@@ -50,11 +58,30 @@ const Home = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleImageClick = () => {
-    requestAnimationFrame(() => {
-      const randomPage = Math.random() < 0.5 ? "/grid" : "/map";
-      navigate(randomPage);
-    });
+  // Open viewer with random media item
+  const openRandomViewer = () => {
+    if (mediaItems.length > 0) {
+      const randomIdx = Math.floor(Math.random() * mediaItems.length);
+      setCurrentIndex(randomIdx);
+      setIsViewerOpen(true);
+    }
+  };
+
+  // Close viewer and return home
+  const closeViewer = () => {
+    setIsViewerOpen(false);
+    setCurrentIndex(null);
+    navigate("/");
+  };
+
+  // Navigate to next item, wrap around
+  const handleNextItem = () => {
+    setCurrentIndex((prev) => (prev + 1) % mediaItems.length);
+  };
+
+  // Navigate to previous item, wrap around
+  const handlePreviousItem = () => {
+    setCurrentIndex((prev) => (prev === 0 ? mediaItems.length - 1 : prev - 1));
   };
 
   return (
@@ -83,6 +110,16 @@ const Home = () => {
         </div>
       )}
 
+      {isViewerOpen && currentIndex !== null && (
+        <Viewer
+          item={mediaItems[currentIndex]}
+          onClose={closeViewer}
+          onNext={handleNextItem}
+          onPrevious={handlePreviousItem}
+          isNavigationMode={true}
+        />
+      )}
+
       <div
         className={`${styles.Home} ${isPortrait ? styles.portraitLayout : ""} ${
           isVeryShort ? styles.veryShortViewport : ""
@@ -98,15 +135,14 @@ const Home = () => {
             <h2>Abstract Altitudes</h2>
           </div>
 
-          {/* Flexbox wrapper to center mascot image */}
           <div
             className={styles.imageCenterWrapper}
-            onClick={handleImageClick}
+            onClick={openRandomViewer}
             role="button"
             tabIndex={0}
-            aria-label="View random portfolio page"
+            aria-label="View random portfolio image or panorama"
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") handleImageClick();
+              if (e.key === "Enter" || e.key === " ") openRandomViewer();
             }}
             style={{ cursor: "pointer" }}
           >

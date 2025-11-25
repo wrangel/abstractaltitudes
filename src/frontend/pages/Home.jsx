@@ -13,6 +13,21 @@ import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeigh
 import { useViewportSize } from "../hooks/useViewportSize";
 import PopupViewer from "../components/PopupViewer";
 
+/**
+ * Generates a cryptographically secure random integer index from 0 (inclusive) to max (exclusive).
+ *
+ * Uses the browser's Crypto API (window.crypto.getRandomValues) to generate a cryptographically strong random number,
+ * then reduces it modulo the provided max to fit the array index range.
+ *
+ * @param {number} max - The upper limit (exclusive) for the generated random index.
+ * @returns {number} A random integer between 0 (inclusive) and max (exclusive).
+ */
+function getSecureRandomIndex(max) {
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  return array[0] % max;
+}
+
 const Home = () => {
   const navigate = useNavigate();
   const { items } = useItems();
@@ -36,7 +51,7 @@ const Home = () => {
     if (items.length > 0) {
       const panoItems = items.filter((item) => item.viewer === "pano");
       if (panoItems.length > 0) {
-        setRandomPano(panoItems[Math.floor(Math.random() * panoItems.length)]);
+        setRandomPano(panoItems[getSecureRandomIndex(panoItems.length)]);
       }
     }
   }, [items]);
@@ -61,7 +76,7 @@ const Home = () => {
   // Open viewer with random media item
   const openRandomViewer = () => {
     if (mediaItems.length > 0) {
-      const randomIdx = Math.floor(Math.random() * mediaItems.length);
+      const randomIdx = getSecureRandomIndex(mediaItems.length);
       setCurrentIndex(randomIdx);
       setIsViewerOpen(true);
     }

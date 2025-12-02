@@ -1,5 +1,3 @@
-// src/backend/server.mjs
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -12,6 +10,7 @@ import logger from "./utils/logger.mjs";
 import { connectDB, closeDB } from "./utils/mongodbConnection.mjs";
 import combinedDataRoute from "./routes/combinedDataRoute.mjs";
 import bunnySignRoute from "./routes/bunnySignRoute.mjs";
+import expressStaticGzip from "express-static-gzip";
 
 // ---- Environment variable validation ----
 const requiredEnvVars = [
@@ -59,11 +58,28 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // ---- Security headers for SPA ----
-app.use(helmet({ contentSecurityPolicy: false })); // Allows inline scripts/style for SPAs
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // Only if you need inline scripts
+        styleSrc: ["'self'", "'unsafe-inline'"], // Only if you need inline styles
+        imgSrc: ["'self'", "", "https:"],
+        connectSrc: ["'self'", "https:"],
+        fontSrc: ["'self'", "", "https:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    frameguard: {
+      action: "deny", // or 'sameorigin'
+    },
+  })
+);
 
 // ---- Brotli/gzip static serving of built SPA assets (public/index.html etc) ----
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-import expressStaticGzip from "express-static-gzip";
 app.use(
   "/",
   expressStaticGzip(path.join(__dirname, "../../build"), {

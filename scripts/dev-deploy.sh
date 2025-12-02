@@ -19,7 +19,18 @@ if [[ "$1" == "-u" ]]; then
     echo "📦 Updating dependencies..."
 
     pnpm self-update
+
+    # Update all dependencies to latest allowed by package.json
     pnpm update
+
+    # Force latest for Vite and its plugins (ensure compatibility)
+    pnpm update vite @vitejs/plugin-react vite-plugin-eslint eslint eslint-plugin-react globals
+
+    # Clean and reinstall to ensure lockfile and node_modules match
+    rm -rf node_modules pnpm-lock.yaml
+    pnpm install
+
+    # Security and cleanup
     pnpm audit fix
     pnpm prune
     pnpm depcheck --ignores="exif,exifreader,node-exif,vite-plugin-eslint"

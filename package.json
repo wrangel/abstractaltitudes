@@ -42,7 +42,7 @@
     "@aws-sdk/lib-storage": "^3.948.0",
     "@vitejs/plugin-react": "^4.7.0",
     "adm-zip": "^0.5.16",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "exif": "^0.6.0",
     "exif-parser": "^0.1.12",

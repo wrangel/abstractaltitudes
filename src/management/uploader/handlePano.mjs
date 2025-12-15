@@ -1,6 +1,8 @@
 // src/backend/management/uploader/handlePano.mjs
+
 import fs from "fs/promises";
 import path from "path";
+import readline from "readline";
 import AdmZip from "adm-zip";
 import sharp from "sharp";
 import logger from "../../backend/utils/logger.mjs";
@@ -13,6 +15,7 @@ import {
   MODIFIED_FOLDER,
   ORIGINAL_FOLDER,
   S3_FOLDER,
+  CONTRIBUTORS,
 } from "../../backend/constants.mjs";
 
 /**
@@ -47,6 +50,30 @@ function parseDataJs(dataJsContent) {
 }
 
 /**
+ * Prompt user for the author of media, validating input.
+ * @param {string} mediaName
+ * @returns {Promise<string>}
+ */
+async function promptAuthorForMedia(mediaName) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const authorInput = await new Promise((resolve) => {
+    rl.question(`Author of --> ${mediaName} <--: `, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+  // Simple validation (customize as needed)
+  if (!CONTRIBUTORS.includes(authorInput)) {
+    logger.warn(`Author '${authorInput}' not in allowed list. Using default.`);
+    return CONTRIBUTORS[0];
+  }
+  return authorInput;
+}
+
+/**
  * Manage panorama folder: move files, extract ZIP, create thumbnail, parse metadata.
  * @param {string} mediaFolderPath
  * @param {string} folderName
@@ -59,6 +86,38 @@ export async function handlePano(mediaFolderPath, folderName) {
   const zipPath = path.join(modifiedPath, "project-title.zip");
 
   logger.info(`[${folderName}]: Starting pano processing`);
+
+  // --- INTERACTIVE PREFLIGHT CHECK ---
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const answer = await new Promise((resolve) => {
+    rl.question(
+      `[${folderName}]: Can you confirm that the following components are present?\n` +
+        "  - 32 JPG files\n" +
+        "  - PANO_0001 Panorama.jpg\n" +
+        "  - project-title.zip\n" +
+        "Type 'Y' to proceed, 'N' to exit: ",
+      (input) => {
+        rl.close();
+        resolve(input.trim().toLowerCase());
+      }
+    );
+  });
+
+  if (answer !== "y") {
+    logger.error(
+      `[${folderName}]: User did not confirm required files. Exiting.`
+    );
+    process.exit(1);
+  }
+  // --- End of interactive check ---
+
+  // Prompt for author after confirmation
+  const author = await promptAuthorForMedia(folderName);
+  logger.info(`[${folderName}]: Author confirmed: ${author}`);
 
   // Ensure modified and original folders exist
   await fs.mkdir(modifiedPath, { recursive: true });

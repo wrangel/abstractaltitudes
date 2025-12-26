@@ -40,7 +40,7 @@ Capturing breathtaking aerial imagery and video through drone flights, showcasin
 2. AWS S3 bucket (and IAM keys with `PutObject`, `DeleteObject`, `ListBucket`)
 3. Mapbox account (https://mapbox.com) – enable **Geocoding API**
 4. Google Cloud account – enable **Maps JavaScript API** (key reserved for future use)
-5. Node ≥ 20 & pnpm ≥ 8
+5. Node ≥ 20 & pnpm ≥ 9
 6. Docker Desktop (only if you run the containerised version)
 
 ## Environment Variables

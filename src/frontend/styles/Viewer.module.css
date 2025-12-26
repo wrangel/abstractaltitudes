@@ -41,6 +41,8 @@
   }
 }
 
-.viewer.hide-cursor {
-  cursor: none;
+.hide-cursor,
+.hide-cursor *,
+.hide-cursor canvas {
+  cursor: none !important;
 }

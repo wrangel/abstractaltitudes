@@ -157,18 +157,25 @@ const Viewer = ({
   }, [item.viewer, onPrevious, onNext]);
 
   const toggleFullScreen = useCallback(() => {
+    const node = viewerRef.current;
+    if (!node) return;
+
     if (!document.fullscreenElement) {
-      viewerRef.current.requestFullscreen().catch((err) => {
-        console.error(
-          `Error attempting to enable full-screen mode: ${err.message} (${err.name})`
-        );
-      });
+      // Important: must be triggered by a direct user gesture like onClick
+      node
+        .requestFullscreen()
+        .then(() => {
+          console.log("Entered fullscreen:", document.fullscreenElement);
+        })
+        .catch((err) => {
+          console.error("Fullscreen request failed:", err);
+        });
     } else {
       document.exitFullscreen();
     }
   }, []);
 
-  const hideCursor = useAutoHideCursor(viewerRef, 1000);
+  const hideCursor = useAutoHideCursor(viewerRef, 800);
 
   useEffect(() => {
     if (error) console.error("Error fetching signed URL:", error);

@@ -164,9 +164,7 @@ const Viewer = ({
       // Important: must be triggered by a direct user gesture like onClick
       node
         .requestFullscreen()
-        .then(() => {
-          console.log("Entered fullscreen:", document.fullscreenElement);
-        })
+        .then(() => {})
         .catch((err) => {
           console.error("Fullscreen request failed:", err);
         });

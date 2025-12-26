@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <link rel="canonical" href="https://abstractaltitudes.com/" />
+
+    <!-- Adaptive favicons -->
     <link
       rel="icon"
       href="/favicon-black.svg"
@@ -29,6 +31,10 @@
     <!-- Bing Site Verification Meta Tag -->
     <meta name="msvalidate.01" content="EAB83D86CB896177B56D68D6B59DAC8C" />
 
+    <!-- Inter Variable Font (from RSMS official CDN) -->
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -38,19 +44,12 @@
         "sameAs": ["https://github.com/wrangel/"]
       }
     </script>
-    <link
-      rel="preload"
-      href="/fonts/Inter-Variable.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
   </head>
+
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
 
-    <!-- Vite injects JavaScript via this script tag -->
     <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>

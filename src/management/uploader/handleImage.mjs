@@ -2,6 +2,7 @@
 
 import fs from "fs/promises";
 import path from "path";
+import readline from "readline";
 import logger from "../../backend/utils/logger.mjs";
 import {
   THUMBNAIL_WIDTH,
@@ -11,12 +12,37 @@ import {
   MODIFIED_FOLDER,
   ORIGINAL_FOLDER,
   S3_FOLDER,
+  CONTRIBUTORS,
 } from "../../backend/constants.mjs";
 import sharp from "sharp";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Prompt user for the author of media, validating input.
+ * @param {string} mediaName
+ * @returns {Promise<string>}
+ */
+async function promptAuthorForMedia(mediaName) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const authorInput = await new Promise((resolve) => {
+    rl.question(`Author of --> ${mediaName} <--: `, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+  // Simple validation (customize as needed)
+  if (!CONTRIBUTORS.includes(authorInput)) {
+    logger.warn(`Author '${authorInput}' not in allowed list. Using default.`);
+    return CONTRIBUTORS[0];
+  }
+  return authorInput;
+}
 
 /**
  * Renames a folder to newName.
@@ -31,6 +57,43 @@ const execFileAsync = promisify(execFile);
 export async function handleImage(originalFolderPath, newName) {
   const parentDir = path.dirname(originalFolderPath);
   const newFolderPath = path.join(parentDir, newName);
+
+  logger.info(`[${newName}]: Starting image processing`);
+
+  // --- INTERACTIVE PREFLIGHT CHECK ---
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const files = await fs.readdir(newFolderPath);
+  const jpgFiles = files.filter(
+    (f) => f.toLowerCase().endsWith(".jpg") || f.toLowerCase().endsWith(".jpeg")
+  );
+  const tiffFiles = files.filter((f) => /\.tiff?$/i.test(f));
+
+  const answer = await new Promise((resolve) => {
+    rl.question(
+      `[${newName}]: Can you confirm that the following components are present?\n` +
+        `  - Exactly 5 JPG/JPEG files (found: ${jpgFiles.length})\n` +
+        `  - Exactly 1 TIFF/TIF file (found: ${tiffFiles.length})\n` +
+        "Type 'Y' to proceed, 'N' to exit: ",
+      (input) => {
+        rl.close();
+        resolve(input.trim().toLowerCase());
+      }
+    );
+  });
+
+  if (answer !== "y") {
+    logger.error(`[${newName}]: User did not confirm required files. Exiting.`);
+    process.exit(1);
+  }
+  // --- End of interactive check ---
+
+  // Prompt for author after confirmation
+  const author = await promptAuthorForMedia(newName);
+  logger.info(`[${newName}]: Author confirmed: ${author}`);
 
   if (originalFolderPath !== newFolderPath) {
     await fs.rename(originalFolderPath, newFolderPath);
@@ -53,11 +116,6 @@ export async function handleImage(originalFolderPath, newName) {
     fs.mkdir(s3Path, { recursive: true }),
   ]);
 
-  const files = await fs.readdir(newFolderPath);
-
-  const jpgFiles = files.filter(
-    (f) => f.toLowerCase().endsWith(".jpg") || f.toLowerCase().endsWith(".jpeg")
-  );
   for (const file of jpgFiles) {
     const src = path.join(newFolderPath, file);
     const dest = path.join(originalPath, file);
@@ -65,9 +123,8 @@ export async function handleImage(originalFolderPath, newName) {
     logger.info(`Moved JPG file ${file} to ${originalPath}`);
   }
 
-  const tiffFiles = files.filter((f) => /\.tiff?$/i.test(f));
-  if (tiffFiles.length === 0) {
-    logger.warn(`No TIFF files found in ${newFolderPath}`);
+  if (tiffFiles.length !== 1) {
+    logger.warn(`Expected exactly 1 TIFF file, found ${tiffFiles.length}`);
     return { newFolderPath, originalWidth: null, originalHeight: null };
   }
 

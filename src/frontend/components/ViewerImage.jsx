@@ -100,7 +100,7 @@ const ViewerImage = ({
           pointerEvents: "none",
           position: "fixed",
           inset: 0,
-          width: "100vw",
+          width: "100%",
           height: "100vh",
           objectFit: "contain",
           zIndex: 1040,

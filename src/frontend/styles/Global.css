@@ -1,6 +1,13 @@
-/* src/frontend/styles/Global.css
-   Inter Variable tuned to feel like Helvetica Neue
-*/
+/* src/frontend/styles/Global.css */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
+}
 
 :root {
   /* Colors & spacing */

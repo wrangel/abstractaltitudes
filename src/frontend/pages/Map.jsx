@@ -98,7 +98,7 @@ const MapPage = () => {
         <ErrorBoundary>
           <div
             className={styles.MapContainer}
-            style={{ height: "100vh", width: "100vw" }}
+            style={{ height: "100vh", width: "100%" }}
             role="application"
             aria-label="Interactive aerial map displaying drone-captured images"
           >

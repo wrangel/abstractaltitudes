@@ -44,16 +44,20 @@ export const useItemViewer = (items = []) => {
   }, []);
 
   const handleNextItem = useCallback(() => {
-    if (selectedItemIndex >= 0 && selectedItemIndex < items.length - 1) {
-      setSelectedItemId(items[selectedItemIndex + 1].id);
+    if (!selectedItemId || !Array.isArray(items)) return;
+    const currentIdx = items.findIndex((item) => item.id === selectedItemId);
+    if (currentIdx >= 0 && currentIdx < items.length - 1) {
+      setSelectedItemId(items[currentIdx + 1].id);
     }
-  }, [items, selectedItemIndex]);
+  }, [items, selectedItemId]); // Add selectedItemId dep
 
   const handlePreviousItem = useCallback(() => {
-    if (selectedItemIndex > 0) {
-      setSelectedItemId(items[selectedItemIndex - 1].id);
+    if (!selectedItemId || !Array.isArray(items)) return;
+    const currentIdx = items.findIndex((item) => item.id === selectedItemId);
+    if (currentIdx > 0) {
+      setSelectedItemId(items[currentIdx - 1].id);
     }
-  }, [items, selectedItemIndex]);
+  }, [items, selectedItemId]);
 
   return {
     selectedItem,

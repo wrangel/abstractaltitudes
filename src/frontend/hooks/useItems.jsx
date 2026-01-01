@@ -51,7 +51,7 @@ export const useItems = () => {
 
       const data = await response.json();
 
-      setItems((prev) => (isSameArray(prev, data) ? prev : [...data]));
+      setItems((prev) => (isSameArray(prev, data) ? prev : data));
       cachedItems = [...data];
       cacheTimestamp = Date.now();
     } catch (e) {

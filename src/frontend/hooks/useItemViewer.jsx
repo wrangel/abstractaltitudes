@@ -31,7 +31,6 @@ export const useItemViewer = (items = []) => {
 
     setSelectedItemId((currentId) => {
       const currentIdx = items.findIndex((item) => item.id === currentId);
-      console.log("[NEXT] currentIdx", currentIdx); // <--- for backward
       if (currentIdx >= 0 && currentIdx < items.length - 1) {
         const nextId = items[currentIdx + 1].id;
         return nextId;
@@ -46,7 +45,6 @@ export const useItemViewer = (items = []) => {
     setSelectedItemId((currentId) => {
       if (!currentId) return currentId;
       const currentIdx = items.findIndex((item) => item.id === currentId);
-      console.log("[PREVIOUS] currentIdx", currentIdx); // <--- add this
       if (currentIdx > 0) {
         return items[currentIdx - 1].id;
       }

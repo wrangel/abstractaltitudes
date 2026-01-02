@@ -13,7 +13,8 @@ import styles from "../styles/Grid.module.css";
 import { DOMAIN } from "../constants";
 
 function Grid() {
-  const { items, isLoading, error } = useItems();
+  const { items, isLoading, error, refetch } = useItems();
+
   const {
     selectedItem,
     isModalOpen,
@@ -22,6 +23,11 @@ function Grid() {
     handleNextItem,
     handlePreviousItem,
   } = useItemViewer(items);
+
+  // Calculate current index FRESH each render (no memoization)
+  const currentIndex = items.findIndex((item) => item.id === selectedItem?.id);
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === items.length - 1;
 
   const onItemClick = useCallback(handleItemClick, [handleItemClick]);
   const onClose = useCallback(handleClosePopup, [handleClosePopup]);
@@ -46,7 +52,7 @@ function Grid() {
         tabIndex={-1}
       >
         <p>Error: {error}</p>
-        <button onClick={() => refetch()}>Retry</button>
+        <button onClick={refetch}>Retry</button>
       </div>
     );
   }
@@ -77,13 +83,18 @@ function Grid() {
         ) : (
           <p>No items to display.</p>
         )}
-        {isModalOpen && (
+        {isModalOpen && selectedItem && (
           <PopupViewer
-            item={selectedItem}
+            item={{
+              ...selectedItem,
+              isFirst, // Fresh calculation
+              isLast, // Fresh calculation
+            }}
             isOpen={isModalOpen}
             onClose={onClose}
             onNext={onNext}
             onPrevious={onPrevious}
+            isNavigationMode={true}
           />
         )}
       </main>

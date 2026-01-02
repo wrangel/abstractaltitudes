@@ -3,9 +3,32 @@
 import { useState, useEffect, useCallback, useDebugValue } from "react";
 import { COMBINED_DATA_URL } from "../constants";
 
+// Simple in‑memory cache shared across hook instances
 let cachedItems = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// 🔥 Use your backend's datetime field here
+// Assumes every item has item.dateTime (ISO string or similar)
+const parseItemDate = (item) => {
+  const t = new Date(item.dateTime).getTime();
+  return Number.isNaN(t) ? 0 : t;
+};
+
+// Newest → oldest
+const sortItemsByDateDesc = (items) =>
+  [...items].sort((a, b) => parseItemDate(b) - parseItemDate(a));
+
+// Shallow identity check; compares by reference and length
+const isSameArray = (a, b) => {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
 
 export const useItems = () => {
   const [items, setItems] = useState(cachedItems ? [...cachedItems] : []);
@@ -14,17 +37,10 @@ export const useItems = () => {
 
   useDebugValue(items, (items) => `Items count: ${items.length}`);
 
-  const isSameArray = (a, b) => {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
-  };
-
-  const fetchData = useCallback(async (signal) => {
+  const fetchData = useCallback(async () => {
     const now = Date.now();
 
+    // Use cached, already-sorted items if cache is still valid
     if (cachedItems && now - cacheTimestamp < CACHE_TTL) {
       setItems((prev) =>
         isSameArray(prev, cachedItems) ? prev : [...cachedItems]
@@ -33,12 +49,12 @@ export const useItems = () => {
       return;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
       setIsLoading(true);
       setError(null);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(COMBINED_DATA_URL, {
         signal: controller.signal,
@@ -46,13 +62,20 @@ export const useItems = () => {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
+      const arrayData = Array.isArray(data) ? data : [];
 
-      setItems((prev) => (isSameArray(prev, data) ? prev : [...data]));
-      cachedItems = [...data];
+      // 🔥 Canonical sort: newest first
+      const sortedData = sortItemsByDateDesc(arrayData);
+
+      setItems((prev) => (isSameArray(prev, sortedData) ? prev : sortedData));
+
+      // Cache the sorted result
+      cachedItems = [...sortedData];
       cacheTimestamp = Date.now();
     } catch (e) {
       if (e.name === "AbortError") {
@@ -61,18 +84,13 @@ export const useItems = () => {
         setError("Failed to load items. Please try again later.");
       }
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    fetchData(controller.signal);
-
-    return () => {
-      controller.abort();
-    };
+    fetchData();
   }, [fetchData]);
 
   const clearCache = useCallback(() => {
@@ -80,9 +98,7 @@ export const useItems = () => {
     cacheTimestamp = 0;
     setItems([]);
     setIsLoading(true);
-
-    const controller = new AbortController();
-    fetchData(controller.signal);
+    fetchData();
   }, [fetchData]);
 
   return { items, isLoading, error, refetch: fetchData, clearCache };

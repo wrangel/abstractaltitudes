@@ -107,7 +107,8 @@ const Viewer = ({
   const [isLoading, setIsLoading] = useState(true);
   const viewerRef = useRef(null);
 
-  useKeyboardNavigation(onClose, onPrevious, onNext);
+  // Only handle ArrowLeft/ArrowRight here; Escape is handled custom below
+  useKeyboardNavigation(null, onPrevious, onNext);
 
   const toggleMetadata = useCallback(() => {
     setShowMetadata((prev) => !prev);
@@ -136,25 +137,6 @@ const Viewer = ({
       document.removeEventListener("keydown", handleEscKey);
     };
   }, [showMetadata, onClose]);
-
-  useEffect(() => {
-    if (item.viewer === "pano" && !isValidPanoItem(item)) return;
-
-    const handleArrowKeys = (event) => {
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        if (onPrevious) onPrevious();
-      } else if (event.key === "ArrowRight") {
-        event.preventDefault();
-        if (onNext) onNext();
-      }
-    };
-
-    document.addEventListener("keydown", handleArrowKeys);
-    return () => {
-      document.removeEventListener("keydown", handleArrowKeys);
-    };
-  }, [item.viewer, onPrevious, onNext]);
 
   const toggleFullScreen = useCallback(() => {
     const node = viewerRef.current;

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import FullScreenModal from "./FullScreenModal";
 import Viewer from "./Viewer";
 import ErrorBoundary from "./ErrorBoundary";
-import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 
 const PopupViewer = ({ item, isOpen, onClose, onNext, onPrevious }) => {
   const [isNavigationMode, setIsNavigationMode] = useState(true);
@@ -12,8 +11,6 @@ const PopupViewer = ({ item, isOpen, onClose, onNext, onPrevious }) => {
   const toggleMode = () => {
     setIsNavigationMode((prevMode) => !prevMode);
   };
-
-  useKeyboardNavigation(onClose, onPrevious, onNext);
 
   if (!item) return null;
 

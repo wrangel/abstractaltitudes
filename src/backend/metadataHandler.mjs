@@ -61,6 +61,7 @@ function processDocument(doc, presignedUrls) {
     id: doc._id.toString(),
     viewer: isPano ? "pano" : "img",
     drone: doc.drone,
+    dateTime: doc.dateTime,
     metadata: formatMetadata(doc),
     latitude: doc.latitude,
     longitude: doc.longitude,

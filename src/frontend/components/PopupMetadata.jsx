@@ -41,6 +41,19 @@ const PopupMetadata = ({
 
   // Draggable popup handlers
   const handleDragStart = (e) => {
+    const target = e.target;
+
+    // 1) If the user starts on the close button or another interactive element,
+    //    DON'T start dragging and DON'T prevent the click.
+    if (
+      target.closest &&
+      (target.closest(`.${styles.closeIcon}`) || // your X button
+        target.closest("button, a, input, textarea, select, [role='button']"))
+    ) {
+      return;
+    }
+
+    // 2) For real drags, we do the old behavior
     e.stopPropagation();
     e.preventDefault();
 

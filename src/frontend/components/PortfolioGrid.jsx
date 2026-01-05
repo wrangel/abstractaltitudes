@@ -74,7 +74,7 @@ const PortfolioGrid = ({ items, onItemClick }) => {
         columnWidth={columnWidth}
         columnGutter={columnGutter}
         rowGutter={rowGutter}
-        maxColumnCount={4}
+        // maxColumnCount={4} // helps with petering out columns, but changes the order
         render={renderItem}
       />
     </LoadingErrorHandler>

@@ -114,7 +114,7 @@ function formatMetadata(doc) {
     formattedRoad,
     location1,
     location2,
-    `by ${doc.author || ""}`,
+    //`by ${doc.author || ""}`,
   ]
     .filter(Boolean)
     .join("\n");

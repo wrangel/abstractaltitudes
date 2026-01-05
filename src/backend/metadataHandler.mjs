@@ -104,7 +104,7 @@ function formatMetadata(doc) {
 
   const road = doc.road ? doc.road.replace(/^,\s*/, "") : "";
   const formattedRoad = formatRoadWithLineBreaks(road, 29);
-  const location1 = `${doc.location || ""}, ${doc.region || ""}`.trim();
+  const location1 = `${doc.location || ""}`.trim(); // Previously: `${doc.location || ""}, ${doc.region || ""}`.trim();
   const location2 = `${doc.country || ""}`.trim();
 
   return [

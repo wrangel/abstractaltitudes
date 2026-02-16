@@ -12,37 +12,12 @@ import {
   MODIFIED_FOLDER,
   ORIGINAL_FOLDER,
   S3_FOLDER,
-  CONTRIBUTORS,
 } from "../../backend/constants.mjs";
 import sharp from "sharp";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
-
-/**
- * Prompt user for the author of media, validating input.
- * @param {string} mediaName
- * @returns {Promise<string>}
- */
-async function promptAuthorForMedia(mediaName) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const authorInput = await new Promise((resolve) => {
-    rl.question(`Author of --> ${mediaName} <--: `, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-  // Simple validation (customize as needed)
-  if (!CONTRIBUTORS.includes(authorInput)) {
-    logger.warn(`Author '${authorInput}' not in allowed list. Using default.`);
-    return CONTRIBUTORS[0];
-  }
-  return authorInput;
-}
 
 /**
  * Renames a folder to newName.
@@ -68,7 +43,8 @@ export async function handleImage(originalFolderPath, newName) {
 
   const files = await fs.readdir(newFolderPath);
   const jpgFiles = files.filter(
-    (f) => f.toLowerCase().endsWith(".jpg") || f.toLowerCase().endsWith(".jpeg")
+    (f) =>
+      f.toLowerCase().endsWith(".jpg") || f.toLowerCase().endsWith(".jpeg"),
   );
   const tiffFiles = files.filter((f) => /\.tiff?$/i.test(f));
 
@@ -81,7 +57,7 @@ export async function handleImage(originalFolderPath, newName) {
       (input) => {
         rl.close();
         resolve(input.trim().toLowerCase());
-      }
+      },
     );
   });
 
@@ -91,18 +67,14 @@ export async function handleImage(originalFolderPath, newName) {
   }
   // --- End of interactive check ---
 
-  // Prompt for author after confirmation
-  const author = await promptAuthorForMedia(newName);
-  logger.info(`[${newName}]: Author confirmed: ${author}`);
-
   if (originalFolderPath !== newFolderPath) {
     await fs.rename(originalFolderPath, newFolderPath);
     logger.info(
-      `Renamed folder: '${originalFolderPath}' to '${newFolderPath}'`
+      `Renamed folder: '${originalFolderPath}' to '${newFolderPath}'`,
     );
   } else {
     logger.info(
-      `No rename needed: '${originalFolderPath}' is already named '${newName}'`
+      `No rename needed: '${originalFolderPath}' is already named '${newName}'`,
     );
   }
 
@@ -185,7 +157,7 @@ export async function handleImage(originalFolderPath, newName) {
     } catch (error) {
       logger.error(
         `Error processing TIFF to WebP for file ${tiffFile}:`,
-        error
+        error,
       );
     }
   }

@@ -46,7 +46,7 @@ function question(promptText) {
 async function validateInput(input, validOptions, inputType) {
   while (!validOptions.includes(input)) {
     input = await question(
-      `Please choose one of (${validOptions.join(", ")}) as ${inputType}: `
+      `Please choose one of (${validOptions.join(", ")}) as ${inputType}: `,
     );
   }
   return input;
@@ -169,7 +169,7 @@ async function readExifFromFirstJPG(parentDir, mediaType, author) {
     const jpgFile = files.find(
       (file) =>
         file.toLowerCase().endsWith(".jpg") ||
-        file.toLowerCase().endsWith(".jpeg")
+        file.toLowerCase().endsWith(".jpeg"),
     );
     if (!jpgFile) {
       logger.warn(`No JPEG file found in ${parentDir}`);
@@ -208,9 +208,9 @@ async function readExifFromFirstJPG(parentDir, mediaType, author) {
     if (dateTime) {
       const pad = (n) => n.toString().padStart(2, "0");
       name = `${prefix}${dateTime.getFullYear()}${pad(
-        dateTime.getMonth() + 1
+        dateTime.getMonth() + 1,
       )}${pad(dateTime.getDate())}_${pad(dateTime.getHours())}${pad(
-        dateTime.getMinutes()
+        dateTime.getMinutes(),
       )}${pad(dateTime.getSeconds())}`;
     } else {
       name = prefix + UNKNOWN_VALUE;

@@ -15,7 +15,6 @@ import {
   MODIFIED_FOLDER,
   ORIGINAL_FOLDER,
   S3_FOLDER,
-  CONTRIBUTORS,
 } from "../../backend/constants.mjs";
 
 /**
@@ -50,30 +49,6 @@ function parseDataJs(dataJsContent) {
 }
 
 /**
- * Prompt user for the author of media, validating input.
- * @param {string} mediaName
- * @returns {Promise<string>}
- */
-async function promptAuthorForMedia(mediaName) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const authorInput = await new Promise((resolve) => {
-    rl.question(`Author of --> ${mediaName} <--: `, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-  // Simple validation (customize as needed)
-  if (!CONTRIBUTORS.includes(authorInput)) {
-    logger.warn(`Author '${authorInput}' not in allowed list. Using default.`);
-    return CONTRIBUTORS[0];
-  }
-  return authorInput;
-}
-
-/**
  * Manage panorama folder: move files, extract ZIP, create thumbnail, parse metadata.
  * @param {string} mediaFolderPath
  * @param {string} folderName
@@ -103,21 +78,17 @@ export async function handlePano(mediaFolderPath, folderName) {
       (input) => {
         rl.close();
         resolve(input.trim().toLowerCase());
-      }
+      },
     );
   });
 
   if (answer !== "y") {
     logger.error(
-      `[${folderName}]: User did not confirm required files. Exiting.`
+      `[${folderName}]: User did not confirm required files. Exiting.`,
     );
     process.exit(1);
   }
   // --- End of interactive check ---
-
-  // Prompt for author after confirmation
-  const author = await promptAuthorForMedia(folderName);
-  logger.info(`[${folderName}]: Author confirmed: ${author}`);
 
   // Ensure modified and original folders exist
   await fs.mkdir(modifiedPath, { recursive: true });
@@ -141,14 +112,14 @@ export async function handlePano(mediaFolderPath, folderName) {
       const dest = path.join(modifiedPath, file);
       await fs.rename(src, dest);
       logger.info(
-        `[${folderName}]: Moved preview file ${file} to modified folder`
+        `[${folderName}]: Moved preview file ${file} to modified folder`,
       );
     } else {
       // No ' Panorama' - original file => move to original folder
       const dest = path.join(originalPath, file);
       await fs.rename(src, dest);
       logger.info(
-        `[${folderName}]: Moved original file ${file} to original folder`
+        `[${folderName}]: Moved original file ${file} to original folder`,
       );
     }
   }
@@ -156,7 +127,7 @@ export async function handlePano(mediaFolderPath, folderName) {
   // Special handling of .pts files (already moved above if matched in panoRegex),
   // but if there are any outside this pattern, ensure to move .pts files anyway
   const ptsFiles = rootFiles.filter(
-    (f) => f.toLowerCase().endsWith(".pts") && !panoRegex.test(f)
+    (f) => f.toLowerCase().endsWith(".pts") && !panoRegex.test(f),
   );
   for (const file of ptsFiles) {
     const src = path.join(mediaFolderPath, file);
@@ -172,7 +143,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     if (src !== dest) {
       await fs.rename(src, dest);
       logger.info(
-        `[${folderName}]: Moved project-title.zip to modified folder`
+        `[${folderName}]: Moved project-title.zip to modified folder`,
       );
     }
   }
@@ -185,7 +156,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     const stat = await fs.stat(zipPath);
     if (!stat.isFile() || stat.size === 0) {
       logger.warn(
-        `[${folderName}]: ZIP file is missing or empty. Skipping pano.`
+        `[${folderName}]: ZIP file is missing or empty. Skipping pano.`,
       );
       return null;
     }
@@ -197,7 +168,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     } catch (zipError) {
       logger.error(
         `[${folderName}]: Error extracting ZIP file: ${zipError.message}`,
-        zipError
+        zipError,
       );
       throw zipError;
     }
@@ -211,12 +182,12 @@ export async function handlePano(mediaFolderPath, folderName) {
 
     if (subfolders.length !== 1) {
       logger.warn(
-        `[${folderName}]: Expected exactly one subfolder in tiles, found ${subfolders.length}. Skipping tiles move.`
+        `[${folderName}]: Expected exactly one subfolder in tiles, found ${subfolders.length}. Skipping tiles move.`,
       );
     } else {
       const singleTileSubfolder = path.join(
         originalTilesBase,
-        subfolders[0].name
+        subfolders[0].name,
       );
       const s3TilesDest = path.join(s3Folder, "tiles");
 
@@ -225,7 +196,7 @@ export async function handlePano(mediaFolderPath, folderName) {
         logger.info(`[${folderName}]: Deleted existing s3/tiles folder`);
       } catch (err) {
         logger.warn(
-          `[${folderName}]: Could not delete existing s3/tiles folder: ${err.message}`
+          `[${folderName}]: Could not delete existing s3/tiles folder: ${err.message}`,
         );
       }
 
@@ -237,7 +208,7 @@ export async function handlePano(mediaFolderPath, folderName) {
         logger.info(`[${folderName}]: Deleted extracted tiles base folder`);
       } catch (err) {
         logger.warn(
-          `[${folderName}]: Could not delete extracted tiles base folder: ${err.message}`
+          `[${folderName}]: Could not delete extracted tiles base folder: ${err.message}`,
         );
       }
     }
@@ -250,11 +221,11 @@ export async function handlePano(mediaFolderPath, folderName) {
       extractedProperties = parseDataJs(dataJsContent);
       if (extractedProperties) {
         logger.info(
-          `[${folderName}]: Extracted levels and initialViewParameters from data.js`
+          `[${folderName}]: Extracted levels and initialViewParameters from data.js`,
         );
       } else {
         logger.warn(
-          `[${folderName}]: Failed to extract levels or initialViewParameters from data.js`
+          `[${folderName}]: Failed to extract levels or initialViewParameters from data.js`,
         );
       }
     } catch (err) {
@@ -267,7 +238,7 @@ export async function handlePano(mediaFolderPath, folderName) {
       logger.info(`[${folderName}]: Deleted project-title extraction folder`);
     } catch (err) {
       logger.warn(
-        `[${folderName}]: Could not delete extraction folder: ${err.message}`
+        `[${folderName}]: Could not delete extraction folder: ${err.message}`,
       );
     }
 
@@ -276,7 +247,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     const jpgFile = modifiedFiles.find((f) => /\.(jpe?g)$/i.test(f));
     if (!jpgFile) {
       logger.warn(
-        `[${folderName}]: No JPG found in modified folder for thumbnail`
+        `[${folderName}]: No JPG found in modified folder for thumbnail`,
       );
       return extractedProperties;
     }
@@ -298,7 +269,7 @@ export async function handlePano(mediaFolderPath, folderName) {
   } catch (err) {
     logger.error(
       `[${folderName}]: Error in handlePano processing: ${err.message}`,
-      err
+      err,
     );
     throw err;
   }

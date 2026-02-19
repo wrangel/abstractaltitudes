@@ -115,8 +115,8 @@ Management helpers:
 
 ```bash
 pnpm manage keep-books   # sync DB ↔ S3 metadata
-pnpm manage upload-media # ingest new imagery
-pnpm manage upload-media -n # ingest new imagery, but do not upload it neither to AWS nor Mongo db
+pnpm manage handle-media # ingest new imagery
+pnpm manage:dry handle-media -n # ingest new imagery, but do not upload it neither to AWS nor Mongo db
 ```
 
 ## Media Upload Folder Layout

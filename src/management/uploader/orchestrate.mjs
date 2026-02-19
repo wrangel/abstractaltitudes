@@ -21,6 +21,11 @@ const DRY_RUN = process.env.NODE_DRY_RUN === "1";
  * and closes the DB connection when finished or on errors.
  */
 export async function orchestrate() {
+  logger.info("DRY_RUN mode:", DRY_RUN);
+  if (DRY_RUN) {
+    logger.info("✅ DRY RUN - skipping uploads");
+  }
+
   try {
     await connectDB();
     logger.info("MongoDB connected");

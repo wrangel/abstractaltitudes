@@ -9,6 +9,7 @@
     "frontend:preview": "vite preview",
     "dev": "./scripts/dev-deploy.sh",
     "manage": "./scripts/manage-tasks.sh",
+    "manage:dry": "./scripts/manage-tasks.sh -n",
     "test": "./scripts/test-deploy.sh",
     "prod": "./scripts/prod-build.sh"
   },

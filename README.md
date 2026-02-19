@@ -121,23 +121,33 @@ pnpm manage:dry handle-media -n # ingest new imagery, but do not upload it neith
 
 ## Media Upload Folder Layout
 
-Place everything inside the folder you point the uploader to:
+Place drone media folders inside INPUT_DIRECTORY ($INPUT_DIRECTORY). collectMetadata auto-detects type by file count/pattern:
 
 ```bash
-your-ingest-folder/
-├── nonpano/
-│ └── any-name/
-│ ├── IMG_1234.JPG # original drone still
-│ ├── IMG_1234.tif # 16-bit TIFF derived from RAW (optional)
-│ └── …
-└── pano/
-└── any-name/
-├── DJI_0001.JPG # individual aerial shots
-├── DJI_0002.JPG
-├── pano-equirect.jpg # stitched 360° equirectangular (e.g. from PTGui Pro)
-├── pano-equirect.pts # stitched 360° equirectangular project file (e.g. from PTGui Pro)
-└── project-title.zip # Marzipano project exported from https://www.marzipano.net/tool/
+your-ingest-folder/                    # INPUT_DIRECTORY
+├── hdr-folder/                        # 5 JPGs + 1 TIFF → type: "hdr"
+│   ├── 5x JPG files                   # original drone still
+│   └── 1x TIFF file                   # 16-bit TIFF derived from RAW
+│
+├── wa-folder/                         # **NEW** 10 JPGs (1 DJI + 9 PANO) → type: "wide_angle"
+│   ├── DJI_20260215154930_0022_D.JPG  # Main image → modified/wa_*.webp
+│   ├── PANO_0001.JPG → PANO_0009.JPG  # 9x reference → original/
+│
+├── pano-folder/                       # Panorama → type: "pano", 25 JPGs
+│   ├── DJI_0001.JPG                   # individual aerial shots
+│   ├── DJI_0002.JPG
+│   ├── pano-equirect.jpg              # stitched 360° equirectangular (e.g. from PTGui Pro)
+│   ├── pano-equirect.pts              # stitched 360° equirectangular project file (e.g. from PTGui Pro)
+│   └── project-title.zip              # Marzipano project exported from https://www.marzipano.net/tool/
 ```
+
+Before running pnpm manage handle-media, ensure your INPUT_DIRECTORY contains folders with one of these exact structures:
+
+| Media Type | File Count | Structure                                  | Processing                        |
+| ---------- | ---------- | ------------------------------------------ | --------------------------------- |
+| hdr        | 6 files    | 5 JPG + 1 TIFF                             | JPG→original/, TIFF→wa\_\*.webp   |
+| wide_angle | 10 JPGs    | 1 DJI*.JPG + 9 PANO*.JPG                   | 9 PANO→original/, DJI→wa\_\*.webp |
+| pano       | 5+ files   | DJI JPGs + equirectangular + Marzipano ZIP | Pano viewer files                 |
 
 The uploader walks these folders, uploads originals to S3, writes metadata to MongoDB and generates the multiple sizes required by the gallery.
 

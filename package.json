@@ -9,11 +9,12 @@
     "frontend:preview": "vite preview",
     "dev": "./scripts/dev-deploy.sh",
     "manage": "./scripts/manage-tasks.sh",
+    "manage:dry": "./scripts/manage-tasks.sh -n",
     "test": "./scripts/test-deploy.sh",
     "prod": "./scripts/prod-build.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.991.0",
+    "@aws-sdk/client-s3": "^3.993.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@vis.gl/react-google-maps": "^1.7.1",
     "compression": "^1.8.1",
@@ -39,10 +40,10 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.991.0",
+    "@aws-sdk/lib-storage": "^3.993.0",
     "@vitejs/plugin-react": "^4.7.0",
     "adm-zip": "^0.5.16",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "eslint-plugin-react": "^7.37.5",
     "exif": "^0.6.0",
     "exif-parser": "^0.1.12",

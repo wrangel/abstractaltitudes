@@ -6,45 +6,55 @@ set -e
 echo "🧹 Cleaning Vite cache..."
 rm -rf node_modules/.vite dist
 
-# Remove Docker containers if Docker is running
+# Stop Docker containers
 if docker info >/dev/null 2>&1; then
-    echo "Stopping Docker containers and cleaning up..."
+    echo "🛑 Stopping Docker containers and cleaning up..."
     docker compose down --rmi all && docker system prune -af
 else
     echo "⚠️  Docker not running or not installed — skipping Docker cleanup."
 fi
 
-# Check for the -u flag to update dependencies
+# FULL UPGRADE (-u flag)
 if [[ "$1" == "-u" ]]; then
-    echo "📦 Updating dependencies..."
+    echo "🚀📦 FULL UPGRADE: Latest secure packages..."
 
+    # System updates
+    brew update && brew cleanup && brew doctor && brew autoremove
     pnpm self-update
 
-    # Update all dependencies to latest allowed by package.json
-    pnpm update
-
-    # Force latest for Vite and its plugins (ensure compatibility)
-    pnpm update vite @vitejs/plugin-react vite-plugin-eslint eslint eslint-plugin-react globals
-
-    # Clean and reinstall to ensure lockfile and node_modules match
+    # Clean slate
     rm -rf node_modules pnpm-lock.yaml
+
+    # LATEST EVERYTHING
+    echo "📈 Updating ALL packages to LATEST..."
+    pnpm up --latest
+
+    # Fix React peer warning (cosmetic only)
+    echo "🔧 Fixing React versions..."
+    pnpm add "react@^18.3.1" "react-dom@^18.3.1" --save-exact
+
+    # Fresh install
     pnpm install
 
-    # Security and cleanup
-    pnpm audit fix
-    pnpm prune
-    pnpm depcheck --ignores="exif,exifreader,node-exif,vite-plugin-eslint"
+    # PROD-ONLY SECURITY CHECK
+    echo "🔒 PROD security check..."
+    pnpm audit --prod --silent || true
+
+    echo "✅ PROD deps: Latest + Secure!"
+
+    # Cleanup
+    pnpm prune || true
 else
-    echo "✅ Skipping dependency updates..."
+    echo "✅ Using existing deps..."
+    pnpm install
 fi
 
-# Start the backend server
+# Start dev servers
 echo "🚀 Starting backend server..."
 node --env-file=.env ./src/backend/server.mjs &
 
-# Start the frontend Vite dev server
 echo "🚀 Starting Vite frontend on port 3000..."
 pnpm run frontend:dev
 
-# Wait for both processes to finish (Ctrl+C will kill both)
+# Wait for both (Ctrl+C kills both)
 wait

@@ -14,7 +14,7 @@
     "prod": "./scripts/prod-build.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.994.0",
+    "@aws-sdk/client-s3": "^3.995.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@vis.gl/react-google-maps": "^1.7.1",
     "compression": "^1.8.1",
@@ -38,7 +38,7 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.994.0",
+    "@aws-sdk/lib-storage": "^3.995.0",
     "@vitejs/plugin-react": "^5.1.4",
     "adm-zip": "^0.5.16",
     "exif": "^0.6.0",

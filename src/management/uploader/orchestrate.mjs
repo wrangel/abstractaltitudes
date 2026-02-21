@@ -4,11 +4,11 @@ import { readdir } from "fs/promises";
 import path from "path";
 import logger from "../../backend/utils/logger.mjs";
 import { connectDB, closeDB } from "../../backend/utils/mongodbConnection.mjs";
-
 import { collectMetadata } from "./collectMetadata.mjs";
 import { handleFolder } from "./handleFolder.mjs";
 import { handleImage } from "./handleImage.mjs";
 import { handlePano } from "./handlePano.mjs";
+import { handleWideAngle } from "./handleWideAngle.mjs";
 import { uploadMetadata } from "./uploadMetadata.mjs";
 import { uploadMedia } from "./uploadMedia.mjs";
 import { convertThenArchive } from "./archive.mjs";
@@ -62,8 +62,14 @@ export async function orchestrate() {
         let panoExtraProps = null;
 
         // Branch handling based on media type
-        if (mediaType === "hdr" || mediaType === "wide_angle") {
+        if (mediaType === "hdr") {
           const imageData = await handleImage(newFolderPath, newName);
+          if (imageData) {
+            processed.metadata.originalWidth = imageData.originalWidth;
+            processed.metadata.originalHeight = imageData.originalHeight;
+          }
+        } else if (mediaType === "wide_angle") {
+          const imageData = await handleWideAngle(newFolderPath, newName);
           if (imageData) {
             processed.metadata.originalWidth = imageData.originalWidth;
             processed.metadata.originalHeight = imageData.originalHeight;

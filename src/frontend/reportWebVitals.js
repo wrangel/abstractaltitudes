@@ -2,15 +2,19 @@ const reportWebVitals = (onPerfEntry) => {
   if (onPerfEntry && onPerfEntry instanceof Function) {
     import("web-vitals")
       .then((webVitals) => {
-        // v3+: default export is the object with all metrics
-        if (webVitals && typeof webVitals.getCLS === "function") {
-          webVitals.getCLS(onPerfEntry);
-          webVitals.getFID(onPerfEntry);
-          webVitals.getFCP(onPerfEntry);
-          webVitals.getLCP(onPerfEntry);
-          webVitals.getTTFB(onPerfEntry);
+        // v3+: use onCLS, onFCP, etc. directly
+        if (typeof webVitals.onCLS === "function") {
+          webVitals.onCLS(onPerfEntry);
+          webVitals.onFCP(onPerfEntry);
+          webVitals.onLCP(onPerfEntry);
+          webVitals.onTTFB(onPerfEntry);
+          // onFID deprecated, replaced by onINP in v3
+          if (webVitals.onINP) webVitals.onINP(onPerfEntry);
         } else {
-          console.warn("web-vitals v3+ structure not found:", webVitals);
+          console.warn(
+            "Unexpected web-vitals structure:",
+            Object.keys(webVitals),
+          );
         }
       })
       .catch((err) => {

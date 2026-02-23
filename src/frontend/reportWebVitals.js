@@ -1,17 +1,17 @@
 const reportWebVitals = (onPerfEntry) => {
   if (onPerfEntry && onPerfEntry instanceof Function) {
     import("web-vitals")
-      .then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-        // Safety check: if any metric is missing, skip
-        if (typeof getCLS !== "function") {
-          console.warn("web-vitals metrics not loaded correctly");
-          return;
+      .then((webVitals) => {
+        // v3+: default export is the object with all metrics
+        if (webVitals && typeof webVitals.getCLS === "function") {
+          webVitals.getCLS(onPerfEntry);
+          webVitals.getFID(onPerfEntry);
+          webVitals.getFCP(onPerfEntry);
+          webVitals.getLCP(onPerfEntry);
+          webVitals.getTTFB(onPerfEntry);
+        } else {
+          console.warn("web-vitals v3+ structure not found:", webVitals);
         }
-        getCLS(onPerfEntry);
-        getFID(onPerfEntry);
-        getFCP(onPerfEntry);
-        getLCP(onPerfEntry);
-        getTTFB(onPerfEntry);
       })
       .catch((err) => {
         console.error("Failed to load web-vitals:", err);

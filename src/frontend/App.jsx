@@ -1,7 +1,6 @@
 // src/frontend/App.jsx
-
-import React, { Suspense, lazy } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import React, { Suspense, lazy, useState } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { preload } from "swr";
 
@@ -11,7 +10,6 @@ import LoadingOverlay from "./components/LoadingOverlay";
 import { COMBINED_DATA_URL } from "./constants";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
-
 preload(COMBINED_DATA_URL, fetcher);
 
 const Home = lazy(() => import("./pages/Home"));
@@ -20,25 +18,39 @@ const Map = lazy(() => import("./pages/Map"));
 
 function App() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showMap, setShowMap] = useState(false);
+
+  // We only show the Map if the user explicitly navigates to /map
+  // or clicks your new Map toggle.
+  const isMapRoute = location.pathname === "/map";
 
   return (
     <HelmetProvider>
       <div className="App">
-        {/* Visually hidden heading for accessibility and SEO */}
         <h1 className="visually-hidden">
           Capturing Breathtaking Aerial Photography
         </h1>
 
         <ErrorBoundary>
           <Suspense fallback={<LoadingOverlay />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/grid" element={<Grid />} />
-              <Route path="/map" element={<Map />} />
-            </Routes>
+            {isMapRoute ? (
+              <Map />
+            ) : (
+              <>
+                {/* 1. HERO SECTION */}
+                <Home />
+
+                {/* 2. MASONRY SECTION (With an ID for the scroll jump) */}
+                <div id="main-content">
+                  <Grid />
+                </div>
+              </>
+            )}
           </Suspense>
         </ErrorBoundary>
 
+        {/* This stays to handle your logo/menu/map navigation */}
         <NavigationPages onNavigate={navigate} />
       </div>
     </HelmetProvider>

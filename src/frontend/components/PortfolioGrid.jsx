@@ -1,69 +1,56 @@
 // src/frontend/components/PortfolioGrid.jsx
 
-import { Masonry } from "masonic";
 import LoadingErrorHandler from "./LoadingErrorHandler";
-import PortfolioItem from "./PortfolioItem";
 import { useLoadingError } from "../hooks/useLoadingError";
-import { useResponsiveGridWithRatio } from "../hooks/useResponsiveGridWithRatio";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 
-/**
- * PortfolioGrid component renders a masonry grid layout of portfolio items using Masonic.
- *
- * It handles loading and error states using the useLoadingError hook,
- * and displays the portfolio items in a responsive masonry layout.
- *
- * @param {Object} props - Component props.
- * @param {Array} props.items - Array of portfolio items to display.
- * @param {Function} props.onItemClick - Callback function when an item is clicked.
- *
- * @returns {JSX.Element} The masonry grid wrapped in loading/error handler.
- */
 const PortfolioGrid = ({ items, onItemClick }) => {
   const { isLoading, error } = useLoadingError(false);
   const { w } = useViewportSize();
-  const { columnWidth, columnGutter, rowGutter } = useResponsiveGridWithRatio(
-    16,
-    -2 / 16
-  );
 
-  // Get device pixel ratio for sharp thumbnails on high-DPI screens
+  // --- NEW COLUMN CALCULATION ---
+  // We want to force 2-3 columns.
+  // Gutters: 24px is a nice breathable space for high-end photography
+  const gutter = 24;
+
+  const getColumnWidth = () => {
+    if (w > 1200) {
+      // Desktop: Aim for 3 columns.
+      // (Total Width - (Gutters * 2)) / 3
+      return Math.floor((w - gutter * 2 - 80) / 3);
+    } else if (w > 600) {
+      // Tablet/Small Desktop: Aim for 2 columns.
+      return Math.floor((w - gutter - 40) / 2);
+    }
+    // Mobile: 1 column
+    return w - 40;
+  };
+
+  const columnWidth = getColumnWidth();
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
   const renderItem = ({ data }) => {
-    // Responsive column width from grid layout
     const width = Math.floor(columnWidth);
-
-    // Use original dimensions or fallback to 1 to avoid div by zero
     const originalWidth = data.originalWidth || 1;
     const originalHeight = data.originalHeight || 1;
-
-    // Calculate proportional height for aspect ratio
     const height = Math.round((width * originalHeight) / originalWidth);
 
-    // Limit requested image size to thumbnail actual size to avoid upscaling
-    const finalWidth = Math.min(width, data.thumbnailWidth || width);
-    const finalHeight = Math.min(height, data.thumbnailHeight || height);
-
-    // Multiply by dpr for crisp thumbnails
-    const requestedWidth = Math.round(finalWidth * dpr);
-    const requestedHeight = Math.round(finalHeight * dpr);
-
-    // Build BunnyCDN URL requesting resized image for the calculated and DPI-scaled size
-    const imageSrc = buildQueryStringWidthHeight(data.thumbnailUrl, {
-      width: requestedWidth,
-      height: requestedHeight,
-    });
-
-    // Pass optimized thumbnail URL and original data to PortfolioItem
+    // Fade-in class added here for that smooth scroll entrance
     return (
-      <PortfolioItem
-        key={data.id}
-        item={{ ...data, thumbnailUrl: imageSrc }}
-        onItemClick={onItemClick}
-        useLazyImage={true}
-      />
+      <div className="grid-item-fade">
+        <PortfolioItem
+          key={data.id}
+          item={{
+            ...data,
+            thumbnailUrl: buildQueryStringWidthHeight(data.thumbnailUrl, {
+              width: Math.round(width * dpr),
+              height: Math.round(height * dpr),
+            }),
+          }}
+          onItemClick={onItemClick}
+          useLazyImage={true}
+        />
+      </div>
     );
   };
 
@@ -72,9 +59,8 @@ const PortfolioGrid = ({ items, onItemClick }) => {
       <Masonry
         items={items}
         columnWidth={columnWidth}
-        columnGutter={columnGutter}
-        rowGutter={rowGutter}
-        // maxColumnCount={4} // helps with petering out columns, but changes the order
+        columnGutter={gutter}
+        rowGutter={gutter}
         render={renderItem}
       />
     </LoadingErrorHandler>

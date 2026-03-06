@@ -1,7 +1,4 @@
-// src/frontend/pages/Home.js
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
@@ -13,15 +10,6 @@ import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeigh
 import { useViewportSize } from "../hooks/useViewportSize";
 import PopupViewer from "../components/PopupViewer";
 
-/**
- * Generates a cryptographically secure random integer index from 0 (inclusive) to max (exclusive).
- *
- * Uses the browser's Crypto API (window.crypto.getRandomValues) to generate a cryptographically strong random number,
- * then reduces it modulo the provided max to fit the array index range.
- *
- * @param {number} max - The upper limit (exclusive) for the generated random index.
- * @returns {number} A random integer between 0 (inclusive) and max (exclusive).
- */
 function getSecureRandomIndex(max) {
   const array = new Uint32Array(1);
   window.crypto.getRandomValues(array);
@@ -29,21 +17,17 @@ function getSecureRandomIndex(max) {
 }
 
 const Home = () => {
-  const navigate = useNavigate();
   const { items } = useItems();
   const [randomPano, setRandomPano] = useState(null);
   const [isPortrait, setIsPortrait] = useState(
-    window.innerHeight > window.innerWidth
+    window.innerHeight > window.innerWidth,
   );
   const isVeryShort = useWindowHeight(360);
   const { w, h } = useViewportSize();
 
-  // Media items containing pano or img viewer types
   const mediaItems = items.filter(
-    (item) => item.viewer === "pano" || item.viewer === "img"
+    (item) => item.viewer === "pano" || item.viewer === "img",
   );
-
-  // State for viewer open and current viewed index
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
@@ -56,16 +40,6 @@ const Home = () => {
     }
   }, [items]);
 
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  const width =
-    randomPano && w
-      ? Math.min((randomPano.thumbnailWidth || w) * dpr, w * dpr)
-      : w * dpr || 0;
-  const height =
-    randomPano && h
-      ? Math.min((randomPano.thumbnailHeight || h) * dpr, h * dpr)
-      : h * dpr || 0;
-
   useEffect(() => {
     const handleResize = () =>
       setIsPortrait(window.innerHeight > window.innerWidth);
@@ -73,31 +47,22 @@ const Home = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Open viewer with random media item
   const openRandomViewer = () => {
     if (mediaItems.length > 0) {
-      const randomIdx = getSecureRandomIndex(mediaItems.length);
-      setCurrentIndex(randomIdx);
+      setCurrentIndex(getSecureRandomIndex(mediaItems.length));
       setIsViewerOpen(true);
     }
   };
 
-  // Close viewer and return home
-  const closeViewer = () => {
-    setIsViewerOpen(false);
-    setCurrentIndex(null);
-    navigate("/");
+  const scrollToGrid = () => {
+    document
+      .getElementById("main-content")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Navigate to next item, wrap around
-  const handleNextItem = () => {
-    setCurrentIndex((prev) => (prev + 1) % mediaItems.length);
-  };
-
-  // Navigate to previous item, wrap around
-  const handlePreviousItem = () => {
-    setCurrentIndex((prev) => (prev === 0 ? mediaItems.length - 1 : prev - 1));
-  };
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  const width = randomPano ? w * dpr : 0;
+  const height = randomPano ? h * dpr : 0;
 
   return (
     <>
@@ -110,7 +75,7 @@ const Home = () => {
         />
       </Helmet>
 
-      {/* Background image wrapper */}
+      {/* FIXED BACKGROUND: Parallax effect as grid scrolls over */}
       {randomPano && (
         <div className={styles.backgroundWrapper}>
           <LazyImage
@@ -129,16 +94,20 @@ const Home = () => {
         <PopupViewer
           item={mediaItems[currentIndex]}
           isOpen={isViewerOpen}
-          onClose={closeViewer}
-          onNext={handleNextItem}
-          onPrevious={handlePreviousItem}
+          onClose={() => setIsViewerOpen(false)}
+          onNext={() =>
+            setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
+          }
+          onPrevious={() =>
+            setCurrentIndex((prev) =>
+              prev === 0 ? mediaItems.length - 1 : prev - 1,
+            )
+          }
         />
       )}
 
-      <div
-        className={`${styles.Home} ${isPortrait ? styles.portraitLayout : ""} ${
-          isVeryShort ? styles.veryShortViewport : ""
-        }`}
+      <section
+        className={`${styles.Home} ${isPortrait ? styles.portraitLayout : ""} ${isVeryShort ? styles.veryShortViewport : ""}`}
       >
         <div className={styles.contentOverlay}>
           <div className={`${styles.textWrapper} ${styles.textShadow}`}>
@@ -155,42 +124,34 @@ const Home = () => {
             onClick={openRandomViewer}
             role="button"
             tabIndex={0}
-            aria-label="View random portfolio image or panorama"
+            aria-label="View random portfolio image"
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") openRandomViewer();
             }}
-            style={{ cursor: "pointer" }}
           >
-            <MascotMedia
-              className={styles.image}
-              aria-label="Abstract Altitudes Mascot"
-            />
+            <MascotMedia className={styles.image} />
           </div>
         </div>
 
-        <footer className={styles.credits}>
-          <div className={`${styles.contentOverlay} ${styles.textShadow}`}>
-            <ul className={styles.creditsList}>
-              {[
-                { href: "https://github.com/wrangel ", label: "wrangel" },
-                { href: "https://www.dji.com ", label: "DJI" },
-                { href: "https://ptgui.com ", label: "PTGui Pro" },
-                { href: "https://www.marzipano.net/ ", label: "Marzipano" },
-                {
-                  href: "https://www.adobe.com/products/photoshop-lightroom.html ",
-                  label: "Adobe Lightroom",
-                },
-              ].map(({ href, label }) => (
-                <li key={label}>
-                  <a href={href} target="_blank" rel="noopener noreferrer">
-                    {label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </footer>
-      </div>
+        {/* Cinematic Scroll Prompt */}
+        <div
+          className="scroll-indicator"
+          onClick={scrollToGrid}
+          role="button"
+          aria-label="Scroll to gallery"
+        >
+          <p
+            style={{
+              fontSize: "0.7rem",
+              letterSpacing: "3px",
+              marginBottom: "0.5rem",
+            }}
+          >
+            EXPLORE
+          </p>
+          <span>↓</span>
+        </div>
+      </section>
     </>
   );
 };

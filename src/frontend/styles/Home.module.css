@@ -13,7 +13,7 @@
 }
 
 .backgroundWrapper {
-  position: fixed; /* Crucial for the parallax feel */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
@@ -21,6 +21,18 @@
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+}
+
+/* THE FADE: This creates the transition from image to black grid */
+.backgroundWrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+  background: linear-gradient(to top, black 0%, transparent 100%);
+  z-index: 1;
 }
 
 .backgroundImage {

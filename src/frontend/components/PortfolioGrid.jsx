@@ -24,12 +24,11 @@ const PortfolioGrid = ({ items, onItemClick }) => {
   const columnWidth = getColumnWidth();
 
   const renderItem = ({ data, width }) => {
-    // ✅ FIXED: Returns JSX element!
     return (
       <PortfolioItem
         item={data}
         width={width}
-        onClick={() => onItemClick(data)}
+        onItemClick={onItemClick} // ✅ FIXED: Correct prop name
         revealRef={revealRef}
       />
     );

@@ -1,5 +1,6 @@
 // src/frontend/components/PortfolioGrid.jsx
 
+// src/frontend/components/PortfolioGrid.jsx
 import { Masonry } from "masonic";
 import PortfolioItem from "./PortfolioItem";
 import LoadingErrorHandler from "./LoadingErrorHandler";
@@ -14,7 +15,19 @@ const PortfolioGrid = ({ items, onItemClick }) => {
 
   const getColumnWidth = () => {
     if (!w || w <= 0) return 300;
-    return Math.floor(w / 3) - 24; // Responsive 3 columns
+
+    if (w <= 768) {
+      // 1 column on mobile, full width minus a small inset
+      return w;
+    }
+
+    if (w <= 900) {
+      // 2 columns on tablets
+      return w / 2 - 24; // gutter 24
+    }
+
+    // 3 columns on desktop
+    return w / 3 - 24; // gutter 24
   };
 
   const columnWidth = getColumnWidth();
@@ -32,12 +45,12 @@ const PortfolioGrid = ({ items, onItemClick }) => {
 
   return (
     <LoadingErrorHandler isLoading={isLoading} error={error}>
-      <div style={{ padding: "0 20px" }}>
+      <div style={{ padding: 0 }}>
         <Masonry
           items={items || []}
           columnWidth={columnWidth}
-          columnGutter={24} // Horizontal spacing
-          rowGutter={12} // Vertical spacing (half of horizontal)
+          columnGutter={24} // horizontal spacing
+          rowGutter={12} // vertical spacing (half of horizontal)
           render={renderItem}
         />
       </div>

@@ -1,7 +1,7 @@
 .Home {
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Center the hero content */
+  justify-content: center;
   align-items: center;
   min-height: 100vh;
   width: 100%;
@@ -9,18 +9,28 @@
   box-sizing: border-box;
   position: relative;
   z-index: 1;
-  /* Removed max-height and overflow-y to allow global scrolling */
+  overflow: hidden;
 }
 
 .backgroundWrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+}
+
+.backgroundFallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  object-fit: cover;
+}
+
+.backgroundImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* THE FADE: This creates the transition from image to black grid */
@@ -35,15 +45,9 @@
   z-index: 1;
 }
 
-.backgroundImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .contentOverlay {
   background-color: var(--overlay-bg-medium);
-  backdrop-filter: blur(8px); /* Softens the background for text readability */
+  backdrop-filter: blur(8px);
   border-radius: var(--overlay-border-radius);
   padding: 2rem;
   display: flex;
@@ -51,6 +55,7 @@
   align-items: center;
   box-shadow: var(--overlay-box-shadow);
   z-index: 2;
+  position: relative;
 }
 
 .textWrapper {

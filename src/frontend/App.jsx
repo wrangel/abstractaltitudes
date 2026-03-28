@@ -1,6 +1,6 @@
 // src/frontend/App.jsx
 import React, { Suspense, lazy, useState } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { preload } from "swr";
 

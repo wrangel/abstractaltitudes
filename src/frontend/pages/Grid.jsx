@@ -1,3 +1,5 @@
+// src/frontend/pages/Grid.js
+
 import React, { useCallback } from "react";
 import PortfolioGrid from "../components/PortfolioGrid";
 import PopupViewer from "../components/PopupViewer";

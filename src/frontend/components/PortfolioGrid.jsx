@@ -1,12 +1,10 @@
 // src/frontend/components/PortfolioGrid.jsx
 
-import React from "react";
 import { Masonry } from "masonic";
 import PortfolioItem from "./PortfolioItem";
 import LoadingErrorHandler from "./LoadingErrorHandler";
 import { useLoadingError } from "../hooks/useLoadingError";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 
 const PortfolioGrid = ({ items, onItemClick }) => {
@@ -28,7 +26,7 @@ const PortfolioGrid = ({ items, onItemClick }) => {
       <PortfolioItem
         item={data}
         width={width}
-        onItemClick={onItemClick} // ✅ FIXED: Correct prop name
+        onItemClick={onItemClick}
         revealRef={revealRef}
       />
     );

@@ -47,20 +47,20 @@ const NavigationPages = memo(({ onNavigate }) => {
   const location = useLocation();
   const isAtRoot = location.pathname === "/";
 
-  const handleAction = (path, isScrollAction) => {
-    if (isAtRoot && isScrollAction) {
-      const elementId = path === "top" ? "root" : "main-content";
-      document
-        .getElementById(elementId)
-        ?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      onNavigate(path);
-    }
+  const scrollToGrid = () => {
+    document.getElementById("main-content")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
-  // Logic:
-  // If on Map: Show Home (links to /) and Grid (links to /#grid)
-  // If on Home/Grid: Show Map button and a toggle between Top/Gallery
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   const renderButtons = () => {
     if (location.pathname === "/map") {
       return (
@@ -94,14 +94,14 @@ const NavigationPages = memo(({ onNavigate }) => {
         </button>
         <button
           className={styles.fabButton}
-          onClick={() => handleAction("main-content", true)}
+          onClick={scrollToGrid}
           aria-label="Scroll to Grid"
         >
           <GridIcon />
         </button>
         <button
           className={styles.fabButton}
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onClick={scrollToTop}
           aria-label="Scroll to Top"
         >
           <HomeIcon />

@@ -1,3 +1,5 @@
+// src/frontend/pages/Home.js
+
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";

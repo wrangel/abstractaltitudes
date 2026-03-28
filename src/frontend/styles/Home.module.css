@@ -1,3 +1,6 @@
+/* src/frontend/styles/Home.module.css - FULL FILE */
+/* Original perfect sizing + Inter thin font only */
+
 .Home {
   display: flex;
   flex-direction: column;
@@ -33,7 +36,6 @@
   object-fit: cover;
 }
 
-/* THE FADE: This creates the transition from image to black grid */
 .backgroundWrapper::after {
   content: "";
   position: absolute;
@@ -68,6 +70,28 @@
   text-shadow: var(--text-shadow-heavy);
 }
 
+/* FORCE INTER THIN - keeps original perfect sizing via CSS vars */
+.Home h1,
+.Home h1 span {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 100 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+.Home h2 {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 100 !important;
+  font-style: italic !important;
+  -webkit-font-smoothing: antialiased !important;
+  opacity: 0.88 !important;
+}
+
+.scroll-indicator * {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 100 !important;
+}
+
 .imageCenterWrapper {
   display: flex;
   justify-content: center;
@@ -91,7 +115,6 @@
 .Home h2 {
   font-size: var(--font-size-medium);
   margin: 0.5rem 0 0 0;
-  opacity: 0.9;
 }
 
 .break {
@@ -102,7 +125,6 @@
   padding-top: 2vh;
 }
 
-/* Very short viewports check */
 .veryShortViewport {
   padding-top: 5vh !important;
 }

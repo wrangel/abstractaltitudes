@@ -1,5 +1,3 @@
-// src/frontend/pages/Grid.js
-
 import React, { useCallback } from "react";
 import PortfolioGrid from "../components/PortfolioGrid";
 import PopupViewer from "../components/PopupViewer";
@@ -45,13 +43,63 @@ function Grid() {
   return (
     <>
       <MascotCorner />
+
+      {/* DEBUG BOX - FIXED POSITION */}
+      <div
+        style={{
+          position: "fixed",
+          top: "10px",
+          left: "10px",
+          background: "lime",
+          color: "black",
+          padding: "1rem",
+          zIndex: 9999,
+          fontSize: "16px",
+          fontWeight: "bold",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+        }}
+      >
+        DEBUG: {items?.length || 0} items | Loading: {isLoading?.toString()} |
+        Error: {error || "none"}
+        <br />
+        {items[0] && (
+          <>
+            First: {items[0].name || "NO NAME"} | Thumb:{" "}
+            {items[0].thumbnailUrl ? "YES" : "NO"}
+          </>
+        )}
+      </div>
+
       <div className={styles.Grid}>
         {items.length > 0 ? (
           <ErrorBoundary>
+            {/* TEMPORARY CONTENT VISIBILITY TEST */}
+            <div
+              style={{
+                color: "white",
+                padding: "2rem",
+                background: "rgba(255,0,0,0.3)",
+                border: "3px solid yellow",
+                marginBottom: "2rem",
+                textAlign: "center",
+              }}
+            >
+              GRID CONTENT TEST - {items.length} items ready
+            </div>
             <PortfolioGrid items={items} onItemClick={onItemClick} />
           </ErrorBoundary>
         ) : (
-          <p>No items to display.</p>
+          <div
+            style={{
+              color: "white",
+              padding: "4rem",
+              textAlign: "center",
+              background: "rgba(0,255,0,0.1)",
+            }}
+          >
+            No items to display. Check useItems() hook.
+          </div>
         )}
 
         {/* Credits Section */}

@@ -1,3 +1,5 @@
+// src/frontend/components/PortfolioGrid.jsx
+
 import React from "react";
 import { Masonry } from "masonic";
 import PortfolioItem from "./PortfolioItem";
@@ -15,18 +17,22 @@ const PortfolioGrid = ({ items, onItemClick }) => {
   const gutter = 24;
 
   const getColumnWidth = () => {
-    // Safety check: if viewport width isn't loaded yet, return a sensible default
     if (!w || w <= 0) return 300;
+    return Math.floor(w / 3) - gutter; // Responsive 3 columns
   };
 
   const columnWidth = getColumnWidth();
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
-  const renderItem = ({ data }) => {
-    const width = Math.floor(columnWidth);
-    const originalWidth = data.originalWidth || 1;
-    const originalHeight = data.originalHeight || 1;
-    const height = Math.round((width * originalHeight) / originalWidth);
+  const renderItem = ({ data, width }) => {
+    // ✅ FIXED: Returns JSX element!
+    return (
+      <PortfolioItem
+        item={data}
+        width={width}
+        onClick={() => onItemClick(data)}
+        revealRef={revealRef}
+      />
+    );
   };
 
   return (

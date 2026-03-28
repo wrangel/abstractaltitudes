@@ -59,7 +59,7 @@ const Home = () => {
   const scrollToGrid = () => {
     document
       .getElementById("main-content")
-      ?.scrollIntoView({ behavior: "smooth" });
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -77,9 +77,9 @@ const Home = () => {
         />
       </Helmet>
 
-      {/* FIXED BACKGROUND: Parallax effect as grid scrolls over */}
-      {randomPano && (
-        <div className={styles.backgroundWrapper}>
+      {/* Hero Background: Now contained within section */}
+      <div className={styles.backgroundWrapper}>
+        {randomPano ? (
           <LazyImage
             src={buildQueryStringWidthHeight(randomPano.thumbnailUrl, {
               width,
@@ -89,8 +89,10 @@ const Home = () => {
             className={styles.backgroundImage}
             placeholderSrc=""
           />
-        </div>
-      )}
+        ) : (
+          <div className={styles.backgroundFallback} aria-hidden="true" />
+        )}
+      </div>
 
       {isViewerOpen && currentIndex !== null && (
         <PopupViewer

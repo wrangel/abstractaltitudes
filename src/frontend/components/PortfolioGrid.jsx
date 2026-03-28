@@ -1,5 +1,6 @@
 // src/frontend/components/PortfolioGrid.jsx
 
+import React from "react";
 import { Masonry } from "masonic";
 import PortfolioItem from "./PortfolioItem";
 import LoadingErrorHandler from "./LoadingErrorHandler";
@@ -12,11 +13,9 @@ const PortfolioGrid = ({ items, onItemClick }) => {
   const { w } = useViewportSize();
   const revealRef = useScrollReveal();
 
-  const gutter = 24;
-
   const getColumnWidth = () => {
     if (!w || w <= 0) return 300;
-    return Math.floor(w / 3) - gutter; // Responsive 3 columns
+    return Math.floor(w / 3) - 24; // Responsive 3 columns
   };
 
   const columnWidth = getColumnWidth();
@@ -38,8 +37,8 @@ const PortfolioGrid = ({ items, onItemClick }) => {
         <Masonry
           items={items || []}
           columnWidth={columnWidth}
-          columnGutter={gutter}
-          rowGutter={gutter}
+          columnGutter={24} // Horizontal spacing
+          rowGutter={12} // Vertical spacing (half of horizontal)
           render={renderItem}
         />
       </div>

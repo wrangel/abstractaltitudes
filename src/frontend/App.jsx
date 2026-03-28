@@ -1,4 +1,5 @@
 // src/frontend/App.jsx
+
 import React, { Suspense, lazy, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";

@@ -1,9 +1,9 @@
-/* src/frontend/styles/Navigation.module.css */
-
 :root {
   --control-right: 1rem;
   --icon-size-default: 20px;
   --icon-size-arrow: 22px;
+  --fab-hover-color: rgba(0, 0, 0, 0.6);
+  --fab-active-color: var(--primary-color);
 }
 
 .fabContainer {

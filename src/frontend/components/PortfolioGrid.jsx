@@ -1,82 +1,46 @@
 // src/frontend/components/PortfolioGrid.jsx
 
 import { Masonry } from "masonic";
-import LoadingErrorHandler from "./LoadingErrorHandler";
 import PortfolioItem from "./PortfolioItem";
+import LoadingErrorHandler from "./LoadingErrorHandler";
 import { useLoadingError } from "../hooks/useLoadingError";
-import { useResponsiveGridWithRatio } from "../hooks/useResponsiveGridWithRatio";
 import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
-/**
- * PortfolioGrid component renders a masonry grid layout of portfolio items using Masonic.
- *
- * It handles loading and error states using the useLoadingError hook,
- * and displays the portfolio items in a responsive masonry layout.
- *
- * @param {Object} props - Component props.
- * @param {Array} props.items - Array of portfolio items to display.
- * @param {Function} props.onItemClick - Callback function when an item is clicked.
- *
- * @returns {JSX.Element} The masonry grid wrapped in loading/error handler.
- */
 const PortfolioGrid = ({ items, onItemClick }) => {
   const { isLoading, error } = useLoadingError(false);
   const { w } = useViewportSize();
-  const { columnWidth, columnGutter, rowGutter } = useResponsiveGridWithRatio(
-    16,
-    -2 / 16
-  );
+  const revealRef = useScrollReveal();
 
-  // Get device pixel ratio for sharp thumbnails on high-DPI screens
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  const getColumnWidth = () => {
+    if (!w || w <= 0) return 300;
+    return Math.floor(w / 3) - 24; // Responsive 3 columns
+  };
 
-  const renderItem = ({ data }) => {
-    // Responsive column width from grid layout
-    const width = Math.floor(columnWidth);
+  const columnWidth = getColumnWidth();
 
-    // Use original dimensions or fallback to 1 to avoid div by zero
-    const originalWidth = data.originalWidth || 1;
-    const originalHeight = data.originalHeight || 1;
-
-    // Calculate proportional height for aspect ratio
-    const height = Math.round((width * originalHeight) / originalWidth);
-
-    // Limit requested image size to thumbnail actual size to avoid upscaling
-    const finalWidth = Math.min(width, data.thumbnailWidth || width);
-    const finalHeight = Math.min(height, data.thumbnailHeight || height);
-
-    // Multiply by dpr for crisp thumbnails
-    const requestedWidth = Math.round(finalWidth * dpr);
-    const requestedHeight = Math.round(finalHeight * dpr);
-
-    // Build BunnyCDN URL requesting resized image for the calculated and DPI-scaled size
-    const imageSrc = buildQueryStringWidthHeight(data.thumbnailUrl, {
-      width: requestedWidth,
-      height: requestedHeight,
-    });
-
-    // Pass optimized thumbnail URL and original data to PortfolioItem
+  const renderItem = ({ data, width }) => {
     return (
       <PortfolioItem
-        key={data.id}
-        item={{ ...data, thumbnailUrl: imageSrc }}
+        item={data}
+        width={width}
         onItemClick={onItemClick}
-        useLazyImage={true}
+        revealRef={revealRef}
       />
     );
   };
 
   return (
     <LoadingErrorHandler isLoading={isLoading} error={error}>
-      <Masonry
-        items={items}
-        columnWidth={columnWidth}
-        columnGutter={columnGutter}
-        rowGutter={rowGutter}
-        // maxColumnCount={4} // helps with petering out columns, but changes the order
-        render={renderItem}
-      />
+      <div style={{ padding: "0 20px" }}>
+        <Masonry
+          items={items || []}
+          columnWidth={columnWidth}
+          columnGutter={24} // Horizontal spacing
+          rowGutter={12} // Vertical spacing (half of horizontal)
+          render={renderItem}
+        />
+      </div>
     </LoadingErrorHandler>
   );
 };

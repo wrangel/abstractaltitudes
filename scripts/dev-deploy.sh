@@ -19,7 +19,7 @@ if [[ "$1" == "-u" ]]; then
     echo "🚀📦 FULL UPGRADE: Latest secure packages..."
 
     # System updates
-    brew update && brew cleanup && brew doctor && brew autoremove
+    brew update && brew upgrade && brew cleanup && brew doctor && brew autoremove
     pnpm self-update
 
     # Clean slate

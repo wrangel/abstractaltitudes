@@ -1,362 +1,139 @@
-/* src/frontend/styles/Home.module.css */
+/* src/frontend/styles/Home.module.css - FULL FILE */
+/* Original perfect sizing + Inter thin font only */
 
 .Home {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
-  max-height: 100vh; /* Limit max height to viewport */
-  overflow-y: auto; /* Allow internal vertical scrolling */
   width: 100%;
   padding: var(--spacing-medium);
   box-sizing: border-box;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
-.portraitLayout {
-  justify-content: flex-start; /* More natural vertical flow */
-  padding-top: 5vh; /* Reduced from 15vh */
+.backgroundWrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.mainContentWrapper {
-  flex-grow: 1;
+.backgroundFallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  object-fit: cover;
+}
+
+.backgroundImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.backgroundWrapper::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30vh;
+  background: linear-gradient(to top, black 0%, transparent 100%);
+  z-index: 1;
+}
+
+.contentOverlay {
+  background-color: var(--overlay-bg-medium);
+  backdrop-filter: blur(8px);
+  border-radius: var(--overlay-border-radius);
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  box-shadow: var(--overlay-box-shadow);
+  z-index: 2;
+  position: relative;
 }
 
 .textWrapper {
-  max-width: 100%;
   text-align: center;
-  margin-bottom: calc(var(--spacing-medium));
+  margin-bottom: var(--spacing-medium);
   color: var(--text-color);
-  z-index: 2;
 }
 
-.imageWrapper {
+.textShadow {
+  text-shadow: var(--text-shadow-heavy);
+}
+
+/* FORCE INTER THIN - keeps original perfect sizing via CSS vars */
+.Home h1,
+.Home h1 span {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 100 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+.Home h2 {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 100 !important;
+  font-style: italic !important;
+  -webkit-font-smoothing: antialiased !important;
+  opacity: 0.88 !important;
+}
+
+.scroll-indicator * {
+  font-family: "Inter", sans-serif !important;
+  font-weight: 100 !important;
+}
+
+.imageCenterWrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 0;
-  position: relative;
-  z-index: 2;
+  width: 100%;
+  cursor: pointer;
 }
 
 .image {
-  display: block; /* keeps image free from inline gap */
+  max-height: 25vh;
   width: auto;
-  height: auto;
-  max-width: 100vw;
-  max-height: 22vh; /* Mascot Height */
   object-fit: contain;
-  border-radius: 8px;
-  z-index: 2;
-
-  box-shadow: none; /* Remove any shadow from the image itself */
-  transition: box-shadow 0.3s ease; /* Optional, keep if you have hover effects */
-}
-
-.Home h1,
-.Home h2 {
-  color: var(--text-color);
-  font-family: var(--font-family);
-  font-weight: var(--font-weight);
-  line-height: 1.3;
-  letter-spacing: 0.5px;
-  z-index: 2;
-  margin-bottom: var(--spacing-small); /* common bottom margin */
 }
 
 .Home h1 {
   font-size: var(--font-size-large);
-  margin: 0 0 var(--spacing-small) 0;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
 }
 
 .Home h2 {
   font-size: var(--font-size-medium);
-  margin-top: var(--spacing-small);
+  margin: 0.5rem 0 0 0;
 }
 
 .break {
   display: block;
 }
 
-.backgroundWrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  z-index: 0;
-  pointer-events: none;
+.portraitLayout {
+  padding-top: 2vh;
 }
 
-.backgroundWrapper img {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  height: 100%;
-  width: auto;
-  max-height: 100vh;
-  transform: translate(-50%, -50%);
-  object-fit: cover;
-  object-position: center center;
-  user-select: none;
-  pointer-events: none;
-  filter: none;
-  -webkit-user-drag: none;
+.veryShortViewport {
+  padding-top: 5vh !important;
 }
 
-.contentOverlay {
-  background-color: var(--overlay-bg-medium);
-  border-radius: var(--overlay-border-radius);
-  padding: 1rem 2rem 0.25rem;
-  display: inline-block;
-  box-shadow: var(--overlay-box-shadow);
-  z-index: 2;
-}
-
-/* Skip link for accessibility */
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
-
-.skip-link:focus {
-  position: static;
-  width: auto;
-  height: auto;
-  clip: auto;
-  overflow: visible;
-  background: var(--primary-color);
-  color: white;
-  padding: 0.5rem 1rem;
-  z-index: 10000;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-/* ---------- sticky footer ---------- */
-footer.credits {
-  font-family: var(--font-family);
-  font-size: 0.95rem;
-  color: var(--text-color);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 3rem;
-  width: 100%;
-  padding: 0 1.5rem;
-  box-sizing: border-box;
-  margin-top: auto;
-  position: relative;
-  overflow: visible;
-  white-space: nowrap;
-  z-index: 2;
-  flex-shrink: 0;
-}
-
-footer.credits .contentOverlay {
-  background-color: var(--overlay-bg-medium);
-  border-radius: var(--overlay-border-radius);
-  padding: 1rem 2rem;
-  display: inline-block;
-  box-shadow: var(--overlay-box-shadow);
-  z-index: 2;
-}
-
-footer.credits .textShadow {
-  text-shadow: var(--text-shadow-heavy);
-}
-
-.creditsList {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  gap: 0.5rem 1rem;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.creditsList li {
-  display: inline-flex;
-  align-items: center;
-}
-
-footer.credits a {
-  color: var(--text-color);
-  text-decoration: none;
-  font-weight: 500;
-  white-space: nowrap;
-  display: inline-block;
-  padding: 0 0.3em;
-  transition: color var(--transition-duration);
-}
-
-footer.credits a:hover,
-footer.credits a:focus {
-  color: var(--primary-color-dark);
-  text-decoration: underline;
-}
-
-/* ---------- media queries ---------- */
-@media (orientation: landscape) and (min-width: 48em) {
-  .mainContentWrapper {
-    flex-direction: row;
-    justify-content: center;
-    gap: 2rem;
-  }
-}
-
-@media (orientation: portrait) {
-  .Home {
-    justify-content: flex-start;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 600px) {
-  .Home h1 {
-    font-size: calc(var(--font-size-medium) * 0.85);
-    line-height: 1.1;
-    margin-bottom: var(--spacing-small);
-  }
-  .Home h2 {
-    font-size: calc(var(--font-size-small) * 0.9);
-    margin-top: 0.25rem;
-    margin-bottom: var(--spacing-small);
-  }
-  .imageWrapper {
-    margin-bottom: var(--spacing-medium);
-  }
-  .image {
-    max-height: 50vh;
-    max-width: 90vw;
-  }
-  .portraitLayout {
-    padding-top: 10vh;
-  }
-}
-
-@media (max-width: 600px), (max-height: 600px) {
-  footer.credits {
-    position: fixed;
-    bottom: var(--spacing-small);
-    left: var(--spacing-small);
-    width: auto;
-    max-width: 90vw;
-    height: auto;
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-    white-space: normal;
-    text-align: left;
-    background-color: var(--overlay-bg-medium);
-    box-shadow: var(--overlay-box-shadow);
-    border-radius: var(--overlay-border-radius);
-    z-index: 1000;
-  }
-  footer.credits .contentOverlay {
-    padding: 0;
-    box-shadow: none;
-    background: transparent;
-  }
-  .creditsList {
-    flex-direction: column;
-    gap: 0.25rem;
-    justify-content: flex-start;
-  }
-  .creditsList li {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 480px) {
-  footer.credits {
-    display: none;
-  }
-}
-
-@media (max-width: 48em) {
+@media (max-width: 768px) {
   .Home h1 {
     font-size: var(--font-size-medium);
   }
-}
-
-@media (max-width: 30em) {
-  .Home h1 {
-    font-size: var(--font-size-small);
-  }
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-/* Fix for very narrow landscape viewports with low height to prevent scrollbar */
-.veryShortViewport {
-  padding-top: 1vh !important;
-  padding-bottom: 1vh !important;
-  max-height: 100vh !important;
-  overflow-y: hidden !important;
-}
-
-/* Optional: reduce image size a bit for very short heights to save vertical space */
-@media (orientation: landscape) and (max-height: 360px) {
   .image {
-    max-height: 15vh;
-  }
-}
-
-.imageCenterWrapper {
-  display: flex;
-  justify-content: center; /* centers horizontally */
-  align-items: center; /* centers vertically, optional if only horizontal needed */
-  width: 100%; /* full width of parent container */
-}
-
-/* Show visible focus outline only when keyboard navigation is detected */
-*:focus-visible {
-  outline-color: var(
-    --primary-color,
-    #005fcc
-  ); /* Use theme primary or fallback blue */
-  outline-style: solid;
-  outline-width: 3px;
-  outline-offset: 2px; /* Space so outline doesn't touch element edge */
-  transition: outline-color 0.15s ease-in-out;
-  border-radius: 4px; /* Optional: soften corners to match design */
-}
-
-/* Maintain a visible focus state on interactive elements */
-button:focus-visible,
-a:focus-visible,
-[role="button"]:focus-visible {
-  box-shadow: 0 0 0 3px var(--primary-color, #005fcc);
-}
-
-/* Avoid removing outlines entirely */
-:focus {
-  outline: none;
-}
-
-/* High contrast mode compatibility */
-@media (forced-colors: active) {
-  *:focus-visible {
-    outline-color: Highlight;
-    outline-style: solid;
-    outline-width: 3px;
-    outline-offset: 2px;
+    max-height: 20vh;
   }
 }

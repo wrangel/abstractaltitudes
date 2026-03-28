@@ -1,7 +1,3 @@
-/* src/frontend/styles/Global.css
-   Inter Variable tuned to feel like Helvetica Neue
-*/
-
 :root {
   /* Colors & spacing */
   --background-color: black;
@@ -9,9 +5,10 @@
   --gutter-size: 20px;
   --transition-duration: 0.3s;
 
-  /* Cross-platform stack (Inter first) */
-  --font-stack: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  /* Cross-platform stack */
+  --font-stack:
+    Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
 
   /* Core design colors */
   --primary-color: #4da6ff;
@@ -44,9 +41,6 @@
   --overlay-bg-color: rgba(0, 0, 0, 0.7);
   --thumbnail-opacity: 0.5;
 
-  --message-font-size: 1.2rem;
-  --message-color: #333;
-
   --zoom-control-bg: white;
   --zoom-control-border-radius: 4px;
   --zoom-control-box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
@@ -55,90 +49,91 @@
   --popup-text-color: white;
   --popup-padding: 10px;
   --popup-border-radius: 5px;
-  --close-button-color: #ffffff;
-  --close-button-font-size: 16px;
-  --link-color: #00f;
 
-  --panorama-bg-color: black;
-
-  --fab-active-color: rgba(60, 60, 60, 0.9);
-  --fab-hover-color: rgba(60, 60, 60, 0.8);
-
-  --adjustment-height: 15px;
-  --max-width-popup: 280px;
-
-  /* Shadows & overlays */
-  --text-shadow-heavy: 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6),
+  --text-shadow-heavy:
+    0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6),
     0 0 20px rgba(0, 0, 0, 0.4);
-  --overlay-bg-light: rgba(0, 0, 0, 0.3);
   --overlay-bg-medium: rgba(0, 0, 0, 0.35);
   --overlay-bg-heavy: rgba(0, 0, 0, 0.7);
   --overlay-border-radius: 0.5rem;
   --overlay-box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
 }
 
-/* Accessibility skip link */
-a[href="#main-content"] {
-  position: absolute;
-  left: -10000px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+/* Base layout */
+html {
+  scroll-behavior: smooth;
+  background: var(--background-color);
 }
 
-/* Typography & base layout */
 body {
   background-color: var(--background-color);
   color: var(--text-color);
   margin: 0;
   padding: 0;
-
   font-family: var(--font-stack);
   font-weight: var(--body-wght);
-  font-optical-sizing: auto;
-  font-variation-settings: "opsz" 14;
-  letter-spacing: var(--track-tight);
-
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-synthesis: none;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
-/* Headings */
-h1,
-h2 {
-  font-weight: 600;
-  font-variation-settings: "wght" 150, "opsz" 20;
-  letter-spacing: -0.01em;
+/* Scroll Indicator for Home section */
+.scroll-indicator {
+  position: absolute;
+  bottom: 5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+  color: var(--text-color);
+  text-shadow: var(--text-shadow-heavy);
+  animation: bounce 2s infinite;
 }
 
-h3,
-h4 {
-  font-weight: 00;
-  font-variation-settings: "wght" 150, "opsz" 18;
-  letter-spacing: -0.008em;
+.scroll-indicator span {
+  font-size: 2rem;
+  line-height: 1;
 }
 
-/* Inline code */
-code {
-  font-family: var(--font-stack);
-  font-weight: 500;
-  font-variation-settings: "wght" 150, "opsz" 12;
+.map-fab:hover {
+  transform: scale(1.05);
+  background-color: var(--primary-color-dark);
 }
 
-/* Animations */
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+/* Entrance animation for Masonry Grid Items */
+.grid-item-fade {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUpFade 0.6s ease-out forwards;
+}
+
+@keyframes slideUpFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
   100% {
-    transform: rotate(360deg);
+    transform: translate(-50%, 0);
+  }
+  40% {
+    transform: translate(-50%, -10px);
+  }
+  60% {
+    transform: translate(-50%, -5px);
   }
 }
 
-/* Accessibility utility */
+/* Standard accessibility */
 .visually-hidden {
   position: absolute !important;
   width: 1px;

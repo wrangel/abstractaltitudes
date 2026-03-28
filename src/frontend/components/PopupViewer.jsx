@@ -17,7 +17,17 @@ const PopupViewer = ({ item, isOpen, onClose, onNext, onPrevious }) => {
   return (
     <ErrorBoundary>
       <FullScreenModal isOpen={isOpen} onClose={onClose}>
-        <div style={{ width: "100%", height: "100%" }}>
+        {/* ✅ FIXED: Constrain Viewer to proper size */}
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            maxWidth: "95vw",
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <Viewer
             item={item}
             isOpen={isOpen}

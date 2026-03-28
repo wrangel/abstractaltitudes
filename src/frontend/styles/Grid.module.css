@@ -1,46 +1,65 @@
-/* src/frontend/styles/Grid.module.css */
-
 .Grid {
   text-align: center;
-  padding: var(--spacing-large);
-  max-width: 1200px;
+  padding: var(--spacing-large) var(--spacing-medium);
+  max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1; /* Lowered from 2 - hero is now contained */
+  background-color: var(--background-color);
 }
 
-.headerWrapper {
+/* Footer content wrapper - was missing */
+.footerContent {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Final Footer Styling */
+.finalFooter {
+  margin-top: 5rem;
+  padding: 4rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.creditsList {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  min-height: 10vh;
-  padding: var(--spacing-medium) 0;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  gap: 1.5rem;
 }
 
-.headerWrapper h1 {
-  font-size: var(--font-size-large);
-  margin-bottom: var(--spacing-small);
-}
-
-.headerWrapper p {
-  font-size: var(--font-size-medium);
+.creditsList a {
   color: var(--text-color);
-  max-width: 600px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 300;
+  opacity: 0.7;
+  transition:
+    opacity var(--transition-duration),
+    color var(--transition-duration);
+}
+
+.creditsList a:hover {
+  opacity: 1;
+  color: var(--primary-color);
+}
+
+.copyright {
+  font-size: 0.8rem;
+  opacity: 0.4;
+  letter-spacing: 1px;
 }
 
 @media (max-width: 768px) {
   .Grid {
     padding: var(--spacing-medium);
   }
-
-  .headerWrapper {
-    min-height: 15vh;
-  }
-
-  .headerWrapper h1 {
-    font-size: var(--font-size-medium);
-  }
-
-  .headerWrapper p {
-    font-size: var(--font-size-small);
+  .creditsList {
+    flex-direction: column;
+    gap: 1rem;
   }
 }

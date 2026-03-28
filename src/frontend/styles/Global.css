@@ -98,25 +98,6 @@ body {
   line-height: 1;
 }
 
-/* Floating Action Button for Map toggle */
-.map-fab {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 1000;
-  background-color: var(--overlay-bg-heavy);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0.8rem 1.4rem;
-  border-radius: 50px;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--overlay-box-shadow);
-  font-family: var(--font-stack);
-  font-weight: 500;
-  transition: transform 0.2s ease;
-}
-
 .map-fab:hover {
   transform: scale(1.05);
   background-color: var(--primary-color-dark);

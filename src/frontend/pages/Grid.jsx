@@ -6,7 +6,6 @@ import PopupViewer from "../components/PopupViewer";
 import { useItems } from "../hooks/useItems";
 import { useItemViewer } from "../hooks/useItemViewer";
 import LoadingOverlay from "../components/LoadingOverlay";
-import MascotCorner from "../components/MascotCorner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import styles from "../styles/Grid.module.css";
 
@@ -44,7 +43,6 @@ function Grid() {
 
   return (
     <>
-      <MascotCorner />
       <div className={styles.Grid}>
         {items.length > 0 ? (
           <ErrorBoundary>

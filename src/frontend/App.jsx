@@ -1,12 +1,10 @@
 // src/frontend/App.jsx
 
-import React, { Suspense, lazy, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { preload } from "swr";
 
 import ErrorBoundary from "./components/ErrorBoundary";
-import NavigationPages from "./components/NavigationPages";
 import LoadingOverlay from "./components/LoadingOverlay";
 import { COMBINED_DATA_URL } from "./constants";
 
@@ -15,17 +13,8 @@ preload(COMBINED_DATA_URL, fetcher);
 
 const Home = lazy(() => import("./pages/Home"));
 const Grid = lazy(() => import("./pages/Grid"));
-const Map = lazy(() => import("./pages/Map"));
 
 function App() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [showMap, setShowMap] = useState(false);
-
-  // We only show the Map if the user explicitly navigates to /map
-  // or clicks your new Map toggle.
-  const isMapRoute = location.pathname === "/map";
-
   return (
     <HelmetProvider>
       <div className="App">
@@ -35,24 +24,12 @@ function App() {
 
         <ErrorBoundary>
           <Suspense fallback={<LoadingOverlay />}>
-            {isMapRoute ? (
-              <Map />
-            ) : (
-              <>
-                {/* 1. HERO SECTION */}
-                <Home />
-
-                {/* 2. MASONRY SECTION (With an ID for the scroll jump) */}
-                <div id="main-content">
-                  <Grid />
-                </div>
-              </>
-            )}
+            <Home />
+            <div id="main-content">
+              <Grid />
+            </div>
           </Suspense>
         </ErrorBoundary>
-
-        {/* This stays to handle your logo/menu/map navigation */}
-        <NavigationPages onNavigate={navigate} />
       </div>
     </HelmetProvider>
   );

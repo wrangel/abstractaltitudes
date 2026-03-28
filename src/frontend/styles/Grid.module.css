@@ -1,18 +1,21 @@
-/* src/frontend/styles/Grid.module.css */
-
 .Grid {
   text-align: center;
   padding: var(--spacing-large) var(--spacing-medium);
-  max-width: 1400px; /* Slightly wider to accommodate 3 columns comfortably */
+  max-width: 1400px;
   margin: 0 auto;
   position: relative;
-  z-index: 2; /* Sits above the fixed background panorama */
-  background-color: var(
-    --background-color
-  ); /* Provides a solid backdrop as it scrolls up */
+  z-index: 1; /* Lowered from 2 - hero is now contained */
+  background-color: var(--background-color);
 }
 
-/* --- Final Footer Styling --- */
+/* Footer content wrapper - was missing */
+.footerContent {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Final Footer Styling */
 .finalFooter {
   margin-top: 5rem;
   padding: 4rem 1rem;

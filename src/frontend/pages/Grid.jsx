@@ -1,4 +1,5 @@
 // src/frontend/pages/Grid.js
+
 import React, { useCallback } from "react";
 import PortfolioGrid from "../components/PortfolioGrid";
 import PopupViewer from "../components/PopupViewer";
@@ -47,14 +48,13 @@ function Grid() {
       <div className={styles.Grid}>
         {items.length > 0 ? (
           <ErrorBoundary>
-            {/* The actual masonry component */}
             <PortfolioGrid items={items} onItemClick={onItemClick} />
           </ErrorBoundary>
         ) : (
           <p>No items to display.</p>
         )}
 
-        {/* --- CREDITS SECTION: The "End of Scroll" Footer --- */}
+        {/* Credits Section */}
         <footer className={styles.finalFooter}>
           <div className={styles.footerContent}>
             <ul className={styles.creditsList}>

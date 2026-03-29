@@ -181,9 +181,7 @@ const Home = () => {
               letterSpacing: "3px",
               marginBottom: "0.5rem",
             }}
-          >
-            EXPLORE
-          </p>
+          ></p>
           <span>↓</span>
         </div>
       </section>

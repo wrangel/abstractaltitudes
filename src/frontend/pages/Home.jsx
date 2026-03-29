@@ -147,12 +147,8 @@ const Home = () => {
       >
         <div className={styles.contentOverlay}>
           <div className={`${styles.textWrapper} ${styles.textShadow}`}>
-            <h1>
-              From lofty heights,
-              <br />
-              <span className={styles.break}>we muse on marvels</span>
-            </h1>
-            <h2>Abstract Altitudes</h2>
+            <h1>Abstract Altitudes</h1>
+            <h2>Aerial Photography</h2>
           </div>
 
           <div

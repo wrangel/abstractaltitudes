@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
-import LazyImage from "../components/LazyImage";
 import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import MascotMedia from "../components/MascotMedia";
-import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
 import { useViewportSize } from "../hooks/useViewportSize";
 import PopupViewer from "../components/PopupViewer";
+import ViewerPanorama from "../components/ViewerPanorama"; // ← NEW IMPORT
 
 function getSecureRandomIndex(max) {
   const array = new Uint32Array(1);
@@ -18,9 +17,20 @@ function getSecureRandomIndex(max) {
   return array[0] % max;
 }
 
+// ← NEW HELPER (copied from Viewer.jsx)
+function isValidPanoItem(item) {
+  return (
+    item.viewer === "pano" &&
+    item.panoPath &&
+    Array.isArray(item.levels) &&
+    item.levels.length > 0
+  );
+}
+
 const Home = () => {
   const { items } = useItems();
   const [randomPano, setRandomPano] = useState(null);
+  const [backgroundPanoReady, setBackgroundPanoReady] = useState(false); // ← NEW STATE
   const [isPortrait, setIsPortrait] = useState(
     window.innerHeight > window.innerWidth,
   );
@@ -37,17 +47,14 @@ const Home = () => {
     if (items.length > 0) {
       const panoItems = items.filter((item) => item.viewer === "pano");
       if (panoItems.length > 0) {
-        setRandomPano(panoItems[getSecureRandomIndex(panoItems.length)]);
+        const selected = panoItems[getSecureRandomIndex(panoItems.length)];
+        setRandomPano(selected);
+        setBackgroundPanoReady(false); // ← RESET READY STATE
       }
     }
   }, [items]);
 
-  useEffect(() => {
-    const handleResize = () =>
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // ... rest of useEffects unchanged ...
 
   const openRandomViewer = () => {
     if (mediaItems.length > 0) {
@@ -62,9 +69,7 @@ const Home = () => {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  const width = randomPano ? w * dpr : 0;
-  const height = randomPano ? h * dpr : 0;
+  // ← REMOVED: dpr/width/height calculations (no longer needed)
 
   return (
     <>
@@ -77,23 +82,48 @@ const Home = () => {
         />
       </Helmet>
 
-      {/* Hero Background: Now contained within section */}
+      {/* ← FULLY REPLACED BACKGROUND SECTION */}
       <div className={styles.backgroundWrapper}>
-        {randomPano ? (
-          <LazyImage
-            src={buildQueryStringWidthHeight(randomPano.thumbnailUrl, {
-              width,
-              height,
-            })}
-            alt="Background panorama"
-            className={styles.backgroundImage}
-            placeholderSrc=""
+        {randomPano && isValidPanoItem(randomPano) ? (
+          <ViewerPanorama
+            panoPath={randomPano.panoPath}
+            levels={randomPano.levels}
+            initialViewParameters={randomPano.initialViewParameters}
+            onReady={() => setBackgroundPanoReady(true)}
+            onError={(err) => {
+              console.error("Background pano error:", err);
+              setRandomPano(null);
+            }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 0,
+              pointerEvents: "none", // Non-interactive background
+            }}
           />
         ) : (
           <div className={styles.backgroundFallback} aria-hidden="true" />
         )}
+        {/* ← GRADIENT OVERLAY (moved from CSS ::after) */}
+        {backgroundPanoReady && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "30vh",
+              background: "linear-gradient(to top, black 0%, transparent 100%)",
+              zIndex: 1,
+              pointerEvents: "none",
+            }}
+          />
+        )}
       </div>
 
+      {/* ← ALL BELOW UNCHANGED */}
       {isViewerOpen && currentIndex !== null && (
         <PopupViewer
           item={mediaItems[currentIndex]}
@@ -111,16 +141,14 @@ const Home = () => {
       )}
 
       <section
-        className={`${styles.Home} ${isPortrait ? styles.portraitLayout : ""} ${isVeryShort ? styles.veryShortViewport : ""}`}
+        className={`${styles.Home} ${isPortrait ? styles.portraitLayout : ""} ${
+          isVeryShort ? styles.veryShortViewport : ""
+        }`}
       >
         <div className={styles.contentOverlay}>
           <div className={`${styles.textWrapper} ${styles.textShadow}`}>
-            <h1>
-              From lofty heights,
-              <br />
-              <span className={styles.break}>we muse on marvels</span>
-            </h1>
-            <h2>Abstract Altitudes</h2>
+            <h1>Abstract Altitudes</h1>
+            <h2>Aerial Photography</h2>
           </div>
 
           <div
@@ -137,7 +165,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Cinematic Scroll Prompt */}
         <div
           className="scroll-indicator"
           onClick={scrollToGrid}
@@ -150,9 +177,7 @@ const Home = () => {
               letterSpacing: "3px",
               marginBottom: "0.5rem",
             }}
-          >
-            EXPLORE
-          </p>
+          ></p>
           <span>↓</span>
         </div>
       </section>

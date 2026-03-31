@@ -1,25 +1,25 @@
 #!/bin/bash
 set -e
 
-# Run locally!
-
 echo "🧹 Cleaning Vite cache..."
 rm -rf node_modules/.vite dist
 
-# Stop Docker containers
+# Stop Docker containers (safer)
 if docker info >/dev/null 2>&1; then
-    echo "🛑 Stopping Docker containers and cleaning up..."
-    docker compose down --rmi all && docker system prune -af
+    echo "🛑 Stopping Docker containers..."
+    docker compose down --volumes --rmi local
 else
-    echo "⚠️  Docker not running or not installed — skipping Docker cleanup."
+    echo "⚠️  Docker not running — skipping."
 fi
 
 # FULL UPGRADE (-u flag)
 if [[ "$1" == "-u" ]]; then
     echo "🚀📦 FULL UPGRADE: Latest secure packages..."
 
-    # System updates
-    brew update && brew upgrade && brew cleanup && brew doctor && brew autoremove
+    # System updates (Mac only)
+    if command -v brew &> /dev/null; then
+        brew update && brew upgrade && brew cleanup
+    fi
     pnpm self-update
 
     # Clean slate
@@ -29,10 +29,6 @@ if [[ "$1" == "-u" ]]; then
     echo "📈 Updating ALL packages to LATEST..."
     pnpm up --latest
 
-    # Fix React peer warning (cosmetic only)
-    echo "🔧 Fixing React versions..."
-    pnpm add "react@^18.3.1" "react-dom@^18.3.1" --save-exact
-
     # Fresh install
     pnpm install
 
@@ -41,20 +37,33 @@ if [[ "$1" == "-u" ]]; then
     pnpm audit --prod --silent || true
 
     echo "✅ PROD deps: Latest + Secure!"
-
-    # Cleanup
     pnpm prune || true
 else
     echo "✅ Using existing deps..."
     pnpm install
 fi
 
-# Start dev servers
-echo "🚀 Starting backend server..."
-node --env-file=.env ./src/backend/server.mjs &
+# DEPCHECK (FIXED - non-blocking)
+echo "🔍 Checking for unused dependencies..."
+pnpx depcheck --json > depcheck-report.json 2>&1 || true
 
-echo "🚀 Starting Vite frontend on port 3000..."
-pnpm run frontend:dev
+if command -v jq &> /dev/null && [[ -s depcheck-report.json ]]; then
+    MISSING=$(jq '.missing | length' depcheck-report.json)
+    UNUSED=$(jq '.unused | length' depcheck-report.json)
+    
+    [[ $MISSING -gt 0 ]] && echo "⚠️  $MISSING MISSING deps (see depcheck-report.json)"
+    [[ $UNUSED -gt 0 ]] && echo "🗑️  $UNUSED UNUSED deps (see depcheck-report.json)"
+else
+    echo "📄 depcheck-report.json saved (install jq for summary)"
+fi
 
-# Wait for both (Ctrl+C kills both)
-wait
+# Start dev servers (FIXED)
+echo "🚀 Starting dev servers..."
+if ! pnpm list concurrently >/dev/null 2>&1; then
+    echo "❌ Install concurrently first: pnpm add -D concurrently"
+    exit 1
+fi
+
+pnpm concurrently \
+    "node --env-file=.env ./src/backend/server.mjs" \
+    "pnpm run frontend:dev"

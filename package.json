@@ -48,7 +48,6 @@
     "node-fetch": "^3.3.2",
     "rollup-plugin-visualizer": "^7.0.1",
     "sharp": "^0.34.5",
-    "unimported": "^1.31.1",
     "vite": "^8.0.3"
   },
   "pnpm": {

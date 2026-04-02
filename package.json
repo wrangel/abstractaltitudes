@@ -14,7 +14,7 @@
     "prod": "./scripts/prod-build.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1021.0",
+    "@aws-sdk/client-s3": "^3.1023.0",
     "@fontsource-variable/inter": "^5.2.8",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
@@ -39,9 +39,9 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.1021.0",
+    "@aws-sdk/lib-storage": "^3.1023.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.5.17",
     "concurrently": "^9.2.1",
     "exif-parser": "^0.1.12",
     "globals": "^17.4.0",

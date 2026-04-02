@@ -3,6 +3,7 @@
 import {
   useRef,
   useLayoutEffect,
+  useEffect, // ← ADDED
   useState,
   memo,
   forwardRef,
@@ -39,7 +40,7 @@ function hasWebGL() {
 
 const ViewerPanorama = forwardRef(function ViewerPanorama(
   { panoPath, levels, initialViewParameters, onReady, onError },
-  ref
+  ref,
 ) {
   const panoramaElement = useRef(null);
   const viewerRef = useRef(null);
@@ -51,7 +52,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   /* -------------------------------------------------
    1.  Viewer creation (once, after DOM exists)
    ------------------------------------------------- */
-  useLayoutEffect(() => {
+  useEffect(() => {
+    // ← CHANGED: useLayoutEffect to useEffect
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
@@ -71,17 +73,24 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         preserveDrawingBuffer: false,
         generateMipmaps: false,
       },
+      // 👇 ADDED LIMITS FOR MOBILE WEBGL STABILITY
+      network: {
+        concurrency: 4, // Max simultaneous tile downloads
+      },
+      renderer: {
+        textureStoreCapacity: 100, // Hard limit on textures stored in GPU memory
+      },
     });
 
     const controls = viewerRef.current.controls();
     controls.addEventListener("dragStart", () =>
-      viewerRef.current.stopMovement()
+      viewerRef.current.stopMovement(),
     );
     controls.addEventListener("dragEnd", () => {
       if (autorotateRef.current) {
         viewerRef.current.setIdleMovement(
           AUTO_ROTATE_DELAY,
-          autorotateRef.current
+          autorotateRef.current,
         );
         viewerRef.current.startMovement(autorotateRef.current);
       }
@@ -92,7 +101,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     canvas.style.opacity = "1";
     canvas.style.cursor = "default";
 
-    // pinch / track-pad zoom via wheel event
+    // Pinch / track-pad zoom via wheel event
     canvas.addEventListener(
       "wheel",
       (e) => {
@@ -103,24 +112,36 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         const delta = e.deltaY > 0 ? 1.1 : 0.9; // zoom factor
         const newFov = Math.max(
           Math.PI / 6,
-          Math.min(Math.PI / 1.5, view.fov() * delta)
+          Math.min(Math.PI / 1.5, view.fov() * delta),
         );
         view.setFov(newFov, { duration: 120 });
       },
-      { passive: false }
+      { passive: false },
     );
+
+    // 👇 ADDED: Handle clean recovery if context loss happens anyway
+    const handleContextLost = (e) => {
+      e.preventDefault();
+      console.warn("WebGL context lost. Mobile GPU ran out of resources.");
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
 
     // autorotate movement
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
       targetPitch: 0,
     });
+
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
+    };
   }, [onError]);
 
   /* -------------------------------------------------
    2.  Scene creation / update
    ------------------------------------------------- */
-  useLayoutEffect(() => {
+  useEffect(() => {
+    // ← CHANGED: useLayoutEffect to useEffect
     if (!panoramaElement.current) return;
     if (
       !viewerRef.current ||
@@ -147,7 +168,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     const geometry = new Marzipano.CubeGeometry(safeLevels);
     const source = Marzipano.ImageUrlSource.fromString(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
-      { cubeMapPreviewUrl: `${panoPath}/preview.jpg` }
+      { cubeMapPreviewUrl: `${panoPath}/preview.jpg` },
     );
 
     source.addEventListener("error", (err) => {
@@ -157,7 +178,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     const limiter = Marzipano.RectilinearView.limit.traditional(
       1024,
-      (120 * Math.PI) / 180
+      (120 * Math.PI) / 180,
     );
     const previousView = sceneRef.current?.view();
     const viewParams = previousView
@@ -173,7 +194,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       source,
       geometry,
       view,
-      pinFirstLevel: true,
+      pinFirstLevel: false, // 👈 CHANGED: Don't lock base textures in mobile RAM
     });
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
@@ -183,7 +204,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     if (viewerRef.current && autorotateRef.current) {
       viewerRef.current.setIdleMovement(
         AUTO_ROTATE_DELAY,
-        autorotateRef.current
+        autorotateRef.current,
       );
       viewerRef.current.startMovement(autorotateRef.current);
     }
@@ -197,6 +218,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   /* -------------------------------------------------
    3.  View-parameter sync
    ------------------------------------------------- */
+  // Left as useLayoutEffect intentionally to prevent visual jumping on param updates
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
@@ -222,19 +244,20 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         if (viewerRef.current && autorotateRef.current) {
           viewerRef.current.setIdleMovement(
             AUTO_ROTATE_DELAY,
-            autorotateRef.current
+            autorotateRef.current,
           );
           viewerRef.current.startMovement(autorotateRef.current);
         }
       },
     }),
-    []
+    [],
   );
 
   /* -------------------------------------------------
    5.  Cleanup
    ------------------------------------------------- */
-  useLayoutEffect(() => {
+  useEffect(() => {
+    // ← CHANGED: useLayoutEffect to useEffect
     return () => {
       viewerRef.current?.destroy();
       viewerRef.current = null;

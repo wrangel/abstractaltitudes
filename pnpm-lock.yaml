@@ -17,8 +17,8 @@ importers:
   .:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.1023.0
-        version: 3.1023.0
+        specifier: ^3.1024.0
+        version: 3.1024.0
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
@@ -50,8 +50,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(react@19.2.4)
       mongoose:
-        specifier: ^9.3.3
-        version: 9.3.3
+        specifier: ^9.4.1
+        version: 9.4.1
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
@@ -71,8 +71,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0(react@19.2.4)
       react-router-dom:
-        specifier: ^7.13.2
-        version: 7.13.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^7.14.0
+        version: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       swr:
         specifier: ^2.4.1
         version: 2.4.1(react@19.2.4)
@@ -87,11 +87,11 @@ importers:
         version: 5.0.0(winston@3.19.0)
     devDependencies:
       '@aws-sdk/lib-storage':
-        specifier: ^3.1023.0
-        version: 3.1023.0(@aws-sdk/client-s3@3.1023.0)
+        specifier: ^3.1024.0
+        version: 3.1024.0(@aws-sdk/client-s3@3.1024.0)
       '@vitejs/plugin-react':
         specifier: ^6.0.1
-        version: 6.0.1(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2))
+        version: 6.0.1(vite@8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2))
       adm-zip:
         specifier: ^0.5.17
         version: 0.5.17
@@ -114,8 +114,8 @@ importers:
         specifier: ^0.34.5
         version: 0.34.5
       vite:
-        specifier: ^8.0.3
-        version: 8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
+        specifier: ^8.0.5
+        version: 8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
 
 packages:
 
@@ -142,8 +142,8 @@ packages:
   '@aws-crypto/util@5.2.0':
     resolution: {integrity: sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==}
 
-  '@aws-sdk/client-s3@3.1023.0':
-    resolution: {integrity: sha512-IvNy49sdoCWd3fgHQxail3y0UQdfKj1Xk0VPu9HTwlog60o9Lmp5ykjZ2LlIuHEPaxq4Siih707GB/ulUWgetw==}
+  '@aws-sdk/client-s3@3.1024.0':
+    resolution: {integrity: sha512-8qdO5aLCzaf9l0RdrSBW1iIroRKP2QBqtZ6lkrtHKiaaH0B18xEn+lrEgiN/eCf3uRAYk4cqbnI2XcWzm+7dDQ==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.973.26':
@@ -186,11 +186,11 @@ packages:
     resolution: {integrity: sha512-d+6h0SD8GGERzKe27v5rOzNGKOl0D+l0bWJdqrxH8WSQzHzjsQFIAPgIeOTUwBHVsKKwtSxc91K/SWax6XgswQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/lib-storage@3.1023.0':
-    resolution: {integrity: sha512-1SFnmHlkKQgQxAt7/nK2f7b90kmymceojIbZT+yoSlHh2rJk2Dcjld8zo6lwUdfROrMwi4PP+z5nRMPG+d7zjQ==}
+  '@aws-sdk/lib-storage@3.1024.0':
+    resolution: {integrity: sha512-5zZSYI8VncyiatvEn+UqElvgX14NKEc+3a+aeMyMzqKuYgDCFd97KGdbqAXEgnfEiTNK0QgSecFC6PUMAsE3xg==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@aws-sdk/client-s3': ^3.1023.0
+      '@aws-sdk/client-s3': ^3.1024.0
 
   '@aws-sdk/middleware-bucket-endpoint@3.972.8':
     resolution: {integrity: sha512-WR525Rr2QJSETa9a050isktyWi/4yIGcmY3BQ1kpHqb0LqUglQHCS8R27dTJxxWNZvQ0RVGtEZjTCbZJpyF3Aw==}
@@ -1407,8 +1407,8 @@ packages:
       socks:
         optional: true
 
-  mongoose@9.3.3:
-    resolution: {integrity: sha512-sfv5LOIPWeN5o/281kp4Rx9ZnuXb0g8CtvBTi7trYQs2PYYx8LWXegXxG3ar7VEns1o+d4h9LI/Dtc7dTTyYmA==}
+  mongoose@9.4.1:
+    resolution: {integrity: sha512-4rFBWa+/wdBQSfvnOPJBpiSG6UCEbhSQh865dEdaH9Y8WfHBUC+I2XT28dp0IBIGrEwmh+gzrgZgea5PbmrHWA==}
     engines: {node: '>=20.19.0'}
 
   mpath@0.9.0:
@@ -1491,8 +1491,8 @@ packages:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
     engines: {node: '>= 0.8'}
 
-  path-expression-matcher@1.2.0:
-    resolution: {integrity: sha512-DwmPWeFn+tq7TiyJ2CxezCAirXjFxvaiD03npak3cRjlP9+OjTmSy1EpIrEbh+l6JgUundniloMLDQ/6VTdhLQ==}
+  path-expression-matcher@1.2.1:
+    resolution: {integrity: sha512-d7gQQmLvAKXKXE2GeP9apIGbMYKz88zWdsn/BN2HRWVQsDFdUY36WSLTY0Jvd4HWi7Fb30gQ62oAOzdgJA6fZw==}
     engines: {node: '>=14.0.0'}
 
   path-to-regexp@8.4.2:
@@ -1555,15 +1555,15 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
-  react-router-dom@7.13.2:
-    resolution: {integrity: sha512-aR7SUORwTqAW0JDeiWF07e9SBE9qGpByR9I8kJT5h/FrBKxPMS6TiC7rmVO+gC0q52Bx7JnjWe8Z1sR9faN4YA==}
+  react-router-dom@7.14.0:
+    resolution: {integrity: sha512-2G3ajSVSZMEtmTjIklRWlNvo8wICEpLihfD/0YMDxbWK2UyP5EGfnoIn9AIQGnF3G/FX0MRbHXdFcD+rL1ZreQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
       react-dom: '>=18'
 
-  react-router@7.13.2:
-    resolution: {integrity: sha512-tX1Aee+ArlKQP+NIUd7SE6Li+CiGKwQtbS+FfRxPX6Pe4vHOo6nr9d++u5cwg+Z8K/x8tP+7qLmujDtfrAoUJA==}
+  react-router@7.14.0:
+    resolution: {integrity: sha512-m/xR9N4LQLmAS0ZhkY2nkPA1N7gQ5TUVa5n8TgANuDTARbn1gt+zLPXEm7W0XDTbrQ2AJSJKhoa6yx1D8BcpxQ==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -1784,14 +1784,14 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vite@8.0.3:
-    resolution: {integrity: sha512-B9ifbFudT1TFhfltfaIPgjo9Z3mDynBTJSUYxTjOQruf/zHH+ezCQKcoqO+h7a9Pw9Nm/OtlXAiGT1axBgwqrQ==}
+  vite@8.0.5:
+    resolution: {integrity: sha512-nmu43Qvq9UopTRfMx2jOYW5l16pb3iDC1JH6yMuPkpVbzK0k+L7dfsEDH4jRgYFmsg0sTAqkojoZgzLMlwHsCQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
       '@types/node': ^20.19.0 || >=22.12.0
       '@vitejs/devtools': ^0.1.0
-      esbuild: ^0.27.0
+      esbuild: ^0.27.0 || ^0.28.0
       jiti: '>=1.21.0'
       less: ^4.0.0
       sass: ^1.70.0
@@ -1943,7 +1943,7 @@ snapshots:
       '@smithy/util-utf8': 2.3.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1023.0':
+  '@aws-sdk/client-s3@3.1024.0':
     dependencies:
       '@aws-crypto/sha1-browser': 5.2.0
       '@aws-crypto/sha256-browser': 5.2.0
@@ -2128,9 +2128,9 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/lib-storage@3.1023.0(@aws-sdk/client-s3@3.1023.0)':
+  '@aws-sdk/lib-storage@3.1024.0(@aws-sdk/client-s3@3.1024.0)':
     dependencies:
-      '@aws-sdk/client-s3': 3.1023.0
+      '@aws-sdk/client-s3': 3.1024.0
       '@smithy/middleware-endpoint': 4.4.28
       '@smithy/protocol-http': 5.3.12
       '@smithy/smithy-client': 4.12.8
@@ -2936,10 +2936,10 @@ snapshots:
     dependencies:
       '@types/webidl-conversions': 7.0.3
 
-  '@vitejs/plugin-react@6.0.1(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2))':
+  '@vitejs/plugin-react@6.0.1(vite@8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2))':
     dependencies:
       '@rolldown/pluginutils': 1.0.0-rc.7
-      vite: 8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
+      vite: 8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)
 
   accepts@2.0.0:
     dependencies:
@@ -3196,12 +3196,12 @@ snapshots:
 
   fast-xml-builder@1.1.4:
     dependencies:
-      path-expression-matcher: 1.2.0
+      path-expression-matcher: 1.2.1
 
   fast-xml-parser@5.5.8:
     dependencies:
       fast-xml-builder: 1.1.4
-      path-expression-matcher: 1.2.0
+      path-expression-matcher: 1.2.1
       strnum: 2.2.2
 
   fdir@6.5.0(picomatch@4.0.4):
@@ -3460,7 +3460,7 @@ snapshots:
       bson: 7.2.0
       mongodb-connection-string-url: 7.0.1
 
-  mongoose@9.3.3:
+  mongoose@9.4.1:
     dependencies:
       kareem: 3.2.0
       mongodb: 7.1.1
@@ -3542,7 +3542,7 @@ snapshots:
 
   parseurl@1.3.3: {}
 
-  path-expression-matcher@1.2.0: {}
+  path-expression-matcher@1.2.1: {}
 
   path-to-regexp@8.4.2: {}
 
@@ -3602,13 +3602,13 @@ snapshots:
 
   react-is@16.13.1: {}
 
-  react-router-dom@7.13.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  react-router-dom@7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
-      react-router: 7.13.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-router: 7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  react-router@7.13.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  react-router@7.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       cookie: 1.1.1
       react: 19.2.4
@@ -3875,7 +3875,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2):
+  vite@8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4

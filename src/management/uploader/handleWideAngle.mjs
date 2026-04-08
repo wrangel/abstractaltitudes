@@ -29,7 +29,7 @@ const execFileAsync = promisify(execFile);
  * 2. Rename folder to metadata name if needed
  * 3. Create original/, modified/, modified/S3/ directories
  * 4. Move 9x PANO JPGs → original/
- * 5. Move 1x DJI JPG → modified/
+ * 5. Move 1x DJI JPG → modified/ as newName.jpg
  * 6. DJI JPG → PNG (magick) → lossless wa_*.webp + thumbnail.webp (S3/)
  *
  * @param {string} originalFolderPath - Path to folder BEFORE renaming
@@ -134,12 +134,14 @@ export async function handleWideAngle(originalFolderPath, newName) {
   let metadata = null;
 
   const srcDji = path.join(newFolderPath, djiFile);
-  const destDji = path.join(modifiedPath, djiFile);
+  const destDji = path.join(modifiedPath, `${newName}.jpg`);
   await fs.rename(srcDji, destDji);
-  logger.info(`[${newName}]: DJI ${djiFile} → ${MODIFIED_FOLDER}/`);
+  logger.info(
+    `[${newName}]: DJI ${djiFile} → ${MODIFIED_FOLDER}/${newName}.jpg`,
+  );
 
   // **IDENTICAL PROCESSING PIPELINE AS TIFF IN handleImage**
-  const baseName = path.parse(djiFile).name;
+  const baseName = newName;
   const tempPngPath = path.join(s3Path, `${baseName}_temp.png`);
 
   try {

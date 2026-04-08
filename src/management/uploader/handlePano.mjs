@@ -1,4 +1,4 @@
-// src/backend/management/uploader/handlePano.mjs
+// src/backend/management/uploader/handlePano.mjs - COMPLETE MODIFIED VERSION
 
 import fs from "fs/promises";
 import path from "path";
@@ -19,8 +19,6 @@ import {
 
 /**
  * Parse levels and initialViewParameters from data.js content by evaluating it.
- * @param {string} dataJsContent
- * @returns {{levels: any, initialViewParameters: any} | null}
  */
 function parseDataJs(dataJsContent) {
   try {
@@ -49,6 +47,46 @@ function parseDataJs(dataJsContent) {
 }
 
 /**
+ * Rename panorama JPG, PTS, and ZIP files to folderName inside modified folder.
+ */
+async function renamePanoFiles(modifiedPath, folderName) {
+  const files = await fs.readdir(modifiedPath);
+
+  // Find and rename Panorama JPG (PANO_0001 or DJI_0001 etc.)
+  const jpgFile = files.find(
+    (f) => f.toLowerCase().includes("panorama") && /\.(jpe?g)$/i.test(f),
+  );
+  if (jpgFile) {
+    const src = path.join(modifiedPath, jpgFile);
+    const dest = path.join(modifiedPath, `${folderName}.jpg`);
+    await fs.rename(src, dest);
+    logger.info(`[${folderName}]: Renamed ${jpgFile} → ${folderName}.jpg`);
+  }
+
+  // Find and rename Panorama PTS
+  const ptsFile = files.find(
+    (f) =>
+      f.toLowerCase().includes("panorama") && f.toLowerCase().endsWith(".pts"),
+  );
+  if (ptsFile) {
+    const src = path.join(modifiedPath, ptsFile);
+    const dest = path.join(modifiedPath, `${folderName}.pts`);
+    await fs.rename(src, dest);
+    logger.info(`[${folderName}]: Renamed ${ptsFile} → ${folderName}.pts`);
+  }
+
+  // Rename project-title.zip if exists
+  if (files.includes("project-title.zip")) {
+    const src = path.join(modifiedPath, "project-title.zip");
+    const dest = path.join(modifiedPath, `${folderName}.zip`);
+    await fs.rename(src, dest);
+    logger.info(
+      `[${folderName}]: Renamed project-title.zip → ${folderName}.zip`,
+    );
+  }
+}
+
+/**
  * Manage panorama folder: move files, extract ZIP, create thumbnail, parse metadata.
  * @param {string} mediaFolderPath
  * @param {string} folderName
@@ -58,7 +96,6 @@ export async function handlePano(mediaFolderPath, folderName) {
   const modifiedPath = path.join(mediaFolderPath, MODIFIED_FOLDER);
   const originalPath = path.join(mediaFolderPath, ORIGINAL_FOLDER);
   const s3Folder = path.join(modifiedPath, S3_FOLDER);
-  const zipPath = path.join(modifiedPath, "project-title.zip");
 
   logger.info(`[${folderName}]: Starting pano processing`);
 
@@ -72,7 +109,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     rl.question(
       `[${folderName}]: Can you confirm that the following components are present?\n` +
         "  - 32 JPG files\n" +
-        "  - PANO_0001 Panorama.jpg\n" +
+        "  - PANO_0001 Panorama.jpg (or similar)\n" +
         "  - project-title.zip\n" +
         "Type 'Y' to proceed, 'N' to exit: ",
       (input) => {
@@ -88,18 +125,15 @@ export async function handlePano(mediaFolderPath, folderName) {
     );
     process.exit(1);
   }
-  // --- End of interactive check ---
 
-  // Ensure modified and original folders exist
+  // Ensure folders exist
   await fs.mkdir(modifiedPath, { recursive: true });
   await fs.mkdir(originalPath, { recursive: true });
 
   const rootFiles = await fs.readdir(mediaFolderPath);
 
-  // Single regex to match both originals and previews with any extension
+  // Process files: split originals and previews
   const panoRegex = /^(.+?)_(\d{4})( Panorama)?\.[^.]+$/i;
-
-  // Process files: split originals (no Panorama) and previews (with Panorama)
   for (const file of rootFiles) {
     const match = file.match(panoRegex);
     if (!match) continue;
@@ -108,14 +142,12 @@ export async function handlePano(mediaFolderPath, folderName) {
     const src = path.join(mediaFolderPath, file);
 
     if (panoramaSuffix) {
-      // ' Panorama' present - preview file => move to modified folder
       const dest = path.join(modifiedPath, file);
       await fs.rename(src, dest);
       logger.info(
         `[${folderName}]: Moved preview file ${file} to modified folder`,
       );
     } else {
-      // No ' Panorama' - original file => move to original folder
       const dest = path.join(originalPath, file);
       await fs.rename(src, dest);
       logger.info(
@@ -124,8 +156,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     }
   }
 
-  // Special handling of .pts files (already moved above if matched in panoRegex),
-  // but if there are any outside this pattern, ensure to move .pts files anyway
+  // Handle .pts files not caught by regex
   const ptsFiles = rootFiles.filter(
     (f) => f.toLowerCase().endsWith(".pts") && !panoRegex.test(f),
   );
@@ -136,7 +167,7 @@ export async function handlePano(mediaFolderPath, folderName) {
     logger.info(`[${folderName}]: Moved pts file ${file} to modified folder`);
   }
 
-  // Move project-title.zip to modified folder if present and not already moved
+  // Move project-title.zip
   if (rootFiles.includes("project-title.zip")) {
     const src = path.join(mediaFolderPath, "project-title.zip");
     const dest = path.join(modifiedPath, "project-title.zip");
@@ -148,8 +179,12 @@ export async function handlePano(mediaFolderPath, folderName) {
     }
   }
 
-  // Proceed with extracting ZIP and processing tiles as before
-  const extractPath = path.join(s3Folder, "project-title-extract-temp");
+  // *** NEW: RENAME THE 3 FILES ***
+  await renamePanoFiles(modifiedPath, folderName);
+
+  // *** UPDATED: Use renamed ZIP ***
+  const zipPath = path.join(modifiedPath, `${folderName}.zip`);
+  const extractPath = path.join(s3Folder, `${folderName}-extract-temp`);
 
   try {
     logger.info(`[${folderName}]: Checking ZIP file at ${zipPath}`);
@@ -162,16 +197,8 @@ export async function handlePano(mediaFolderPath, folderName) {
     }
 
     logger.info(`[${folderName}]: Extracting ZIP to ${extractPath}`);
-    try {
-      const zip = new AdmZip(zipPath);
-      zip.extractAllTo(extractPath, true);
-    } catch (zipError) {
-      logger.error(
-        `[${folderName}]: Error extracting ZIP file: ${zipError.message}`,
-        zipError,
-      );
-      throw zipError;
-    }
+    const zip = new AdmZip(zipPath);
+    zip.extractAllTo(extractPath, true);
     logger.info(`[${folderName}]: ZIP extraction completed`);
 
     // Move tiles folder to s3/tiles
@@ -213,7 +240,7 @@ export async function handlePano(mediaFolderPath, folderName) {
       }
     }
 
-    // Parse data.js file for levels and initialViewParameters
+    // Parse data.js
     const dataJsPath = path.join(extractPath, "app-files", "data.js");
     let extractedProperties = null;
     try {
@@ -232,17 +259,17 @@ export async function handlePano(mediaFolderPath, folderName) {
       logger.warn(`[${folderName}]: Could not read data.js: ${err.message}`);
     }
 
-    // Remove extraction temporary folder
+    // Cleanup extraction folder
     try {
       await fs.rm(extractPath, { recursive: true, force: true });
-      logger.info(`[${folderName}]: Deleted project-title extraction folder`);
+      logger.info(`[${folderName}]: Deleted extraction folder`);
     } catch (err) {
       logger.warn(
         `[${folderName}]: Could not delete extraction folder: ${err.message}`,
       );
     }
 
-    // Create thumbnail.webp from first JPG/JPEG in modified folder
+    // Create thumbnail.webp from renamed JPG
     const modifiedFiles = await fs.readdir(modifiedPath);
     const jpgFile = modifiedFiles.find((f) => /\.(jpe?g)$/i.test(f));
     if (!jpgFile) {

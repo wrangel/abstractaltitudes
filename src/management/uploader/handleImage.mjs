@@ -22,7 +22,7 @@ const execFileAsync = promisify(execFile);
 /**
  * Renames a folder to newName.
  * Moves JPG files to the original folder.
- * Moves TIFF files to the modified folder,
+ * Moves TIFF files to the modified folder as newName.tiff,
  * then converts TIFF to lossless and thumbnail WebP images in modified/S3.
  *
  * @param {string} originalFolderPath
@@ -104,11 +104,11 @@ export async function handleImage(originalFolderPath, newName) {
 
   for (const tiffFile of tiffFiles) {
     const srcTiff = path.join(newFolderPath, tiffFile);
-    const destTiff = path.join(modifiedPath, tiffFile);
+    const destTiff = path.join(modifiedPath, `${newName}.tiff`);
     await fs.rename(srcTiff, destTiff);
-    logger.info(`Moved TIFF file ${tiffFile} to ${modifiedPath}`);
+    logger.info(`Moved and renamed TIFF file ${tiffFile} to ${destTiff}`);
 
-    const baseName = path.parse(tiffFile).name;
+    const baseName = newName;
     const tempPngPath = path.join(s3Path, `${baseName}_temp.png`);
 
     try {

@@ -14,7 +14,7 @@
     "prod": "./scripts/prod-build.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1029.0",
+    "@aws-sdk/client-s3": "^3.1032.0",
     "@fontsource-variable/inter": "^5.2.8",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
@@ -25,21 +25,21 @@
     "helmet": "^8.1.0",
     "marzipano": "^0.10.2",
     "masonic": "^4.1.0",
-    "mongoose": "^9.4.1",
+    "mongoose": "^9.5.0",
     "node-cache": "^5.1.2",
     "panzoom": "^9.4.4",
     "prop-types": "^15.8.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-helmet-async": "^3.0.0",
-    "react-router-dom": "^7.14.0",
+    "react-router-dom": "^7.14.1",
     "swr": "^2.4.1",
     "web-vitals": "^5.2.0",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.1029.0",
+    "@aws-sdk/lib-storage": "^3.1032.0",
     "@vitejs/plugin-react": "^6.0.1",
     "adm-zip": "^0.5.17",
     "concurrently": "^9.2.1",
@@ -48,7 +48,7 @@
     "node-fetch": "^3.3.2",
     "rollup-plugin-visualizer": "^7.0.1",
     "sharp": "^0.34.5",
-    "vite": "^8.0.8"
+    "vite": "^8.0.9"
   },
   "pnpm": {
     "overrides": {

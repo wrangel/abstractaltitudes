@@ -274,8 +274,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         <div className={styles.errorMessage}>
           <h1>WebGL unsupported</h1>
           <p>
-            This device's browser does not support high-performance 360°
-            panoramas. Try Chrome for best results.
+            This device or your browser do not support WebGL. WebGL is required
+            to view high-performance 360° panoramas.
           </p>
           {panoPath && (
             <img

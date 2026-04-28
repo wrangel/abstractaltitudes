@@ -1,4 +1,4 @@
-/* src/styles/ViewerImage.module.css */
+/* src/frontend/styles/ViewerImage.module.css */
 
 .ViewerImage {
   position: fixed;
@@ -10,8 +10,15 @@
   justify-content: center;
   align-items: center;
   z-index: 1050;
-  background-color: black; /* fully opaque */
-  overflow: hidden;
+  background-color: black;
+  /*
+    CHANGED: overflow:hidden → overflow:clip
+    overflow:hidden creates a scroll container, which causes the browser to
+    swallow wheel events before panzoom can handle them. overflow:clip clips
+    visually but does NOT create a scroll container, so wheel events propagate
+    correctly to panzoom.
+  */
+  overflow: clip;
   transition: background-color var(--transition-duration) ease;
 }
 
@@ -44,17 +51,28 @@
   align-items: center;
   position: relative;
   z-index: 1050;
+  /*
+    ADDED: touch-action:none tells the browser to pass ALL touch and pointer
+    events to JavaScript (panzoom) instead of handling pinch-zoom natively.
+    Without this, mobile Safari/Chrome intercept the gesture before panzoom.
+  */
+  touch-action: none;
 }
 
 .image {
-  max-width: 100%;
-  max-height: 100%;
+  /*
+    REMOVED: max-width / max-height
+    These constrain the element dimensions panzoom uses to compute its
+    transform origin, which breaks zoom at scale > 1. Size is now controlled
+    by the flexbox container. object-fit:contain is kept only as a pre-init
+    fallback and is overridden by panzoom's inline style once active.
+  */
+  display: block;
   object-fit: contain;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   transition: opacity var(--transition-duration) ease-in-out;
 }
 
-/* Bleep indicator button style */
 .bleepButton {
   position: fixed;
   bottom: 1.5rem;
@@ -75,12 +93,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none; /* prevents clicking */
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {
   .image {
     width: 100%;
-    max-height: 95%;
   }
 }

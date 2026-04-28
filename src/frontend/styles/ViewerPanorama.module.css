@@ -1,4 +1,4 @@
-/* src/styles/ViewerPanorama.module.css */
+/* src/frontend/styles/ViewerPanorama.module.css */
 
 .ViewerPanorama {
   position: fixed;
@@ -9,15 +9,22 @@
   background-color: var(--panorama-bg-color, black);
   z-index: 1050;
   overflow: hidden;
+  /*
+    ADDED: touch-action:none prevents the browser from claiming pinch-zoom
+    gestures for native page zoom. Marzipano's Hammer.js recogniser then
+    receives all touch events and handles pinch-to-zoom correctly on mobile.
+  */
+  touch-action: none;
 }
 
 .ViewerPanorama canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
+  /* Repeated here so the rule applies regardless of how Marzipano nests the canvas */
+  touch-action: none;
 }
 
-/* Overlay for static preview/thumbnail */
 .thumbnail {
   position: absolute;
   top: 50%;

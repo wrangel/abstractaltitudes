@@ -3,7 +3,7 @@
 import {
   useRef,
   useLayoutEffect,
-  useEffect, // ← ADDED
+  useEffect,
   useState,
   memo,
   forwardRef,
@@ -53,7 +53,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
    1.  Viewer creation (once, after DOM exists)
    ------------------------------------------------- */
   useEffect(() => {
-    // ← CHANGED: useLayoutEffect to useEffect
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
@@ -65,20 +64,19 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
-        scrollZoom: false, // we handle wheel ourselves
-        pinchZoom: true, // keeps Hammer recogniser active
+        scrollZoom: false, // we handle wheel ourselves below
+        pinchZoom: true, // keep Hammer.js recogniser active for touch
       },
       stage: {
         pixelRatio: window.devicePixelRatio || 1,
         preserveDrawingBuffer: false,
         generateMipmaps: false,
       },
-      // 👇 ADDED LIMITS FOR MOBILE WEBGL STABILITY
       network: {
-        concurrency: 4, // Max simultaneous tile downloads
+        concurrency: 4,
       },
       renderer: {
-        textureStoreCapacity: 100, // Hard limit on textures stored in GPU memory
+        textureStoreCapacity: 100,
       },
     });
 
@@ -96,43 +94,55 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       }
     });
 
-    const canvas = viewerRef.current.stage().domElement();
+    // domElement() on Marzipano returns the stage wrapper DIV, which is the
+    // parent of the actual <canvas>. We need the canvas for style tweaks but
+    // must register wheel on the wrapper so it catches events over all child
+    // elements.
+    const stageEl = viewerRef.current.stage().domElement();
+    const canvas =
+      stageEl.tagName === "CANVAS"
+        ? stageEl
+        : (stageEl.querySelector("canvas") ?? stageEl);
+
     canvas.style.backgroundColor = "black";
     canvas.style.opacity = "1";
     canvas.style.cursor = "default";
 
-    // Pinch / track-pad zoom via wheel event
-    canvas.addEventListener(
-      "wheel",
-      (e) => {
-        e.preventDefault(); // stop page scroll / browser zoom
-        const view = sceneRef.current?.view();
-        if (!view) return;
+    // Wheel target: if stageEl is the canvas itself walk up to its parent so
+    // the listener covers the full stage area.
+    const wheelTarget =
+      stageEl.tagName === "CANVAS"
+        ? (stageEl.parentElement ?? stageEl)
+        : stageEl;
 
-        const delta = e.deltaY > 0 ? 1.1 : 0.9; // zoom factor
-        const newFov = Math.max(
-          Math.PI / 6,
-          Math.min(Math.PI / 1.5, view.fov() * delta),
-        );
-        view.setFov(newFov, { duration: 120 });
-      },
-      { passive: false },
-    );
+    const handleWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // stop the browser from triggering native page zoom
+      const view = sceneRef.current?.view();
+      if (!view) return;
+      const delta = e.deltaY > 0 ? 1.1 : 0.9;
+      const newFov = Math.max(
+        Math.PI / 6,
+        Math.min(Math.PI / 1.5, view.fov() * delta),
+      );
+      view.setFov(newFov, { duration: 120 });
+    };
 
-    // 👇 ADDED: Handle clean recovery if context loss happens anyway
+    wheelTarget.addEventListener("wheel", handleWheel, { passive: false });
+
     const handleContextLost = (e) => {
       e.preventDefault();
-      console.warn("WebGL context lost. Mobile GPU ran out of resources.");
+      console.warn("WebGL context lost — mobile GPU ran out of resources.");
     };
     canvas.addEventListener("webglcontextlost", handleContextLost, false);
 
-    // autorotate movement
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
       targetPitch: 0,
     });
 
     return () => {
+      wheelTarget.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
     };
   }, [onError]);
@@ -141,7 +151,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
    2.  Scene creation / update
    ------------------------------------------------- */
   useEffect(() => {
-    // ← CHANGED: useLayoutEffect to useEffect
     if (!panoramaElement.current) return;
     if (
       !viewerRef.current ||
@@ -176,9 +185,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       onError?.(err);
     });
 
-    const limiter = Marzipano.RectilinearView.limit.traditional(
-      1024,
-      (120 * Math.PI) / 180,
+    const limiter = Marzipano.RectilinearView.limit.vfov(
+      (30 * Math.PI) / 180, // min FOV: 30°
+      (120 * Math.PI) / 180, // max FOV: 120°
     );
     const previousView = sceneRef.current?.view();
     const viewParams = previousView
@@ -194,7 +203,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       source,
       geometry,
       view,
-      pinFirstLevel: false, // 👈 CHANGED: Don't lock base textures in mobile RAM
+      pinFirstLevel: false,
     });
     sceneRef.current.switchTo({ transitionDuration: 1000 });
 
@@ -218,7 +227,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   /* -------------------------------------------------
    3.  View-parameter sync
    ------------------------------------------------- */
-  // Left as useLayoutEffect intentionally to prevent visual jumping on param updates
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
@@ -257,7 +265,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
    5.  Cleanup
    ------------------------------------------------- */
   useEffect(() => {
-    // ← CHANGED: useLayoutEffect to useEffect
     return () => {
       viewerRef.current?.destroy();
       viewerRef.current = null;

@@ -5,20 +5,13 @@ import panzoom from "panzoom";
 import LazyImage from "./LazyImage";
 import styles from "../styles/ViewerImage.module.css";
 
-function debounce(func, wait) {
-  let timeout;
-  return function (...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
 const ViewerImage = ({
   actualUrl,
   thumbnailUrl,
   name,
-  isNavigationMode,
   onLoad,
+  // isNavigationMode intentionally not used here — panzoom is always active.
+  // The navigation arrows are controlled by the parent; zoom is independent.
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -40,25 +33,30 @@ const ViewerImage = ({
   };
 
   useEffect(() => {
-    if (!isLoading && !hasError && containerRef.current) {
-      const img = containerRef.current.querySelector("img");
-      if (!panZoomInstanceRef.current && img) {
-        panZoomInstanceRef.current = panzoom(img);
-        // Debounce panzoom events (example: zoom and pan triggers)
-        panZoomInstanceRef.current.on(
-          "pan",
-          debounce(() => {
-            // You can add logic here if needed on pan event.
-          }, 50)
-        );
-        panZoomInstanceRef.current.on(
-          "zoom",
-          debounce(() => {
-            // You can add logic here if needed on zoom event.
-          }, 50)
-        );
-      }
+    if (isLoading || hasError || !containerRef.current) return;
+    if (panZoomInstanceRef.current) return;
+
+    // Remove CSS size constraints from the img so panzoom can scale freely.
+    // max-width/max-height cap the transform origin and break zoom at scale > 1.
+    const img = containerRef.current.querySelector("img");
+    if (img) {
+      img.style.maxWidth = "none";
+      img.style.maxHeight = "none";
     }
+
+    // Apply panzoom to the CONTAINER div, not to the img element.
+    // Applying to img causes conflicts with CSS constraints and produces
+    // an unpredictable transform origin.
+    panZoomInstanceRef.current = panzoom(containerRef.current, {
+      maxZoom: 5,
+      minZoom: 0.5,
+      bounds: true,
+      boundsPadding: 0.1,
+      // Returning false means "handle this event" (don't skip).
+      // Prevents the browser intercepting wheel/pinch for native page zoom.
+      beforeWheel: () => false,
+      beforeMouseDown: () => false,
+    });
 
     return () => {
       if (panZoomInstanceRef.current) {
@@ -67,14 +65,6 @@ const ViewerImage = ({
       }
     };
   }, [isLoading, hasError]);
-
-  useEffect(() => {
-    if (panZoomInstanceRef.current) {
-      isNavigationMode
-        ? panZoomInstanceRef.current.resume()
-        : panZoomInstanceRef.current.pause();
-    }
-  }, [isNavigationMode]);
 
   if (hasError) {
     return (
@@ -91,6 +81,7 @@ const ViewerImage = ({
 
   return (
     <div className={styles.ViewerImage}>
+      {/* Low-res thumbnail visible while the high-res image loads */}
       <img
         src={thumbnailUrl}
         alt={`${name} thumbnail`}
@@ -107,6 +98,8 @@ const ViewerImage = ({
           transition: "opacity 0.15s ease",
         }}
       />
+
+      {/* panzoom attaches to this wrapper div */}
       <div
         ref={containerRef}
         className={styles.panzoomContainer}
@@ -121,6 +114,10 @@ const ViewerImage = ({
           position: "relative",
           zIndex: 1050,
           transition: "opacity 0.15s ease",
+          // Hand all touch/pointer gestures to JS.
+          // Without this, mobile browsers intercept pinch for native page zoom
+          // before panzoom can process it.
+          touchAction: "none",
         }}
         tabIndex={0}
         aria-label={name}
@@ -134,6 +131,7 @@ const ViewerImage = ({
           onError={handleError}
         />
       </div>
+
       {showBleep && (
         <button
           className={styles.bleepButton}

@@ -1,33 +1,26 @@
 // src/frontend/utils/buildQueryStringWidthHeight.jsx
 
-// Creates query strings for thumnbnails and actual nonpano media
+// Creates query strings for thumbnails and actual non-pano media
 const CDN_BASE = import.meta.env.VITE_BUNNYCDN_BASE_URL;
 
 export function buildQueryStringWidthHeight(
   path,
   { width, height, class: cls } = {},
-  needsToken = false
 ) {
-  const u = new URL(path, CDN_BASE);
+  if (!path) return "";
 
-  // Always set width and height if provided
-  if (width) u.searchParams.set("width", width);
-  if (height) u.searchParams.set("height", height);
+  // 1. Clean the path
+  const cleanPath = path.replace(/^\/+/, "");
 
-  // Add class only if provided and NOT 'thumbnail'
-  if (cls && cls !== "thumbnail") {
-    u.searchParams.set("class", cls);
-  }
+  // 2. We use a dummy base because we only care about the resulting
+  // path and query string for the signer
+  const u = new URL(cleanPath, "https://dummy.com");
 
-  // Sign private URLs if requested
-  if (needsToken) {
-    const token = generateBunnyToken(
-      u.pathname + u.search,
-      process.env.BUNNYCDN_TOKEN_SECRET, // server-side only
-      300
-    );
-    u.searchParams.set("token", token);
-  }
+  if (width) u.searchParams.set("width", Math.round(width));
+  if (height) u.searchParams.set("height", Math.round(height));
+  if (cls && cls !== "thumbnail") u.searchParams.set("class", cls);
 
-  return u.toString();
+  // 3. Return ONLY the path and query string: "/folder/img.webp?width=100"
+  // This is what the BunnyCDN token algorithm actually signs.
+  return u.pathname + u.search;
 }

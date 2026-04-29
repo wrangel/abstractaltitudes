@@ -2,7 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const LazyImage = ({ src, alt, className, style, width, height }) => {
+// 1. Add onLoad and onError to the destructured props
+const LazyImage = ({
+  src,
+  alt,
+  className,
+  style,
+  width,
+  height,
+  onLoad,
+  onError,
+}) => {
   const imgRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -19,11 +29,10 @@ const LazyImage = ({ src, alt, className, style, width, height }) => {
             }
           });
         },
-        { rootMargin: "100px" }
+        { rootMargin: "100px" },
       );
 
       observer.observe(imgRef.current);
-
       return () => observer.disconnect();
     } else {
       setIsVisible(true);
@@ -33,9 +42,12 @@ const LazyImage = ({ src, alt, className, style, width, height }) => {
   return (
     <img
       ref={imgRef}
-      src={isVisible ? src : undefined} // Use undefined instead of empty string to avoid loading errors
+      src={isVisible ? src : undefined}
       alt={alt}
       className={className}
+      // 2. Attach the listeners here
+      onLoad={onLoad}
+      onError={onError}
       style={{
         ...style,
         width,

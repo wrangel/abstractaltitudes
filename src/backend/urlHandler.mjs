@@ -34,7 +34,7 @@ export async function signedUrl(path, params = {}) {
     const { token } = generateBunnyToken(
       fullPath,
       process.env.BUNNYCDN_TOKEN_SECRET,
-      expires
+      expires,
     );
 
     const baseUrl = process.env.VITE_BUNNYCDN_BASE_URL.replace(/\/$/, ""); // trim trailing slash
@@ -72,7 +72,7 @@ export async function getUrls() {
       actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
     } else {
       // Raw actualUrl path without width/height; frontend will request signed URLs with size params
-      actualUrl = `/${name}/${name}.webp`;
+      actualUrl = `${name}/${name}.webp`;
     }
 
     results.push({ name, type, urls: { thumbnailUrl, actualUrl } });

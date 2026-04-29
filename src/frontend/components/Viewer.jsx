@@ -82,74 +82,72 @@ const Viewer = ({
   toggleMode,
 }) => {
   const { w, h } = useViewportSize();
-
-  const actualWidth = item.originalWidth || w;
-  const actualHeight = item.originalHeight || h;
-
-  const requestedWidth = Math.min(w, actualWidth);
-  const requestedHeight = Math.min(h, actualHeight);
-
-  // resize + sign only for images
-  const resizedActualUrl =
-    item.viewer === "img"
-      ? buildQueryStringWidthHeight(item.actualUrl, {
-          width: requestedWidth,
-          height: requestedHeight,
-        })
-      : item.actualUrl;
-
-  const { signedUrl, error } = useSignedUrl(
-    resizedActualUrl,
-    /* skip = */ item.viewer !== "img"
-  );
-
+  const viewerRef = useRef(null);
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const viewerRef = useRef(null);
 
-  // Only handle ArrowLeft/ArrowRight here; Escape is handled custom below
+  // 1. Memoize sizing to prevent signature floods
+  const resizedActualUrl = useMemo(() => {
+    if (item.viewer !== "img") return item.actualUrl;
+
+    const actualWidth = item.originalWidth || w;
+    const actualHeight = item.originalHeight || h;
+
+    // Step the dimensions by 50px to debounce window resizing
+    const reqW = Math.round(Math.min(w, actualWidth) / 50) * 50;
+    const reqH = Math.round(Math.min(h, actualHeight) / 50) * 50;
+
+    return buildQueryStringWidthHeight(item.actualUrl, {
+      width: reqW,
+      height: reqH,
+    });
+  }, [
+    item.actualUrl,
+    item.viewer,
+    item.originalWidth,
+    item.originalHeight,
+    w,
+    h,
+  ]);
+
+  // 2. Fetch the signature
+  const { signedUrl, error } = useSignedUrl(
+    resizedActualUrl,
+    item.viewer !== "img",
+  );
+
+  // 3. Prepare the item for children - ensure actualUrl is ONLY the signed one if available
+  const mediaItem = useMemo(() => {
+    if (item.viewer === "img") {
+      return { ...item, actualUrl: signedUrl || null };
+    }
+    return item;
+  }, [item, signedUrl]);
+
   useKeyboardNavigation(null, onPrevious, onNext);
 
-  const toggleMetadata = useCallback(() => {
-    setShowMetadata((prev) => !prev);
-  }, []);
-
-  const handleContentLoaded = useCallback(() => {
-    setIsLoading(false);
-  }, []);
-
-  const handleCloseMetadata = useCallback(() => {
-    setShowMetadata(false);
-  }, []);
+  const toggleMetadata = useCallback(
+    () => setShowMetadata((prev) => !prev),
+    [],
+  );
+  const handleContentLoaded = useCallback(() => setIsLoading(false), []);
+  const handleCloseMetadata = useCallback(() => setShowMetadata(false), []);
 
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === "Escape") {
-        if (showMetadata) {
-          setShowMetadata(false);
-        } else {
-          onClose();
-        }
+        showMetadata ? setShowMetadata(false) : onClose();
       }
     };
     document.addEventListener("keydown", handleEscKey);
-    return () => {
-      document.removeEventListener("keydown", handleEscKey);
-    };
+    return () => document.removeEventListener("keydown", handleEscKey);
   }, [showMetadata, onClose]);
 
   const toggleFullScreen = useCallback(() => {
     const node = viewerRef.current;
     if (!node) return;
-
     if (!document.fullscreenElement) {
-      // Important: must be triggered by a direct user gesture like onClick
-      node
-        .requestFullscreen()
-        .then(() => {})
-        .catch((err) => {
-          console.error("Fullscreen request failed:", err);
-        });
+      node.requestFullscreen().catch((err) => console.error(err));
     } else {
       document.exitFullscreen();
     }
@@ -161,14 +159,6 @@ const Viewer = ({
     if (error) console.error("Error fetching signed URL:", error);
   }, [error]);
 
-  // keep original panorama object intact, only patch images
-  const mediaItem = useMemo(() => {
-    if (item.viewer === "img") {
-      return { ...item, actualUrl: signedUrl || resizedActualUrl };
-    }
-    return item;
-  }, [item, signedUrl, resizedActualUrl]);
-
   return (
     <div
       className={`${styles.viewer} ${hideCursor ? styles["hide-cursor"] : ""}`}
@@ -179,12 +169,15 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
-      <MediaContent
-        key={mediaItem.id}
-        item={mediaItem}
-        isNavigationMode={isNavigationMode}
-        onContentLoaded={handleContentLoaded}
-      />
+      {/* Only render content once we have a signed URL (for images) or if it's a pano */}
+      {(mediaItem.actualUrl || item.viewer === "pano") && (
+        <MediaContent
+          key={mediaItem.id}
+          item={mediaItem}
+          isNavigationMode={isNavigationMode}
+          onContentLoaded={handleContentLoaded}
+        />
+      )}
 
       <NavigationMedia
         onClose={onClose}

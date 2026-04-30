@@ -1,138 +1,152 @@
-import { useState, useEffect, useRef, memo } from "react";
-import panzoom from "panzoom";
-import LazyImage from "./LazyImage";
+import { useRef, useEffect, useState, memo } from "react";
+import Marzipano from "marzipano";
 import styles from "../styles/ViewerImage.module.css";
 
-const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [showBleep, setShowBleep] = useState(false);
-
-  const containerRef = useRef(null);
-  const panZoomInstanceRef = useRef(null);
-
-  // WICHTIG: Wenn sich die URL ändert (nächstes Bild), Status zurücksetzen
-  useEffect(() => {
-    setIsLoading(true);
-    setHasError(false);
-
-    // Altes Panzoom entsorgen, falls vorhanden
-    if (panZoomInstanceRef.current) {
-      panZoomInstanceRef.current.dispose();
-      panZoomInstanceRef.current = null;
-    }
-  }, [actualUrl]);
-
-  const handleLoad = () => {
-    setIsLoading(false);
-    setShowBleep(true);
-    if (onLoad) onLoad();
-    setTimeout(() => setShowBleep(false), 500);
-  };
-
-  const handleError = () => {
-    setHasError(true);
-    setIsLoading(false);
-  };
+const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
+  const viewerElement = useRef(null);
+  const viewerInstance = useRef(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Initialisierung nur, wenn Bild geladen, kein Fehler und Container da
-    if (isLoading || hasError || !containerRef.current || !actualUrl) return;
+    // --- DEBUG LOGS START ---
+    console.log("DEBUG [ViewerImage]: Component mounted/updated", { name });
+    console.log("DEBUG [ViewerImage]: actualUrl (Tiles-Pfad):", actualUrl);
+    console.log(
+      "DEBUG [ViewerImage]: levels (Anzahl):",
+      levels?.length,
+      levels,
+    );
 
-    // Falls durch schnelles Klicken doch noch eine Instanz da ist: weg damit
-    if (panZoomInstanceRef.current) {
-      panZoomInstanceRef.current.dispose();
+    if (!viewerElement.current) {
+      console.warn(
+        "DEBUG [ViewerImage]: viewerElement (DOM) noch nicht bereit.",
+      );
+      return;
     }
 
-    const img = containerRef.current.querySelector("img");
-    if (img) {
-      img.style.maxWidth = "none";
-      img.style.maxHeight = "none";
+    if (!actualUrl || !levels?.length) {
+      console.error("DEBUG [ViewerImage]: Fehlende Daten für Tiled-View!", {
+        actualUrl,
+        levels,
+      });
+      return;
+    }
+    // --- DEBUG LOGS END ---
+
+    // 1. Instanz erstellen
+    try {
+      console.log("DEBUG [ViewerImage]: Initialisiere Marzipano Viewer...");
+      viewerInstance.current = new Marzipano.Viewer(viewerElement.current, {
+        controls: {
+          mouseViewMode: "drag",
+          scrollZoom: true,
+        },
+      });
+
+      // 2. Geometrie (Flat für flache Bilder)
+      const geometry = new Marzipano.FlatGeometry(levels);
+      console.log("DEBUG [ViewerImage]: FlatGeometry erstellt.");
+
+      // 3. Source (ACHTUNG: Pfad-Muster für flache Bilder ohne {f})
+      const tilePath = `${actualUrl}/{z}/{y}/{x}.jpg`;
+      console.log("DEBUG [ViewerImage]: Tile-Pfad Muster:", tilePath);
+
+      const source = Marzipano.ImageUrlSource.fromString(tilePath, {
+        cubeMapPreviewUrl: `${actualUrl}/preview.jpg`,
+      });
+
+      // 4. View & Limiter
+      const limiter = Marzipano.FlatView.limit.visible(geometry);
+      const view = new Marzipano.FlatView({ fov: Math.PI / 2 }, limiter);
+
+      // 5. Szene erstellen
+      const scene = viewerInstance.current.createScene({
+        source,
+        geometry,
+        view,
+        pinFirstLevel: true,
+      });
+
+      console.log("DEBUG [ViewerImage]: Szene erstellt, schalte um...");
+      scene.switchTo({ transitionDuration: 500 }, () => {
+        console.log("DEBUG [ViewerImage]: Szene erfolgreich aktiviert.");
+        setLoaded(true);
+        if (onLoad) onLoad();
+      });
+    } catch (err) {
+      console.error(
+        "DEBUG [ViewerImage]: KRITISCHER FEHLER bei Marzipano Initialisierung:",
+        err,
+      );
     }
 
-    panZoomInstanceRef.current = panzoom(containerRef.current, {
-      maxZoom: 5,
-      minZoom: 0.5,
-      bounds: true,
-      boundsPadding: 0.1,
-      zoomDoubleClickGraph: false, // Verhindert Konflikte mit UI
-      beforeWheel: () => false,
-      beforeMouseDown: () => false,
-    });
-
+    // Cleanup: Verhindert Speicherlecks und doppelte Viewer beim Navigieren
     return () => {
-      if (panZoomInstanceRef.current) {
-        panZoomInstanceRef.current.dispose();
-        panZoomInstanceRef.current = null;
+      console.log("DEBUG [ViewerImage]: Cleanup - Zerstöre Instanz für:", name);
+      if (viewerInstance.current) {
+        viewerInstance.current.destroy();
+        viewerInstance.current = null;
       }
     };
-  }, [isLoading, hasError, actualUrl]);
-
-  if (hasError) {
-    return (
-      <div className={styles.ViewerImage} role="alert">
-        <p>Failed to load image: {name}</p>
-        <img
-          src={thumbnailUrl}
-          alt="fallback"
-          className={styles.thumbnailFullViewport}
-        />
-      </div>
-    );
-  }
+  }, [actualUrl, levels, onLoad, name]);
 
   return (
-    <div className={styles.ViewerImage}>
-      {/* Thumbnail als Platzhalter */}
-      <img
-        src={thumbnailUrl}
-        alt={`${name} thumbnail`}
-        className={styles.thumbnailFullViewport}
-        style={{
-          opacity: isLoading ? 1 : 0,
-          pointerEvents: "none",
-          position: "fixed",
-          inset: 0,
-          width: "100vw",
-          height: "100vh",
-          objectFit: "contain",
-          zIndex: 1040,
-          transition: "opacity 0.3s ease", // Etwas weicherer Übergang
-        }}
-      />
+    <div
+      className={styles.ViewerImage}
+      style={{
+        background: "#000",
+        width: "100%",
+        height: "100%",
+        position: "relative",
+      }}
+    >
+      {/* 1. Platzhalter (Thumbnail) */}
+      {!loaded && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+          }}
+        >
+          <img
+            src={thumbnailUrl}
+            alt={`${name} loading`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              opacity: 0.5,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              color: "#fff",
+              background: "rgba(0,0,0,0.5)",
+              padding: "5px 10px",
+              borderRadius: "4px",
+            }}
+          >
+            Initialisiere High-Res Tiles...
+          </div>
+        </div>
+      )}
 
+      {/* 2. Marzipano Container */}
       <div
-        ref={containerRef}
-        className={styles.panzoomContainer}
+        ref={viewerElement}
         style={{
-          opacity: isLoading ? 0 : 1,
-          pointerEvents: isLoading ? "none" : "auto",
           width: "100%",
           height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-          zIndex: 1050,
-          touchAction: "none",
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.4s ease",
+          zIndex: 5,
         }}
-      >
-        {actualUrl && (
-          <LazyImage
-            src={actualUrl}
-            alt={name}
-            className={styles.image}
-            onLoad={handleLoad}
-            onError={handleError}
-          />
-        )}
-      </div>
-
-      {showBleep && (
-        <button className={styles.bleepButton} type="button" tabIndex={-1}>
-          ●
-        </button>
-      )}
+      />
     </div>
   );
 };

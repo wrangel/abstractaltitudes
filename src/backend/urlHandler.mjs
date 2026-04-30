@@ -59,6 +59,8 @@ export async function signedUrl(path, params = {}) {
  * and returns an array of name, type, and URLs for frontend consumption.
  * @returns {Promise<Array<{name: string, type: string, urls: {thumbnailUrl: string, actualUrl: string}}>>}
  */
+// src/backend/urlHandler.mjs
+
 export async function getUrls() {
   const docs = await Island.find().select("name type").lean();
 
@@ -67,13 +69,7 @@ export async function getUrls() {
     const thumbnailUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/thumbnail.webp`;
     let actualUrl;
 
-    if (type === "pano") {
-      // Public pano content served by BunnyCDN URL directly
-      actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
-    } else {
-      // Raw actualUrl path without width/height; frontend will request signed URLs with size params
-      actualUrl = `${name}/${name}.webp`;
-    }
+    actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
 
     results.push({ name, type, urls: { thumbnailUrl, actualUrl } });
   }

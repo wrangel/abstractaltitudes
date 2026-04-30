@@ -47,15 +47,14 @@ function processDocument(doc, presignedUrls) {
   const entry = presignedUrls.find((e) => e.name === doc.name);
   const urls = entry?.urls || {};
 
-  // Detect if this is a pano based on URL containing "/tiles"
-  const isPano = !!urls.actualUrl && urls.actualUrl.includes("/tiles");
-
   // Correctly access nested initialViewParameters
   const initialViewParameters = doc.initialViewParameters || {
     yaw: 0,
     pitch: 0,
     fov: Math.PI / 4,
   };
+
+  console.log(urls.actualUrl);
 
   return {
     id: doc._id.toString(),

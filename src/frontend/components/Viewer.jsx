@@ -1,5 +1,3 @@
-// src/frontend/components/Viewer.jsx
-
 import {
   useState,
   useEffect,
@@ -10,7 +8,7 @@ import {
   lazy,
 } from "react";
 import NavigationMedia from "./NavigationMedia";
-import ViewerImage from "./ViewerImage";
+import ViewerImage from "./ViewerImage"; // Jetzt für flache Tiles
 import PopupMetadata from "./PopupMetadata";
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
@@ -18,33 +16,14 @@ import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 
-// Validierung bleibt gleich
-function isValidPanoItem(item) {
-  return (
-    item.viewer === "pano" &&
-    item.actualUrl &&
-    Array.isArray(item.levels) &&
-    item.levels.length > 0
-  );
-}
-
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
+  // PANORAMA: Nutzt ViewerPanorama (unverändert)
   if (item.viewer === "pano") {
-    if (!isValidPanoItem(item)) {
-      return (
-        <div
-          role="alert"
-          style={{ color: "red", padding: "2rem", background: "#fff" }}
-        >
-          Panorama data is missing or incomplete.
-        </div>
-      );
-    }
     return (
       <ErrorBoundary>
-        <Suspense fallback={<div>Loading panorama viewer…</div>}>
+        <Suspense fallback={<LoadingOverlay />}>
           <ViewerPanorama
             actualUrl={item.actualUrl}
             levels={item.levels}
@@ -57,15 +36,15 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
     );
   }
 
-  // Normales Bild: Nutzt die direkt vom Backend gelieferte actualUrl
+  // BILDER: Nutzt jetzt ebenfalls Tiles über ViewerImage
   return (
     <ErrorBoundary>
       <ViewerImage
         actualUrl={item.actualUrl}
+        levels={item.levels}
         thumbnailUrl={item.thumbnailUrl}
         name={item.name}
         onLoad={onContentLoaded}
-        isNavigationMode={isNavigationMode}
       />
     </ErrorBoundary>
   );
@@ -83,7 +62,6 @@ const Viewer = ({
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Keyboard navigation
   useKeyboardNavigation(null, onPrevious, onNext);
 
   const toggleMetadata = useCallback(
@@ -93,7 +71,6 @@ const Viewer = ({
   const handleContentLoaded = useCallback(() => setIsLoading(false), []);
   const handleCloseMetadata = useCallback(() => setShowMetadata(false), []);
 
-  // Escape-Key Handling
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === "Escape") {
@@ -126,9 +103,6 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
-      {/* Hier wird nun einfach direkt das 'item' aus den Props genommen.
-        Es gibt keinen useSignedUrl Hook mehr, der dazwischenfunkt.
-      */}
       {item.actualUrl && (
         <MediaContent
           key={item.id}

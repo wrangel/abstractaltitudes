@@ -11,6 +11,18 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   const containerRef = useRef(null);
   const panZoomInstanceRef = useRef(null);
 
+  // WICHTIG: Wenn sich die URL ändert (nächstes Bild), Status zurücksetzen
+  useEffect(() => {
+    setIsLoading(true);
+    setHasError(false);
+
+    // Altes Panzoom entsorgen, falls vorhanden
+    if (panZoomInstanceRef.current) {
+      panZoomInstanceRef.current.dispose();
+      panZoomInstanceRef.current = null;
+    }
+  }, [actualUrl]);
+
   const handleLoad = () => {
     setIsLoading(false);
     setShowBleep(true);
@@ -24,10 +36,13 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   };
 
   useEffect(() => {
-    // Wait until loading is done, no errors exist, the container is ready,
-    // and we have an authorized URL from the parent.
+    // Initialisierung nur, wenn Bild geladen, kein Fehler und Container da
     if (isLoading || hasError || !containerRef.current || !actualUrl) return;
-    if (panZoomInstanceRef.current) return;
+
+    // Falls durch schnelles Klicken doch noch eine Instanz da ist: weg damit
+    if (panZoomInstanceRef.current) {
+      panZoomInstanceRef.current.dispose();
+    }
 
     const img = containerRef.current.querySelector("img");
     if (img) {
@@ -40,6 +55,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
       minZoom: 0.5,
       bounds: true,
       boundsPadding: 0.1,
+      zoomDoubleClickGraph: false, // Verhindert Konflikte mit UI
       beforeWheel: () => false,
       beforeMouseDown: () => false,
     });
@@ -67,6 +83,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
 
   return (
     <div className={styles.ViewerImage}>
+      {/* Thumbnail als Platzhalter */}
       <img
         src={thumbnailUrl}
         alt={`${name} thumbnail`}
@@ -80,7 +97,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
           height: "100vh",
           objectFit: "contain",
           zIndex: 1040,
-          transition: "opacity 0.15s ease",
+          transition: "opacity 0.3s ease", // Etwas weicherer Übergang
         }}
       />
 
@@ -100,7 +117,6 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
           touchAction: "none",
         }}
       >
-        {/* We use actualUrl directly. Viewer.jsx handles the signing. */}
         {actualUrl && (
           <LazyImage
             src={actualUrl}

@@ -47,17 +47,33 @@ function processDocument(doc, presignedUrls) {
   const entry = presignedUrls.find((e) => e.name === doc.name);
   const urls = entry?.urls || {};
 
-  // Correctly access nested initialViewParameters
   const initialViewParameters = doc.initialViewParameters || {
     yaw: 0,
     pitch: 0,
     fov: Math.PI / 4,
   };
 
-  console.log(urls.actualUrl);
+  // --- DER TRICK FÜR KONSISTENZ ---
+  // Wenn es ein HDR ist, mappen wir 'size' zurück auf 'width' & 'height'
+  // Marzipano FlatGeometry braucht diese für das Seitenverhältnis.
+  let levels = doc.levels || [];
+
+  if (doc.type === "hdr" && levels.length > 0) {
+    const aspectRatio =
+      doc.originalHeight && doc.originalWidth
+        ? doc.originalHeight / doc.originalWidth
+        : 1;
+
+    levels = levels.map((level) => ({
+      tileSize: level.tileSize,
+      width: level.size, // 'size' aus DB wird hier zu 'width'
+      height: Math.round(level.size * aspectRatio), // 'height' wird berechnet
+    }));
+  }
 
   return {
     id: doc._id.toString(),
+    name: doc.name,
     viewer: doc.type === "pano" ? "pano" : "img",
     drone: doc.drone,
     dateTime: doc.dateTime,
@@ -65,8 +81,6 @@ function processDocument(doc, presignedUrls) {
     latitude: doc.latitude,
     longitude: doc.longitude,
     thumbnailUrl: urls.thumbnailUrl,
-    originalWidth: doc.originalWidth || null, // TODO Kill
-    originalHeight: doc.originalHeight || null, // TODO Kill
     actualUrl: urls.actualUrl,
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
@@ -75,7 +89,7 @@ function processDocument(doc, presignedUrls) {
       pitch: initialViewParameters.pitch,
       fov: initialViewParameters.fov,
     },
-    levels: doc.levels || [],
+    levels: levels, // Hier schicken wir die (evtl. gemappten) Levels
   };
 }
 

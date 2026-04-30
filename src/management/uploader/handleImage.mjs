@@ -20,40 +20,42 @@ import { promisify } from "util";
 const execFileAsync = promisify(execFile);
 
 /**
- * Renames a folder to newName.
- * Moves JPG files to the original folder.
- * Moves TIFF files to the modified folder as newName.tiff,
- * then converts TIFF to lossless and thumbnail WebP images in modified/S3.
- *
- * @param {string} originalFolderPath
- * @param {string} newName
- * @returns {Promise<object>} folder path and image dimensions
+ * Berechnet die Flat-Levels für Marzipano basierend auf der Bildgröße.
  */
+function calculateFlatLevels(width, height, tileSize = 512) {
+  const levels = [];
+  let currentWidth = width;
+  let currentHeight = height;
+  while (currentWidth > tileSize || currentHeight > tileSize) {
+    levels.unshift({ width: currentWidth, height: currentHeight, tileSize });
+    currentWidth = Math.round(currentWidth / 2);
+    currentHeight = Math.round(currentHeight / 2);
+  }
+  levels.unshift({ width: currentWidth, height: currentHeight, tileSize });
+  return levels;
+}
+
 export async function handleImage(originalFolderPath, newName) {
   const parentDir = path.dirname(originalFolderPath);
   const newFolderPath = path.join(parentDir, newName);
 
   logger.info(`[${newName}]: Starting image processing`);
 
-  // --- INTERACTIVE PREFLIGHT CHECK ---
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  const files = await fs.readdir(newFolderPath);
-  const jpgFiles = files.filter(
-    (f) =>
-      f.toLowerCase().endsWith(".jpg") || f.toLowerCase().endsWith(".jpeg"),
-  );
+  const files = await fs.readdir(originalFolderPath);
+  const jpgFiles = files.filter((f) => /\.jpe?g$/i.test(f));
   const tiffFiles = files.filter((f) => /\.tiff?$/i.test(f));
 
   const answer = await new Promise((resolve) => {
     rl.question(
-      `[${newName}]: Can you confirm that the following components are present?\n` +
-        `  - Exactly 5 JPG/JPEG files (found: ${jpgFiles.length})\n` +
-        `  - Exactly 1 TIFF/TIF file (found: ${tiffFiles.length})\n` +
-        "Type 'Y' to proceed, 'N' to exit: ",
+      `[${newName}]: Confirm components?\n` +
+        `  - JPGs: ${jpgFiles.length} (Expected 5)\n` +
+        `  - TIFFs: ${tiffFiles.length} (Expected 1)\n` +
+        "Type 'Y' to proceed: ",
       (input) => {
         rl.close();
         resolve(input.trim().toLowerCase());
@@ -62,56 +64,51 @@ export async function handleImage(originalFolderPath, newName) {
   });
 
   if (answer !== "y") {
-    logger.error(`[${newName}]: User did not confirm required files. Exiting.`);
+    logger.error(`[${newName}]: User aborted.`);
     process.exit(1);
   }
-  // --- End of interactive check ---
 
   if (originalFolderPath !== newFolderPath) {
     await fs.rename(originalFolderPath, newFolderPath);
-    logger.info(
-      `Renamed folder: '${originalFolderPath}' to '${newFolderPath}'`,
-    );
-  } else {
-    logger.info(
-      `No rename needed: '${originalFolderPath}' is already named '${newName}'`,
-    );
   }
 
   const modifiedPath = path.join(newFolderPath, MODIFIED_FOLDER);
   const originalPath = path.join(newFolderPath, ORIGINAL_FOLDER);
   const s3Path = path.join(modifiedPath, S3_FOLDER);
+  const tilesPath = path.join(s3Path, "tiles");
 
   await Promise.all([
     fs.mkdir(modifiedPath, { recursive: true }),
     fs.mkdir(originalPath, { recursive: true }),
     fs.mkdir(s3Path, { recursive: true }),
+    fs.mkdir(tilesPath, { recursive: true }),
   ]);
 
   for (const file of jpgFiles) {
-    const src = path.join(newFolderPath, file);
-    const dest = path.join(originalPath, file);
-    await fs.rename(src, dest);
-    logger.info(`Moved JPG file ${file} to ${originalPath}`);
+    await fs.rename(
+      path.join(newFolderPath, file),
+      path.join(originalPath, file),
+    );
   }
 
-  if (tiffFiles.length !== 1) {
-    logger.warn(`Expected exactly 1 TIFF file, found ${tiffFiles.length}`);
-    return { newFolderPath, originalWidth: null, originalHeight: null };
-  }
+  let resultData = {
+    newFolderPath,
+    originalWidth: null,
+    originalHeight: null,
+    levels: null,
+    viewer: "img",
+  };
 
-  let metadata = null;
-
-  for (const tiffFile of tiffFiles) {
-    const srcTiff = path.join(newFolderPath, tiffFile);
+  if (tiffFiles.length === 1) {
+    const tiffFile = tiffFiles[0];
     const destTiff = path.join(modifiedPath, `${newName}.tiff`);
-    await fs.rename(srcTiff, destTiff);
-    logger.info(`Moved and renamed TIFF file ${tiffFile} to ${destTiff}`);
+    await fs.rename(path.join(newFolderPath, tiffFile), destTiff);
 
-    const baseName = newName;
-    const tempPngPath = path.join(s3Path, `${baseName}_temp.png`);
+    const tempPngPath = path.join(s3Path, `${newName}_temp.png`);
 
     try {
+      // 1. TIFF -> PNG (für Sharp Verarbeitung)
+      logger.info(`[${newName}]: Converting TIFF to temporary PNG...`);
       await execFileAsync("magick", [
         destTiff,
         "-depth",
@@ -119,54 +116,42 @@ export async function handleImage(originalFolderPath, newName) {
         "-normalize",
         tempPngPath,
       ]);
-      logger.info(`Converted TIFF to PNG: ${tempPngPath}`);
 
       const image = sharp(tempPngPath);
-      metadata = await image.metadata();
+      const metadata = await image.metadata();
+      resultData.originalWidth = metadata.width;
+      resultData.originalHeight = metadata.height;
 
-      let hrImage = image;
-      if (metadata.width > 16383 || metadata.height > 16383) {
-        const aspectRatio = metadata.width / metadata.height;
-        let newWidth = Math.min(metadata.width, 16383);
-        let newHeight = Math.round(newWidth / aspectRatio);
-        if (newHeight > 16383) {
-          newHeight = 16383;
-          newWidth = Math.round(newHeight * aspectRatio);
-        }
-        hrImage = image.resize(newWidth, newHeight, { fit: "inside" });
-      }
+      // 2. Tiles generieren (google layout -> z/y/x Struktur)
+      logger.info(`[${newName}]: Generating tiles in ${tilesPath}...`);
+      await sharp(tempPngPath)
+        .tile({
+          size: 512,
+          layout: "google",
+        })
+        .toFile(tilesPath);
 
-      const losslessWebpPath = path.join(s3Path, `${baseName}.webp`);
-      await hrImage.webp({ lossless: true }).toFile(losslessWebpPath);
+      resultData.levels = calculateFlatLevels(metadata.width, metadata.height);
 
-      const thumbnailWebpPath = path.join(s3Path, THUMBNAIL_FILENAME);
-
-      const tnImage = image
-        .webp({ lossless: false, quality: THUMBNAIL_QUALITY })
+      // 3. Thumbnail erstellen
+      logger.info(`[${newName}]: Generating thumbnail...`);
+      await image
+        .clone()
         .resize({
           width: THUMBNAIL_WIDTH,
           height: THUMBNAIL_HEIGHT,
           fit: "inside",
-          position: sharp.strategy.attention,
-        });
+        })
+        .webp({ quality: THUMBNAIL_QUALITY })
+        .toFile(path.join(s3Path, THUMBNAIL_FILENAME));
 
-      await tnImage.toFile(thumbnailWebpPath);
-
+      // Cleanup
       await fs.unlink(tempPngPath);
-      logger.info(`Completed TIFF to WebP conversion for ${tiffFile}`);
+      logger.info(`[${newName}]: Processing complete.`);
     } catch (error) {
-      logger.error(
-        `Error processing TIFF to WebP for file ${tiffFile}:`,
-        error,
-      );
+      logger.error(`[${newName}]: Error:`, error);
     }
   }
 
-  return metadata
-    ? {
-        newFolderPath,
-        originalWidth: metadata.width,
-        originalHeight: metadata.height,
-      }
-    : { newFolderPath, originalWidth: null, originalHeight: null };
+  return resultData;
 }

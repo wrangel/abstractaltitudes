@@ -8,7 +8,6 @@ import {
   memo,
   Suspense,
   lazy,
-  useMemo,
 } from "react";
 import NavigationMedia from "./NavigationMedia";
 import ViewerImage from "./ViewerImage";
@@ -18,10 +17,8 @@ import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
-import { useViewportSize } from "../hooks/useViewportSize";
-import { buildQueryStringWidthHeight } from "../utils/buildQueryStringWidthHeight";
-import { useSignedUrl } from "../hooks/useUrlSigner";
 
+// Validierung bleibt gleich
 function isValidPanoItem(item) {
   return (
     item.viewer === "pano" &&
@@ -60,6 +57,7 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
     );
   }
 
+  // Normales Bild: Nutzt die direkt vom Backend gelieferte actualUrl
   return (
     <ErrorBoundary>
       <ViewerImage
@@ -81,49 +79,11 @@ const Viewer = ({
   isNavigationMode,
   toggleMode,
 }) => {
-  const { w, h } = useViewportSize();
   const viewerRef = useRef(null);
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Memoize sizing to prevent signature floods
-  const resizedActualUrl = useMemo(() => {
-    if (item.viewer !== "img") return item.actualUrl;
-
-    const actualWidth = item.originalWidth || w;
-    const actualHeight = item.originalHeight || h;
-
-    // Step the dimensions by 50px to debounce window resizing
-    const reqW = Math.round(Math.min(w, actualWidth) / 50) * 50;
-    const reqH = Math.round(Math.min(h, actualHeight) / 50) * 50;
-
-    return buildQueryStringWidthHeight(item.actualUrl, {
-      width: reqW,
-      height: reqH,
-    });
-  }, [
-    item.actualUrl,
-    item.viewer,
-    item.originalWidth,
-    item.originalHeight,
-    w,
-    h,
-  ]);
-
-  // 2. Fetch the signature
-  const { signedUrl, error } = useSignedUrl(
-    resizedActualUrl,
-    item.viewer !== "img",
-  );
-
-  // 3. Prepare the item for children - ensure actualUrl is ONLY the signed one if available
-  const mediaItem = useMemo(() => {
-    if (item.viewer === "img") {
-      return { ...item, actualUrl: signedUrl || null };
-    }
-    return item;
-  }, [item, signedUrl]);
-
+  // Keyboard navigation
   useKeyboardNavigation(null, onPrevious, onNext);
 
   const toggleMetadata = useCallback(
@@ -133,6 +93,7 @@ const Viewer = ({
   const handleContentLoaded = useCallback(() => setIsLoading(false), []);
   const handleCloseMetadata = useCallback(() => setShowMetadata(false), []);
 
+  // Escape-Key Handling
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === "Escape") {
@@ -155,10 +116,6 @@ const Viewer = ({
 
   const hideCursor = useAutoHideCursor(viewerRef, 800);
 
-  useEffect(() => {
-    if (error) console.error("Error fetching signed URL:", error);
-  }, [error]);
-
   return (
     <div
       className={`${styles.viewer} ${hideCursor ? styles["hide-cursor"] : ""}`}
@@ -169,11 +126,13 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
-      {/* Only render content once we have a signed URL (for images) or if it's a pano */}
-      {(mediaItem.actualUrl || item.viewer === "pano") && (
+      {/* Hier wird nun einfach direkt das 'item' aus den Props genommen.
+        Es gibt keinen useSignedUrl Hook mehr, der dazwischenfunkt.
+      */}
+      {item.actualUrl && (
         <MediaContent
-          key={mediaItem.id}
-          item={mediaItem}
+          key={item.id}
+          item={item}
           isNavigationMode={isNavigationMode}
           onContentLoaded={handleContentLoaded}
         />

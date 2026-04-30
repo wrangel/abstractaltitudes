@@ -68,7 +68,7 @@ function processDocument(doc, presignedUrls) {
     thumbnailUrl: urls.thumbnailUrl,
     originalWidth: doc.originalWidth || null, // TODO Kill
     originalHeight: doc.originalHeight || null, // TODO Kill
-    actualUrl: actualUrl,
+    actualUrl: urls.actualUrl,
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
     initialViewParameters: {

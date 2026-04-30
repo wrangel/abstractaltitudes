@@ -39,7 +39,7 @@ function hasWebGL() {
 }
 
 const ViewerPanorama = forwardRef(function ViewerPanorama(
-  { panoPath, levels, initialViewParameters, onReady, onError },
+  { actualUrl, levels, initialViewParameters, onReady, onError },
   ref,
 ) {
   const panoramaElement = useRef(null);
@@ -154,7 +154,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     if (!panoramaElement.current) return;
     if (
       !viewerRef.current ||
-      !panoPath ||
+      !actualUrl ||
       !levels ||
       !Array.isArray(levels) ||
       !levels.length ||
@@ -176,8 +176,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     const geometry = new Marzipano.CubeGeometry(safeLevels);
     const source = Marzipano.ImageUrlSource.fromString(
-      `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
-      { cubeMapPreviewUrl: `${panoPath}/preview.jpg` },
+      `${actualUrl}/{z}/{f}/{y}/{x}.jpg`,
+      { cubeMapPreviewUrl: `${actualUrl}/preview.jpg` },
     );
 
     source.addEventListener("error", (err) => {
@@ -222,7 +222,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       viewerRef.current?.destroyScene(sceneRef.current);
       sceneRef.current = null;
     };
-  }, [panoPath, levels, webglAbsent, initialViewParameters, onReady, onError]);
+  }, [actualUrl, levels, webglAbsent, initialViewParameters, onReady, onError]);
 
   /* -------------------------------------------------
    3.  View-parameter sync
@@ -284,9 +284,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
             This device or your browser do not support WebGL. WebGL is required
             to view high-performance 360° panoramas.
           </p>
-          {panoPath && (
+          {actualUrl && (
             <img
-              src={`${panoPath}/preview.jpg`}
+              src={`${actualUrl}/preview.jpg`}
               alt="Panorama preview"
               className={styles.thumbnail}
               style={{

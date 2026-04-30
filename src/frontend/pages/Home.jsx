@@ -21,7 +21,7 @@ function getSecureRandomIndex(max) {
 function isValidPanoItem(item) {
   return (
     item.viewer === "pano" &&
-    item.panoPath &&
+    item.actualUrl &&
     Array.isArray(item.levels) &&
     item.levels.length > 0
   );
@@ -86,7 +86,7 @@ const Home = () => {
       <div className={styles.backgroundWrapper}>
         {randomPano && isValidPanoItem(randomPano) ? (
           <ViewerPanorama
-            panoPath={randomPano.panoPath}
+            actualUrl={randomPano.actualUrl}
             levels={randomPano.levels}
             initialViewParameters={randomPano.initialViewParameters}
             onReady={() => setBackgroundPanoReady(true)}

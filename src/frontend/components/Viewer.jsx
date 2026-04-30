@@ -25,7 +25,7 @@ import { useSignedUrl } from "../hooks/useUrlSigner";
 function isValidPanoItem(item) {
   return (
     item.viewer === "pano" &&
-    item.panoPath &&
+    item.actualUrl &&
     Array.isArray(item.levels) &&
     item.levels.length > 0
   );
@@ -49,7 +49,7 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
       <ErrorBoundary>
         <Suspense fallback={<div>Loading panorama viewer…</div>}>
           <ViewerPanorama
-            panoPath={item.panoPath}
+            actualUrl={item.actualUrl}
             levels={item.levels}
             initialViewParameters={item.initialViewParameters}
             onReady={onContentLoaded}

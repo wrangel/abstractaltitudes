@@ -12,7 +12,7 @@ import logger from "./utils/logger.mjs";
 function validateInput(mongoData, presignedUrls) {
   if (!Array.isArray(mongoData) || !Array.isArray(presignedUrls)) {
     throw new Error(
-      "Invalid input: mongoData and presignedUrls must be arrays"
+      "Invalid input: mongoData and presignedUrls must be arrays",
     );
   }
 }
@@ -28,7 +28,7 @@ function intersectData(mongoData, presignedUrls) {
   const awsNames = new Set(presignedUrls.map((item) => item.name));
 
   const intersectedData = mongoData.filter((mongoItem) =>
-    awsNames.has(mongoItem.name)
+    awsNames.has(mongoItem.name),
   );
   const onlyInMongo = [...mongoNames].filter((name) => !awsNames.has(name));
   const onlyInAWS = [...awsNames].filter((name) => !mongoNames.has(name));
@@ -59,18 +59,18 @@ function processDocument(doc, presignedUrls) {
 
   return {
     id: doc._id.toString(),
-    viewer: isPano ? "pano" : "img",
+    viewer: doc.type === "pano" ? "pano" : "img",
     drone: doc.drone,
     dateTime: doc.dateTime,
     metadata: formatMetadata(doc),
     latitude: doc.latitude,
     longitude: doc.longitude,
     thumbnailUrl: urls.thumbnailUrl,
-    originalWidth: doc.originalWidth || null,
-    originalHeight: doc.originalHeight || null,
+    originalWidth: doc.originalWidth || null, // TODO Kill
+    originalHeight: doc.originalHeight || null, // TODO Kill
+    actualUrl: actualUrl,
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
-    ...(isPano ? { panoPath: urls.actualUrl } : { actualUrl: urls.actualUrl }),
     initialViewParameters: {
       yaw: initialViewParameters.yaw,
       pitch: initialViewParameters.pitch,
@@ -175,7 +175,7 @@ export const beautify = async (mongoData, presignedUrls) => {
 
   const { intersectedData, onlyInMongo, onlyInAWS } = intersectData(
     mongoData,
-    presignedUrls
+    presignedUrls,
   );
 
   try {

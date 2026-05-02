@@ -69,7 +69,11 @@ export async function getUrls() {
     const thumbnailUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/thumbnail.webp`;
     let actualUrl;
 
-    actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
+    if (type === "pano") {
+      actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
+    } else {
+      actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/${name}.dzi`;
+    }
 
     results.push({ name, type, urls: { thumbnailUrl, actualUrl } });
   }

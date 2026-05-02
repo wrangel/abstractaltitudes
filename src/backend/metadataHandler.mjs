@@ -5,9 +5,6 @@ import logger from "./utils/logger.mjs";
 
 /**
  * Validates input arrays for the beautify function.
- * @param {Array} mongoData - Data retrieved from MongoDB.
- * @param {Array} presignedUrls - URL data from AWS S3.
- * @throws Will throw an error if inputs are not arrays.
  */
 function validateInput(mongoData, presignedUrls) {
   if (!Array.isArray(mongoData) || !Array.isArray(presignedUrls)) {
@@ -18,30 +15,20 @@ function validateInput(mongoData, presignedUrls) {
 }
 
 /**
- * Computes intersection and differences between Mongo and AWS data sets.
- * @param {Array} mongoData - Array of MongoDB data objects.
- * @param {Array} presignedUrls - Array of AWS S3 URL objects.
- * @returns {Object} Object with intersected data and data only in one source.
+ * Computes intersection between Mongo and AWS data sets.
  */
 function intersectData(mongoData, presignedUrls) {
-  const mongoNames = new Set(mongoData.map((item) => item.name));
   const awsNames = new Set(presignedUrls.map((item) => item.name));
 
   const intersectedData = mongoData.filter((mongoItem) =>
     awsNames.has(mongoItem.name),
   );
-  const onlyInMongo = [...mongoNames].filter((name) => !awsNames.has(name));
-  const onlyInAWS = [...awsNames].filter((name) => !mongoNames.has(name));
 
-  return { intersectedData, onlyInMongo, onlyInAWS };
+  return { intersectedData };
 }
 
 /**
- * Processes a single document by augmenting it with URL info.
- * Determines if the media is panorama based on URL pattern.
- * @param {Object} doc - MongoDB document.
- * @param {Array} presignedUrls - AWS S3 presigned URLs array.
- * @returns {Object} Processed document ready for frontend consumption.
+ * Processes a single document.
  */
 function processDocument(doc, presignedUrls) {
   const entry = presignedUrls.find((e) => e.name === doc.name);
@@ -53,22 +40,27 @@ function processDocument(doc, presignedUrls) {
     fov: Math.PI / 4,
   };
 
-  // --- DER TRICK FÜR KONSISTENZ ---
-  // Wenn es ein HDR ist, mappen wir 'size' zurück auf 'width' & 'height'
-  // Marzipano FlatGeometry braucht diese für das Seitenverhältnis.
-  let levels = doc.levels || [];
+  // ==========================================================
+  // LEVELS MAPPING
+  // Da die DB jetzt width/height/tileSize hat, nehmen wir sie direkt.
+  // ==========================================================
+  let levels = Array.isArray(doc.levels) ? doc.levels : [];
 
   if (doc.type === "hdr" && levels.length > 0) {
-    const aspectRatio =
-      doc.originalHeight && doc.originalWidth
-        ? doc.originalHeight / doc.originalWidth
-        : 1;
-
-    levels = levels.map((level) => ({
-      tileSize: level.tileSize,
-      width: level.size, // 'size' aus DB wird hier zu 'width'
-      height: Math.round(level.size * aspectRatio), // 'height' wird berechnet
-    }));
+    levels = levels
+      .map((level) => ({
+        tileSize: level.tileSize || 512,
+        width: level.width || level.size, // Fallback auf 'size' falls alte Daten existieren
+        height:
+          level.height ||
+          Math.round(
+            (level.width || level.size) *
+              (doc.originalHeight / doc.originalWidth),
+          ),
+      }))
+      // Nur valide Level an das Frontend schicken
+      .filter((l) => l.width > 0 && l.height > 0)
+      .sort((a, b) => a.width - b.width);
   }
 
   return {
@@ -77,36 +69,40 @@ function processDocument(doc, presignedUrls) {
     viewer: doc.type === "pano" ? "pano" : "img",
     drone: doc.drone,
     dateTime: doc.dateTime,
+
     metadata: formatMetadata(doc),
+
     latitude: doc.latitude,
     longitude: doc.longitude,
+
     thumbnailUrl: urls.thumbnailUrl,
     actualUrl: urls.actualUrl,
+
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
+
     initialViewParameters: {
       yaw: initialViewParameters.yaw,
       pitch: initialViewParameters.pitch,
       fov: initialViewParameters.fov,
     },
-    levels: levels, // Hier schicken wir die (evtl. gemappten) Levels
+
+    levels,
   };
 }
 
 /**
- * Formats document metadata fields into a readable multiline string.
- * Formats date, time, altitude, location, author, and drone info.
- * @param {Object} doc - Document with metadata fields.
- * @returns {string} Formatted metadata string with line breaks.
+ * Formats metadata strings.
  */
 function formatMetadata(doc) {
   const dateTime = new Date(doc.dateTime);
+
   const formattedDate = dateTime.toLocaleDateString("en-US", {
-    //weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
   const formattedTime = dateTime.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
@@ -117,7 +113,8 @@ function formatMetadata(doc) {
 
   const road = doc.road ? doc.road.replace(/^,\s*/, "") : "";
   const formattedRoad = formatRoadWithLineBreaks(road, 29);
-  const location1 = `${doc.location || ""}`.trim(); // Previously: `${doc.location || ""}, ${doc.region || ""}`.trim();
+
+  const location1 = `${doc.location || ""}`.trim();
   const location2 = `${doc.country || ""}`.trim();
 
   return [
@@ -127,69 +124,39 @@ function formatMetadata(doc) {
     formattedRoad,
     location1,
     location2,
-    //`by ${doc.author || ""}`,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
 /**
- * Helper function to format road strings with line breaks
- * if they exceed a specified max length.
- * @param {string} road - The road string to format.
- * @param {number} maxLength - Maximum line length.
- * @returns {string} Road string with inserted line breaks.
+ * Road formatter for UI readability.
  */
 function formatRoadWithLineBreaks(road, maxLength) {
-  if (road.length <= maxLength) {
-    return road;
-  }
-
+  if (road.length <= maxLength) return road;
   const words = road.split(" ");
   let currentLine = "";
   const lines = [];
 
   for (const word of words) {
     if ((currentLine + word).length > maxLength) {
-      if (currentLine) {
-        lines.push(currentLine.trim());
-        currentLine = "";
-      }
-      // Split very long words if needed
-      if (word.length > maxLength) {
-        for (let i = 0; i < word.length; i += maxLength) {
-          lines.push(word.substr(i, maxLength));
-        }
-      } else {
-        currentLine = word;
-      }
+      if (currentLine) lines.push(currentLine.trim());
+      currentLine = word;
     } else {
       currentLine += (currentLine ? " " : "") + word;
     }
   }
-
-  if (currentLine) {
-    lines.push(currentLine.trim());
-  }
-
+  if (currentLine) lines.push(currentLine.trim());
   return lines.join("\n");
 }
 
 /**
- * Main exported function.
- * Processes MongoDB and AWS S3 data to produce combined, beautified dataset.
- * @param {Array} mongoData - Raw data from MongoDB.
- * @param {Array} presignedUrls - Raw presigned URL data from AWS S3.
- * @returns {Promise<Array>} Processed and beautified data.
- * @throws {Error} If input validation fails or processing errors occur.
+ * Main entry point for data transformation.
  */
 export const beautify = async (mongoData, presignedUrls) => {
   validateInput(mongoData, presignedUrls);
 
-  const { intersectedData, onlyInMongo, onlyInAWS } = intersectData(
-    mongoData,
-    presignedUrls,
-  );
+  const { intersectedData } = intersectData(mongoData, presignedUrls);
 
   try {
     return intersectedData.map((doc) => processDocument(doc, presignedUrls));

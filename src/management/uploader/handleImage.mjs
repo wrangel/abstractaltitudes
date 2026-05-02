@@ -125,9 +125,9 @@ export async function handleImage(originalFolderPath, newName) {
       await sharp(tempPngPath)
         .tile({
           size: 512,
-          layout: "dzi",
+          layout: "dz", // Change "dzi" to "dz"
         })
-        .toFile(path.join(s3Path, `${newName}.dzi`));
+        .toFile(path.join(s3Path, `${newName}`));
 
       logger.info(`[${newName}]: Generating webp thumbnail`);
 

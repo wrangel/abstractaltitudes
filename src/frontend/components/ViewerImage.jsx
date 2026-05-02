@@ -2,18 +2,16 @@ import { useEffect, useRef, useState, memo } from "react";
 import OpenSeadragon from "openseadragon";
 import styles from "../styles/ViewerImage.module.css";
 
-const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
+const ViewerImage = ({ tileSourceUrl, thumbnailUrl, name, onLoad }) => {
   const viewerRef = useRef(null);
   const osdInstance = useRef(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Sicherheits-Check: Wir brauchen URL und valide Levels
-    if (!viewerRef.current || !actualUrl || !levels?.length) return;
+    // 🔍 NEW CHECK: We only need the viewer element and the tileSourceUrl
+    if (!viewerRef.current || !tileSourceUrl) return;
 
-    // =========================
-    // CLEANUP (Vor Neu-Initialisierung)
-    // =========================
+    // Cleanup before re-initialization
     if (osdInstance.current) {
       try {
         osdInstance.current.destroy();
@@ -26,53 +24,27 @@ const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
     setLoaded(false);
 
     // =========================
-    // LEVELS (Sortierung sicherstellen)
-    // =========================
-    const sortedLevels = [...levels].sort((a, b) => a.width - b.width);
-    const maxLevel = sortedLevels[sortedLevels.length - 1];
-
-    if (!maxLevel || !maxLevel.width || !maxLevel.height) {
-      console.error("OSD: Invalid level dimensions", maxLevel);
-      return;
-    }
-
-    // =========================
-    // TILE SOURCE (Mapping für Google-Layout)
-    // =========================
-    const tileSource = {
-      width: maxLevel.width,
-      height: maxLevel.height,
-      tileSize: sortedLevels[0]?.tileSize || 512,
-      tileOverlap: 0,
-      minLevel: 0,
-      maxLevel: sortedLevels.length - 1,
-
-      // Schaut in S3-Ordner: tiles/{z}/{x}/{y}.jpg
-      getTileUrl: (level, x, y) => {
-        return `${actualUrl}/${level}/${x}/${y}.jpg`;
-      },
-    };
-
-    // =========================
-    // VIEWER INIT
+    // VIEWER INIT (DZI Mode)
     // =========================
     const viewer = OpenSeadragon({
       element: viewerRef.current,
       prefixUrl:
         "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
 
-      tileSources: tileSource,
+      // 🔥 THE MAGIC LINK:
+      // Instead of a manual object, we pass the URL string to the .dzi file.
+      tileSources: tileSourceUrl,
 
-      // 🔥 DER ENTSCHEIDENDE FIX FÜR DEN WEBGL-CRASH / CORS:
       crossOriginPolicy: "Anonymous",
+      loadTilesWithAjax: true, // Recommended for DZI over S3/CDNs
 
-      // Navigationselemente ausblenden (für sauberen Look)
+      // Navigation & Clean Look
       showNavigationControl: false,
       showZoomControl: false,
       showHomeControl: false,
       showFullPageControl: false,
 
-      // Performance & Interaktion
+      // Performance & Interaction
       gestureSettingsMouse: {
         clickToZoom: true,
         dblClickToZoom: true,
@@ -80,12 +52,10 @@ const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
         scrollToZoom: true,
       },
 
-      animationTime: 0.4,
-      blendTime: 0.2,
-      immediateRender: true,
+      animationTime: 0.5,
+      blendTime: 0.1,
       visibilityRatio: 1.0,
       constrainDuringPan: true,
-      imageSmoothingEnabled: true,
     });
 
     osdInstance.current = viewer;
@@ -99,25 +69,14 @@ const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
     };
 
     const onFail = (e) => {
-      console.error("OSD failed to open image:", e);
+      console.error("OSD failed to open DZI:", e.message, tileSourceUrl);
     };
 
     viewer.addHandler("open", onOpen);
     viewer.addHandler("open-failed", onFail);
 
-    // Initialer Zoom auf das ganze Bild
-    let raf;
-    viewer.addOnceHandler("fully-loaded-change", () => {
-      raf = requestAnimationFrame(() => {
-        viewer.viewport?.goHome(true);
-      });
-    });
-
-    // =========================
-    // CLEANUP BEIM UNMOUNT
-    // =========================
+    // Cleanup on unmount
     return () => {
-      if (raf) cancelAnimationFrame(raf);
       if (osdInstance.current) {
         try {
           osdInstance.current.removeHandler("open", onOpen);
@@ -129,7 +88,7 @@ const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
         osdInstance.current = null;
       }
     };
-  }, [actualUrl, levels]); // Re-init wenn sich URL oder Levels ändern
+  }, [tileSourceUrl]); // Re-init only when the DZI URL changes
 
   return (
     <div
@@ -142,7 +101,7 @@ const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
         overflow: "hidden",
       }}
     >
-      {/* Thumbnail als Platzhalter während des Ladens */}
+      {/* Placeholder thumbnail */}
       {!loaded && thumbnailUrl && (
         <img
           src={thumbnailUrl}
@@ -160,7 +119,7 @@ const ViewerImage = ({ actualUrl, levels, thumbnailUrl, name, onLoad }) => {
         />
       )}
 
-      {/* Das eigentliche OSD Canvas */}
+      {/* OSD Canvas */}
       <div
         ref={viewerRef}
         style={{

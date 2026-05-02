@@ -28,7 +28,7 @@ function intersectData(mongoData, presignedUrls) {
 }
 
 /**
- * Processes a single document.
+ * Processes a single document for DZI compatibility.
  */
 function processDocument(doc, presignedUrls) {
   const entry = presignedUrls.find((e) => e.name === doc.name);
@@ -40,32 +40,16 @@ function processDocument(doc, presignedUrls) {
     fov: Math.PI / 4,
   };
 
-  // ==========================================================
-  // LEVELS MAPPING
-  // Da die DB jetzt width/height/tileSize hat, nehmen wir sie direkt.
-  // ==========================================================
-  let levels = Array.isArray(doc.levels) ? doc.levels : [];
-
-  if (doc.type === "hdr" && levels.length > 0) {
-    levels = levels
-      .map((level) => ({
-        tileSize: level.tileSize || 512,
-        width: level.width || level.size, // Fallback auf 'size' falls alte Daten existieren
-        height:
-          level.height ||
-          Math.round(
-            (level.width || level.size) *
-              (doc.originalHeight / doc.originalWidth),
-          ),
-      }))
-      // Nur valide Level an das Frontend schicken
-      .filter((l) => l.width > 0 && l.height > 0)
-      .sort((a, b) => a.width - b.width);
-  }
+  // 🔥 NEW LOGIC: Construct the pointer to the DZI XML file
+  // This assumes your S3 structure is: folder/name.dzi
+  const tileSourceUrl = urls.actualUrl
+    ? `${urls.actualUrl}/${doc.name}.dzi`
+    : null;
 
   return {
     id: doc._id.toString(),
     name: doc.name,
+    // Keep 'hdr' as 'img' so the frontend loads ViewerImage.jsx
     viewer: doc.type === "pano" ? "pano" : "img",
     drone: doc.drone,
     dateTime: doc.dateTime,
@@ -76,7 +60,9 @@ function processDocument(doc, presignedUrls) {
     longitude: doc.longitude,
 
     thumbnailUrl: urls.thumbnailUrl,
-    actualUrl: urls.actualUrl,
+
+    // Pass the DZI path to the frontend
+    tileSourceUrl: tileSourceUrl,
 
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
@@ -87,7 +73,8 @@ function processDocument(doc, presignedUrls) {
       fov: initialViewParameters.fov,
     },
 
-    levels,
+    // 🗑️ We can keep this empty; the frontend won't need it for DZI
+    levels: [],
   };
 }
 

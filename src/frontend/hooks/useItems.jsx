@@ -43,7 +43,7 @@ export const useItems = () => {
     // Use cached, already-sorted items if cache is still valid
     if (cachedItems && now - cacheTimestamp < CACHE_TTL) {
       setItems((prev) =>
-        isSameArray(prev, cachedItems) ? prev : [...cachedItems]
+        isSameArray(prev, cachedItems) ? prev : [...cachedItems],
       );
       setIsLoading(false);
       return;
@@ -67,6 +67,8 @@ export const useItems = () => {
       }
 
       const data = await response.json();
+
+      console.log(data); // TODO
       const arrayData = Array.isArray(data) ? data : [];
 
       // 🔥 Canonical sort: newest first

@@ -72,7 +72,7 @@ export async function getUrls() {
       actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/tiles`;
     } else {
       // Raw actualUrl path without width/height; frontend will request signed URLs with size params
-      actualUrl = `${name}/${name}.webp`;
+      actualUrl = `${process.env.VITE_BUNNYCDN_BASE_URL}/${name}/${name}.dzi`;
     }
 
     results.push({ name, type, urls: { thumbnailUrl, actualUrl } });

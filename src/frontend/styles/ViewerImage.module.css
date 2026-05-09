@@ -71,6 +71,10 @@
   object-fit: contain;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   transition: opacity var(--transition-duration) ease-in-out;
+  /* ADD THESE FOR DESKTOP */
+  user-select: none; /* Prevents accidental text highlighting */
+  -webkit-user-drag: none; /* Stops the 'ghost image' drag behavior in Chrome/Safari */
+  pointer-events: auto; /* Ensures the image itself can still be 'grabbed' by panzoom */
 }
 
 .bleepButton {
@@ -98,6 +102,7 @@
 
 @media (max-width: 768px) {
   .image {
-    width: 100%;
+    max-width: 100%;
+    height: auto;
   }
 }

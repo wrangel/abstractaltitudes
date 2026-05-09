@@ -12,7 +12,6 @@ import combinedDataRoute from "./routes/combinedDataRoute.mjs";
 import bunnySignRoute from "./routes/bunnySignRoute.mjs";
 import expressStaticGzip from "express-static-gzip";
 
-// ---- Environment variable validation ----
 const requiredEnvVars = [
   "MONGODB_DB_USER",
   "MONGODB_DB_PASSWORD",
@@ -28,24 +27,15 @@ requiredEnvVars.forEach((v) => {
   }
 });
 
-// ---- Parse and prepare CORS origins ----
 const corsOrigins = process.env.CORS_ORIGINS.split(",")
   .map((x) => x.trim())
-  .filter(Boolean); // Remove empty strings
+  .filter(Boolean);
 
-if (!corsOrigins.length) {
-  logger.error("No valid domains in CORS_ORIGINS env var!");
-  process.exit(1);
-}
-
-// ---- Express initialization ----
 const app = express();
 const PORT = process.env.PORT || 8081;
 
-// ---- Dynamic CORS function middleware ----
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (e.g., curl, testing, mobile apps)
     if (!origin || corsOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -55,137 +45,94 @@ const corsOptions = {
   },
   credentials: true,
 };
-app.use(cors(corsOptions));
 
-// ---- Security headers for SPA ----
+// 1. GLOBAL RATE LIMITER (General protection for static files and fallback)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 2000, // Slightly higher for static assets
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(globalLimiter);
+
+app.use(cors(corsOptions));
+app.use(express.json());
+
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // Only if you need inline scripts
-        styleSrc: ["'self'", "'unsafe-inline'"], // Only if you need inline styles
-        imgSrc: ["'self'", "", "https:"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "https:"],
-        fontSrc: ["'self'", "", "https:"],
+        fontSrc: ["'self'", "https:", "data:"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
       },
     },
-    frameguard: {
-      action: "deny", // or 'sameorigin'
-    },
-  })
+    frameguard: { action: "deny" },
+  }),
 );
 
-// ---- Brotli/gzip static serving of built SPA assets (public/index.html etc) ----
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 app.use(
   "/",
   expressStaticGzip(path.join(__dirname, "../../build"), {
     enableBrotli: true,
     orderPreference: ["br", "gz"],
-    etag: true,
     maxAge: "1d",
-  })
+  }),
 );
 
-// ---- Compression for all HTTP responses ----
 app.use(compression({ level: 6, threshold: 1024 }));
 
-// ---- Log request origins (shows which client is connecting) ----
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  logger.info(`Request received from origin: ${origin}`);
-  next();
-});
-
-// ---- Health and readiness endpoints ----
-app.get("/healthz", (_, res) => res.status(200).send("ok"));
-app.get("/ready", async (_, res) => {
-  try {
-    await mongoose.connection.db.admin().ping();
-    res.status(200).send("ready");
-  } catch {
-    res.status(503).send("not ready");
-  }
-});
-
-// ---- API rate limiting (except health probes) ----
+// 2. API RATE LIMITER (Stricter protection for database routes)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: {
-    error: "Too many requests from this IP, please try again after 15 minutes",
-  },
+  max: 1000,
+  message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.path === "/healthz" || req.path === "/ready",
 });
+
 app.use("/api", apiLimiter);
 
-// ---- Register main API route(s) and a MongoDB test ----
+// Endpoints
+app.get("/healthz", (_, res) => res.status(200).send("ok"));
 app.use("/api", combinedDataRoute);
+app.use("/api", bunnySignRoute);
+
 app.get("/api/test-mongo", async (req, res) => {
   try {
     await mongoose.connection.db.admin().ping();
     res.json({ message: "MongoDB connection successful" });
   } catch (error) {
-    logger.error("MongoDB connection test failed:", { error });
     res.status(500).json({ error: "MongoDB connection test failed" });
   }
 });
 
-app.use("/api", bunnySignRoute);
-
-// ---- Catch-all SPA fallback for unknown paths ----
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: {
-    error: "Too many requests from this IP, please try again after 15 minutes",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.get("/", (_, res) => res.send("Server is running"));
-app.get("/*splat", generalLimiter, (req, res) => {
+// SPA Fallback - Now covered by globalLimiter
+app.get("/*path", (req, res) => {
   res.sendFile(path.join(__dirname, "../../build", "index.html"));
 });
 
-// ---- Final error handler ----
+// Error handling
 app.use((err, req, res, next) => {
   logger.error("Unhandled error:", err);
-  res.status(500).json({
-    error: "Internal Server Error",
-    message:
-      process.env.NODE_ENV === "production"
-        ? "Something went wrong"
-        : err.message,
+  res.status(500).json({ error: "Internal Server Error" });
+});
+
+mongoose.set("strictQuery", false);
+connectDB().then(() => {
+  const server = app.listen(PORT, () => logger.info(`Server on port ${PORT}`));
+  process.on("SIGTERM", async () => {
+    await closeDB();
+    server.close(() => process.exit(0));
   });
 });
 
-// ---- Graceful shutdown ----
-mongoose.set("strictQuery", false);
-const isMainModule = import.meta.url === `file://${process.argv[1]}`;
-if (isMainModule) {
-  connectDB()
-    .then(() => {
-      const server = app.listen(PORT, () =>
-        logger.info(`Server is running on port ${PORT}`)
-      );
-      // graceful stop
-      process.on("SIGTERM", async () => {
-        logger.info("SIGTERM received – shutting down gracefully");
-        await closeDB();
-        server.close(() => process.exit(0));
-      });
-    })
-    .catch((err) => {
-      logger.error("Failed to start the server:", { error: err });
-      process.exit(1);
-    });
-}
-
-// Let other modules trigger graceful shutdown
 export { closeDB };

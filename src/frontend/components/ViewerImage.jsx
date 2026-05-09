@@ -1,148 +1,155 @@
-// src/frontend/components/ViewerImage.jsx
-
 import { useState, useEffect, useRef, memo } from "react";
-import panzoom from "panzoom";
-import LazyImage from "./LazyImage";
+import OpenSeadragon from "openseadragon";
 import styles from "../styles/ViewerImage.module.css";
 
-const ViewerImage = ({
-  actualUrl,
-  thumbnailUrl,
-  name,
-  onLoad,
-  // isNavigationMode intentionally not used here — panzoom is always active.
-  // The navigation arrows are controlled by the parent; zoom is independent.
-}) => {
+/**
+ * ViewerImage Component
+ * Handles high-resolution Deep Zoom Images (DZI) using OpenSeadragon.
+ */
+const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [showBleep, setShowBleep] = useState(false);
 
-  const containerRef = useRef(null);
-  const panZoomInstanceRef = useRef(null);
-
-  const handleLoad = () => {
-    setIsLoading(false);
-    setShowBleep(true);
-    if (onLoad) onLoad();
-    setTimeout(() => setShowBleep(false), 500);
-  };
-
-  const handleError = () => {
-    setHasError(true);
-    setIsLoading(false);
-  };
+  const viewerRef = useRef(null);
+  const osdInstance = useRef(null);
 
   useEffect(() => {
-    if (isLoading || hasError || !containerRef.current) return;
-    if (panZoomInstanceRef.current) return;
+    // Prevent initialization if the URL or the container element is missing
+    if (!actualUrl || !viewerRef.current) return;
 
-    // Remove CSS size constraints from the img so panzoom can scale freely.
-    // max-width/max-height cap the transform origin and break zoom at scale > 1.
-    const img = containerRef.current.querySelector("img");
-    if (img) {
-      img.style.maxWidth = "none";
-      img.style.maxHeight = "none";
-    }
+    let isDestroyed = false;
 
-    // Apply panzoom to the CONTAINER div, not to the img element.
-    // Applying to img causes conflicts with CSS constraints and produces
-    // an unpredictable transform origin.
-    panZoomInstanceRef.current = panzoom(containerRef.current, {
-      maxZoom: 5,
-      minZoom: 0.5,
-      bounds: true,
-      boundsPadding: 0.1,
-      // Returning false means "handle this event" (don't skip).
-      // Prevents the browser intercepting wheel/pinch for native page zoom.
-      beforeWheel: () => false,
-      beforeMouseDown: () => false,
-    });
+    const initOSD = () => {
+      if (isDestroyed || !viewerRef.current) return;
 
+      // Clear the container to prevent multiple canvases if React re-renders
+      viewerRef.current.innerHTML = "";
+
+      // Initialize OpenSeadragon instance
+      osdInstance.current = OpenSeadragon({
+        element: viewerRef.current,
+        // Standard OSD UI icons from CDN
+        prefixUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
+        tileSources: actualUrl,
+        crossOriginPolicy: "Anonymous",
+        loadTilesWithAjax: true,
+        showNavigationControl: false,
+        gestureSettingsMouse: { clickToZoom: false },
+        visibilityRatio: 1.0,
+        constrainDuringPan: true,
+        minZoomImageRatio: 1,
+        checkUpdateInterval: 50,
+        // Updated from 'useCanvas' to 'drawer' to fix deprecation warning
+        drawer: "canvas",
+      });
+
+      // Handler for successful image loading
+      osdInstance.current.addHandler("open", () => {
+        if (!isDestroyed) {
+          setIsLoading(false);
+          if (onLoad) onLoad();
+        }
+      });
+
+      // Handler for failed image loading (S3 404, CORS, or Invalid DZI)
+      osdInstance.current.addHandler("open-failed", (error) => {
+        if (!isDestroyed) {
+          console.error("❌ OpenSeadragon failed to load:", error);
+          setHasError(true);
+          setIsLoading(false);
+        }
+      });
+    };
+
+    // Execute initialization after a micro-task to ensure DOM readiness
+    const timer = setTimeout(initOSD, 1);
+
+    // CLEANUP: Executed when component unmounts or URL changes
     return () => {
-      if (panZoomInstanceRef.current) {
-        panZoomInstanceRef.current.dispose();
-        panZoomInstanceRef.current = null;
+      isDestroyed = true;
+      clearTimeout(timer);
+
+      if (osdInstance.current) {
+        // 1. Unbind all event handlers
+        osdInstance.current.removeAllHandlers();
+
+        // 2. Immediately stop any pending tile requests (prevents WebGL context loss errors)
+        osdInstance.current.close();
+
+        // 3. Destroy the viewer and release GPU resources
+        osdInstance.current.destroy();
+        osdInstance.current = null;
+      }
+
+      // 4. Clean up the DOM element manually to be safe
+      if (viewerRef.current) {
+        viewerRef.current.innerHTML = "";
       }
     };
-  }, [isLoading, hasError]);
+  }, [actualUrl, onLoad]);
 
+  // Error State Render
   if (hasError) {
     return (
-      <div className={styles.ViewerImage} role="alert" aria-live="assertive">
-        <p>Failed to load image: {name}</p>
-        <img
-          src={thumbnailUrl}
-          alt={`${name} thumbnail fallback`}
-          className={styles.thumbnailFullViewport}
-        />
+      <div className={styles.ViewerImage} role="alert">
+        <div style={{ color: "#fff", textAlign: "center", paddingTop: "20vh" }}>
+          <p>Failed to load high-resolution image: {name}</p>
+          <img
+            src={thumbnailUrl}
+            alt="Fallback preview"
+            style={{
+              maxWidth: "80%",
+              maxHeight: "60vh",
+              marginTop: "20px",
+              borderRadius: "4px",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
+            }}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.ViewerImage}>
-      {/* Low-res thumbnail visible while the high-res image loads */}
-      <img
-        src={thumbnailUrl}
-        alt={`${name} thumbnail`}
-        className={styles.thumbnailFullViewport}
-        style={{
-          opacity: isLoading ? 1 : 0,
-          pointerEvents: "none",
-          position: "fixed",
-          inset: 0,
-          width: "100vw",
-          height: "100vh",
-          objectFit: "contain",
-          zIndex: 1040,
-          transition: "opacity 0.15s ease",
-        }}
-      />
+    <div
+      className={styles.ViewerImage}
+      style={{
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        background: "#000",
+        overflow: "hidden",
+      }}
+    >
+      {/* Blurry Thumbnail: Serves as a placeholder while high-res tiles load */}
+      {isLoading && (
+        <img
+          src={thumbnailUrl}
+          alt="Loading high-res preview"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            zIndex: 1040,
+            filter: "blur(12px)",
+            opacity: 0.7,
+            transition: "opacity 0.4s ease",
+          }}
+        />
+      )}
 
-      {/* panzoom attaches to this wrapper div */}
+      {/* Target element for OpenSeadragon */}
       <div
-        ref={containerRef}
-        className={styles.panzoomContainer}
+        ref={viewerRef}
         style={{
-          opacity: isLoading ? 0 : 1,
-          pointerEvents: isLoading ? "none" : "auto",
           width: "100%",
           height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
           zIndex: 1050,
-          transition: "opacity 0.15s ease",
-          // Hand all touch/pointer gestures to JS.
-          // Without this, mobile browsers intercept pinch for native page zoom
-          // before panzoom can process it.
-          touchAction: "none",
         }}
-        tabIndex={0}
-        aria-label={name}
-        role="img"
-      >
-        <LazyImage
-          src={actualUrl}
-          alt={name}
-          className={styles.image}
-          onLoad={handleLoad}
-          onError={handleError}
-        />
-      </div>
-
-      {showBleep && (
-        <button
-          className={styles.bleepButton}
-          aria-label="Image loaded indicator"
-          type="button"
-          tabIndex={-1}
-          onClick={() => console.info("Bleep indicator clicked")}
-        >
-          ●
-        </button>
-      )}
+      />
     </div>
   );
 };

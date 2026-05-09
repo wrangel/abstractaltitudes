@@ -1,5 +1,3 @@
-// server.mjs
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -47,8 +45,18 @@ const corsOptions = {
   },
   credentials: true,
 };
+
+// 1. GLOBAL RATE LIMITER (General protection for static files and fallback)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 2000, // Slightly higher for static assets
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(globalLimiter);
+
 app.use(cors(corsOptions));
-app.use(express.json()); // Essential for POST bodies
+app.use(express.json());
 
 app.use(
   helmet({
@@ -69,6 +77,7 @@ app.use(
 );
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 app.use(
   "/",
   expressStaticGzip(path.join(__dirname, "../../build"), {
@@ -80,17 +89,16 @@ app.use(
 
 app.use(compression({ level: 6, threshold: 1024 }));
 
-// API RATE LIMITER - Increased for Dev/Gallery usage
+// 2. API RATE LIMITER (Stricter protection for database routes)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000, // Increased from 100
+  max: 1000,
   message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.path === "/healthz" || req.path === "/ready",
 });
 
-// Apply rate limiter to all /api routes
 app.use("/api", apiLimiter);
 
 // Endpoints
@@ -107,7 +115,7 @@ app.get("/api/test-mongo", async (req, res) => {
   }
 });
 
-// SPA Fallback - Express 5 / path-to-regexp v8 compatible
+// SPA Fallback - Now covered by globalLimiter
 app.get("/*path", (req, res) => {
   res.sendFile(path.join(__dirname, "../../build", "index.html"));
 });

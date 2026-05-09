@@ -1,5 +1,3 @@
-// src/backend/management/uploader/handleImage.mjs
-
 import fs from "fs/promises";
 import path from "path";
 import readline from "readline";
@@ -19,23 +17,12 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
-/**
- * Renames a folder to newName.
- * Moves JPG files to the original folder.
- * Moves TIFF files to the modified folder as newName.tiff,
- * then converts TIFF to lossless and thumbnail WebP images in modified/S3.
- *
- * @param {string} originalFolderPath
- * @param {string} newName
- * @returns {Promise<object>} folder path and image dimensions
- */
 export async function handleImage(originalFolderPath, newName) {
   const parentDir = path.dirname(originalFolderPath);
   const newFolderPath = path.join(parentDir, newName);
 
-  logger.info(`[${newName}]: Starting image processing`);
+  logger.info(`[${newName}]: Starting HDR image processing`);
 
-  // --- INTERACTIVE PREFLIGHT CHECK ---
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -50,9 +37,9 @@ export async function handleImage(originalFolderPath, newName) {
 
   const answer = await new Promise((resolve) => {
     rl.question(
-      `[${newName}]: Can you confirm that the following components are present?\n` +
-        `  - Exactly 5 JPG/JPEG files (found: ${jpgFiles.length})\n` +
-        `  - Exactly 1 TIFF/TIF file (found: ${tiffFiles.length})\n` +
+      `[${newName}]: Confirm HDR file structure?\n` +
+        `  - JPGs: ${jpgFiles.length} (Expected 5)\n` +
+        `  - TIFFs: ${tiffFiles.length} (Expected 1)\n` +
         "Type 'Y' to proceed, 'N' to exit: ",
       (input) => {
         rl.close();
@@ -62,20 +49,12 @@ export async function handleImage(originalFolderPath, newName) {
   });
 
   if (answer !== "y") {
-    logger.error(`[${newName}]: User did not confirm required files. Exiting.`);
+    logger.error(`[${newName}]: User aborted processing.`);
     process.exit(1);
   }
-  // --- End of interactive check ---
 
   if (originalFolderPath !== newFolderPath) {
     await fs.rename(originalFolderPath, newFolderPath);
-    logger.info(
-      `Renamed folder: '${originalFolderPath}' to '${newFolderPath}'`,
-    );
-  } else {
-    logger.info(
-      `No rename needed: '${originalFolderPath}' is already named '${newName}'`,
-    );
   }
 
   const modifiedPath = path.join(newFolderPath, MODIFIED_FOLDER);
@@ -89,29 +68,21 @@ export async function handleImage(originalFolderPath, newName) {
   ]);
 
   for (const file of jpgFiles) {
-    const src = path.join(newFolderPath, file);
-    const dest = path.join(originalPath, file);
-    await fs.rename(src, dest);
-    logger.info(`Moved JPG file ${file} to ${originalPath}`);
+    await fs.rename(
+      path.join(newFolderPath, file),
+      path.join(originalPath, file),
+    );
   }
 
-  if (tiffFiles.length !== 1) {
-    logger.warn(`Expected exactly 1 TIFF file, found ${tiffFiles.length}`);
-    return { newFolderPath, originalWidth: null, originalHeight: null };
-  }
-
-  let metadata = null;
-
-  for (const tiffFile of tiffFiles) {
-    const srcTiff = path.join(newFolderPath, tiffFile);
+  if (tiffFiles.length === 1) {
+    const srcTiff = path.join(newFolderPath, tiffFiles[0]);
     const destTiff = path.join(modifiedPath, `${newName}.tiff`);
     await fs.rename(srcTiff, destTiff);
-    logger.info(`Moved and renamed TIFF file ${tiffFile} to ${destTiff}`);
 
-    const baseName = newName;
-    const tempPngPath = path.join(s3Path, `${baseName}_temp.png`);
+    const tempPngPath = path.join(s3Path, `${newName}_temp.png`);
 
     try {
+      // Normalize and convert to PNG for processing
       await execFileAsync("magick", [
         destTiff,
         "-depth",
@@ -119,54 +90,45 @@ export async function handleImage(originalFolderPath, newName) {
         "-normalize",
         tempPngPath,
       ]);
-      logger.info(`Converted TIFF to PNG: ${tempPngPath}`);
 
       const image = sharp(tempPngPath);
-      metadata = await image.metadata();
+      const metadata = await image.metadata();
 
-      let hrImage = image;
-      if (metadata.width > 16383 || metadata.height > 16383) {
-        const aspectRatio = metadata.width / metadata.height;
-        let newWidth = Math.min(metadata.width, 16383);
-        let newHeight = Math.round(newWidth / aspectRatio);
-        if (newHeight > 16383) {
-          newHeight = 16383;
-          newWidth = Math.round(newHeight * aspectRatio);
-        }
-        hrImage = image.resize(newWidth, newHeight, { fit: "inside" });
-      }
+      // GENERATE DEEP ZOOM TILES
+      // This creates {newName}.dzi and {newName}_files/
+      const dziOutputPath = path.join(s3Path, newName);
+      await image
+        .tile({
+          size: 256,
+          overlap: 1,
+          layout: "dz",
+          format: "jpeg",
+          quality: 90,
+        })
+        .toFile(dziOutputPath);
 
-      const losslessWebpPath = path.join(s3Path, `${baseName}.webp`);
-      await hrImage.webp({ lossless: true }).toFile(losslessWebpPath);
-
-      const thumbnailWebpPath = path.join(s3Path, THUMBNAIL_FILENAME);
-
-      const tnImage = image
+      // GENERATE THUMBNAIL
+      await image
         .webp({ lossless: false, quality: THUMBNAIL_QUALITY })
         .resize({
           width: THUMBNAIL_WIDTH,
           height: THUMBNAIL_HEIGHT,
           fit: "inside",
-          position: sharp.strategy.attention,
-        });
-
-      await tnImage.toFile(thumbnailWebpPath);
+        })
+        .toFile(path.join(s3Path, THUMBNAIL_FILENAME));
 
       await fs.unlink(tempPngPath);
-      logger.info(`Completed TIFF to WebP conversion for ${tiffFile}`);
-    } catch (error) {
-      logger.error(
-        `Error processing TIFF to WebP for file ${tiffFile}:`,
-        error,
-      );
-    }
-  }
+      logger.info(`[${newName}]: ✅ HDR DZI and Thumbnail completed`);
 
-  return metadata
-    ? {
+      return {
         newFolderPath,
         originalWidth: metadata.width,
         originalHeight: metadata.height,
-      }
-    : { newFolderPath, originalWidth: null, originalHeight: null };
+      };
+    } catch (error) {
+      logger.error(`[${newName}]: Processing failed`, error);
+    }
+  }
+
+  return { newFolderPath, originalWidth: null, originalHeight: null };
 }

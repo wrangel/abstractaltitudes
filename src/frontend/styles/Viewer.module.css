@@ -1,48 +1,32 @@
-/* src/frontend/styles/Viewer.css */
+/* src/frontend/styles/Viewer.module.css */
 
 .viewer {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden; /* Prevent overflow for better layout control */
-  z-index: 1000; /* Ensure the viewer is behind the popups */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  overflow: hidden;
+  z-index: 1000; /* High z-index to cover the gallery */
+  display: block;
 }
 
-.PopupMetadata {
-  position: absolute;
-  bottom: var(--spacing-medium);
-  left: var(--spacing-medium);
-  background-color: var(--popup-bg-color);
-  color: var(--popup-text-color);
-  padding: var(--popup-padding);
-  border-radius: var(--popup-border-radius);
-  box-shadow: var(--box-shadow); /* Optional: Add shadow for depth */
-  transition: opacity var(--transition-duration) ease; /* Smooth transition for visibility changes */
-  z-index: 1500; /* Ensure this is higher than the ViewerImage */
-}
-
-/* Optional: Focus styles for accessibility */
-.PopupMetadata:focus {
-  outline: none; /* Remove default outline */
-  box-shadow: 0 0 0 2px var(--primary-color); /* Custom focus outline */
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .PopupMetadata {
-    left: var(--spacing-small); /* Adjust left spacing on smaller screens */
-    bottom: var(--spacing-small); /* Adjust bottom spacing on smaller screens */
-    padding: var(
-      --popup-padding-small
-    ); /* Use a smaller padding variable if available */
-    font-size: var(
-      --font-size-small
-    ); /* Adjust font size for smaller screens */
-  }
-}
-
+/* Ensure the hide-cursor logic applies to the OSD canvas specifically */
 .hide-cursor,
 .hide-cursor *,
 .hide-cursor canvas {
   cursor: none !important;
+}
+
+.PopupMetadata {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  z-index: 2000; /* Above the viewer */
+  transition: opacity 0.3s ease;
 }

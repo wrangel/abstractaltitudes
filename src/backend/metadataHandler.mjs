@@ -70,8 +70,7 @@ function processDocument(doc, presignedUrls) {
     originalHeight: doc.originalHeight || null, // TODO Kill
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
-    ...(isPano ? { panoPath: urls.actualUrl } : { actualUrl: urls.actualUrl }),
-    actualUrl: urls.actualUrl,
+    ...(isPano ? { panoPath: urls.actualUrl } : { imagePath: urls.actualUrl }), // actualUrl becomes panoPath for panos and imagePath for images
     initialViewParameters: {
       yaw: initialViewParameters.yaw,
       pitch: initialViewParameters.pitch,

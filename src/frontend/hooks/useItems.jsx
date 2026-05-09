@@ -68,7 +68,6 @@ export const useItems = () => {
 
       const data = await response.json();
 
-      console.log(data); // TODO
       const arrayData = Array.isArray(data) ? data : [];
 
       // 🔥 Canonical sort: newest first

@@ -1,122 +1,126 @@
 import { useState, useEffect, useRef, memo } from "react";
-import panzoom from "panzoom";
-import LazyImage from "./LazyImage";
+import OpenSeadragon from "openseadragon";
 import styles from "../styles/ViewerImage.module.css";
 
 const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [showBleep, setShowBleep] = useState(false);
 
-  const containerRef = useRef(null);
-  const panZoomInstanceRef = useRef(null);
-
-  const handleLoad = () => {
-    setIsLoading(false);
-    setShowBleep(true);
-    if (onLoad) onLoad();
-    setTimeout(() => setShowBleep(false), 500);
-  };
-
-  const handleError = () => {
-    setHasError(true);
-    setIsLoading(false);
-  };
+  const viewerRef = useRef(null);
+  const osdInstance = useRef(null);
 
   useEffect(() => {
-    // Wait until loading is done, no errors exist, the container is ready,
-    // and we have an authorized URL from the parent.
-    if (isLoading || hasError || !containerRef.current || !actualUrl) return;
-    if (panZoomInstanceRef.current) return;
+    if (!actualUrl || !viewerRef.current) return;
 
-    const img = containerRef.current.querySelector("img");
-    if (img) {
-      img.style.maxWidth = "none";
-      img.style.maxHeight = "none";
-    }
+    let isDestroyed = false;
 
-    panZoomInstanceRef.current = panzoom(containerRef.current, {
-      maxZoom: 5,
-      minZoom: 0.5,
-      bounds: true,
-      boundsPadding: 0.1,
-      beforeWheel: () => false,
-      beforeMouseDown: () => false,
-    });
+    const initOSD = () => {
+      if (isDestroyed) return;
+
+      if (viewerRef.current) {
+        viewerRef.current.innerHTML = "";
+      }
+
+      osdInstance.current = OpenSeadragon({
+        element: viewerRef.current,
+        prefixUrl:
+          "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
+        tileSources: actualUrl,
+        crossOriginPolicy: "Anonymous",
+        loadTilesWithAjax: true,
+        showNavigationControl: false,
+        gestureSettingsMouse: { clickToZoom: false },
+        visibilityRatio: 1.0,
+        constrainDuringPan: true,
+        minZoomImageRatio: 1,
+        checkUpdateInterval: 50,
+      });
+
+      osdInstance.current.addHandler("open", () => {
+        if (!isDestroyed) {
+          setIsLoading(false);
+          if (onLoad) onLoad();
+        }
+      });
+
+      osdInstance.current.addHandler("open-failed", (error) => {
+        if (!isDestroyed) {
+          // Keep this one so you know if the CDN or S3 fails
+          console.error("❌ OSD failed to load:", error);
+          setHasError(true);
+          setIsLoading(false);
+        }
+      });
+    };
+
+    const timer = setTimeout(initOSD, 1);
 
     return () => {
-      if (panZoomInstanceRef.current) {
-        panZoomInstanceRef.current.dispose();
-        panZoomInstanceRef.current = null;
+      isDestroyed = true;
+      clearTimeout(timer);
+      if (osdInstance.current) {
+        osdInstance.current.removeAllHandlers();
+        osdInstance.current.destroy();
+        osdInstance.current = null;
+      }
+      if (viewerRef.current) {
+        viewerRef.current.innerHTML = "";
       }
     };
-  }, [isLoading, hasError, actualUrl]);
+  }, [actualUrl, onLoad]);
 
   if (hasError) {
     return (
       <div className={styles.ViewerImage} role="alert">
-        <p>Failed to load image: {name}</p>
-        <img
-          src={thumbnailUrl}
-          alt="fallback"
-          className={styles.thumbnailFullViewport}
-        />
+        <div style={{ color: "#fff", textAlign: "center", paddingTop: "20vh" }}>
+          <p>Failed to load high-res image: {name}</p>
+          <img
+            src={thumbnailUrl}
+            alt="fallback"
+            style={{ maxWidth: "80%", maxHeight: "60vh", marginTop: "20px" }}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.ViewerImage}>
-      <img
-        src={thumbnailUrl}
-        alt={`${name} thumbnail`}
-        className={styles.thumbnailFullViewport}
-        style={{
-          opacity: isLoading ? 1 : 0,
-          pointerEvents: "none",
-          position: "fixed",
-          inset: 0,
-          width: "100vw",
-          height: "100vh",
-          objectFit: "contain",
-          zIndex: 1040,
-          transition: "opacity 0.15s ease",
-        }}
-      />
+    <div
+      className={styles.ViewerImage}
+      style={{
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        background: "#000",
+        overflow: "hidden",
+      }}
+    >
+      {isLoading && (
+        <img
+          src={thumbnailUrl}
+          alt="loading"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            zIndex: 1040,
+            filter: "blur(10px)",
+            opacity: 0.8,
+            transition: "opacity 0.5s ease",
+          }}
+        />
+      )}
 
       <div
-        ref={containerRef}
-        className={styles.panzoomContainer}
+        ref={viewerRef}
         style={{
-          opacity: isLoading ? 0 : 1,
-          pointerEvents: isLoading ? "none" : "auto",
           width: "100%",
           height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
           zIndex: 1050,
-          touchAction: "none",
         }}
-      >
-        {/* We use actualUrl directly. Viewer.jsx handles the signing. */}
-        {actualUrl && (
-          <LazyImage
-            src={actualUrl}
-            alt={name}
-            className={styles.image}
-            onLoad={handleLoad}
-            onError={handleError}
-          />
-        )}
-      </div>
-
-      {showBleep && (
-        <button className={styles.bleepButton} type="button" tabIndex={-1}>
-          ●
-        </button>
-      )}
+      />
     </div>
   );
 };

@@ -8,7 +8,7 @@ import {
   lazy,
 } from "react";
 import NavigationMedia from "./NavigationMedia";
-import ViewerImage from "./ViewerImage";
+import ViewerImage from "./ViewerImage"; // The DZI Component
 import PopupMetadata from "./PopupMetadata";
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";

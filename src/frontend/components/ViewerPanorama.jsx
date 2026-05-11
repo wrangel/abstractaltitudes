@@ -174,6 +174,11 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       };
     });
 
+    // In ViewerPanorama.jsx, inside the scene creation useEffect, just before the geometry line:
+    console.log("levels received:", JSON.stringify(levels, null, 2));
+    console.log("maxCubeMapSize:", getMaxCubeMapSize());
+    console.log("safeLevels:", JSON.stringify(safeLevels, null, 2));
+
     const geometry = new Marzipano.CubeGeometry(safeLevels);
     const source = Marzipano.ImageUrlSource.fromString(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,

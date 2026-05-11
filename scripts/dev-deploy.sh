@@ -43,17 +43,14 @@ fi
 
 # DEPCHECK (non-blocking)
 echo "🔍 Checking for unused dependencies..."
-if pnpx depcheck --json > depcheck-report.json 2>/dev/null; then
-  if command -v jq &> /dev/null && [[ -s depcheck-report.json ]]; then
-    MISSING=$(jq '.missing | length' depcheck-report.json 2>/dev/null || echo 0)
-    UNUSED=$(jq '.dependencies | length' depcheck-report.json 2>/dev/null || echo 0)
-    [[ $MISSING -gt 0 ]] && echo "⚠️  $MISSING MISSING deps (see depcheck-report.json)"
-    [[ $UNUSED -gt 0 ]] && echo "🗑️  $UNUSED UNUSED deps (see depcheck-report.json)"
-  else
-    echo "📄 depcheck-report.json saved (install jq for summary)"
-  fi
+pnpm dlx depcheck --json > depcheck-report.json 2>/dev/null || true
+if command -v jq &> /dev/null && [[ -s depcheck-report.json ]]; then
+  MISSING=$(jq '.missing | length' depcheck-report.json 2>/dev/null || echo 0)
+  UNUSED=$(jq '.dependencies | length' depcheck-report.json 2>/dev/null || echo 0)
+  [[ $MISSING -gt 0 ]] && echo "⚠️  $MISSING MISSING deps (see depcheck-report.json)"
+  [[ $UNUSED -gt 0 ]] && echo "🗑️  $UNUSED UNUSED deps (see depcheck-report.json)"
 else
-  echo "⚠️  depcheck failed — skipping report"
+  echo "📄 depcheck-report.json saved (install jq for summary)"
 fi
 
 # Start dev servers

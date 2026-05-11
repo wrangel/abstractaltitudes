@@ -87,13 +87,26 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
+      {/* 
+          This wrapper is critical. 
+          It gives ViewerImage a defined area to calculate the DZI viewport.
+      */}
       {(item.imagePath || item.panoPath) && (
-        <MediaContent
-          key={item.id}
-          item={item}
-          isNavigationMode={isNavigationMode}
-          onContentLoaded={handleContentLoaded}
-        />
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            position: "absolute",
+            inset: 0,
+          }}
+        >
+          <MediaContent
+            key={item.id}
+            item={item}
+            isNavigationMode={isNavigationMode}
+            onContentLoaded={handleContentLoaded}
+          />
+        </div>
       )}
 
       <NavigationMedia

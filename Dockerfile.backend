@@ -1,40 +1,25 @@
 # syntax=docker/dockerfile:1
-
 FROM node:slim AS build
-
 WORKDIR /app
-
 RUN npm install -g pnpm
-
 # Copy only necessary files first for caching
 COPY package*.json pnpm-lock.yaml ./
-
 # Cache pnpm store between builds for speed
 RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile
-
+    pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
-
 # Optional build step if needed
 # RUN pnpm run build
 
 FROM node:alpine AS runtime
-
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
 WORKDIR /app
-
 # Create logs directory with proper ownership and permissions
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app/logs
-
 RUN npm install -g pnpm
-
 USER appuser
-
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/src ./src
 COPY --from=build /app/package*.json ./
-
 EXPOSE 8081
-
 CMD ["node", "src/backend/server.mjs"]

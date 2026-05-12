@@ -63,7 +63,7 @@ function Grid() {
                 { href: "https://www.marzipano.net/", label: "Marzipano" },
                 {
                   href: "https://openseadragon.github.io/",
-                  label: "OpenSeaDragon",
+                  label: "OpenSeadragon",
                 },
                 {
                   href: "https://www.adobe.com/products/photoshop-lightroom.html",

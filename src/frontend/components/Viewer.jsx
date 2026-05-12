@@ -8,7 +8,7 @@ import {
   lazy,
 } from "react";
 import NavigationMedia from "./NavigationMedia";
-import ViewerImage from "./ViewerImage"; // The DZI Component
+import ViewerImage from "./ViewerImage"; // OpenSeadragon / DZI Component
 import PopupMetadata from "./PopupMetadata";
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
@@ -16,9 +16,16 @@ import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 
+// Lazy load the heavy 360 viewer
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
+/**
+ * MediaContent decides which engine to use:
+ * 1. Marzipano (ViewerPanorama) for 360 CubeMaps
+ * 2. OpenSeadragon (ViewerImage) for Wide-Angle DZI or Standard JPGs
+ */
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
+  // If the item is specifically a 360 panorama
   if (item.viewer === "pano") {
     return (
       <ErrorBoundary>
@@ -34,10 +41,13 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
     );
   }
 
+  // For Wide-Angle (DZI) or standard DJI photos
+  // ViewerImage should be your component that uses OpenSeadragon
   return (
     <ErrorBoundary>
       <ViewerImage
-        actualUrl={item.imagePath}
+        // Prioritize DZI path for high-res tiling, fallback to standard image path
+        actualUrl={item.dziPath || item.imagePath}
         thumbnailUrl={item.thumbnailUrl}
         name={item.name}
         onLoad={onContentLoaded}
@@ -88,10 +98,10 @@ const Viewer = ({
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
       {/* 
-          This wrapper is critical. 
-          It gives ViewerImage a defined area to calculate the DZI viewport.
+          Container for the actual media. 
+          The inset: 0 ensures the child (OSD or Marzipano) fills the screen.
       */}
-      {(item.imagePath || item.panoPath) && (
+      {(item.imagePath || item.panoPath || item.dziPath) && (
         <div
           style={{
             width: "100%",
@@ -101,7 +111,7 @@ const Viewer = ({
           }}
         >
           <MediaContent
-            key={item.id}
+            key={item.id} // Key ensures fresh mount when switching items
             item={item}
             isNavigationMode={isNavigationMode}
             onContentLoaded={handleContentLoaded}

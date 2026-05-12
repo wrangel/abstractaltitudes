@@ -12,10 +12,6 @@ import {
   S3_FOLDER,
 } from "../../backend/constants.mjs";
 import sharp from "sharp";
-import { execFile } from "child_process";
-import { promisify } from "util";
-
-const execFileAsync = promisify(execFile);
 
 export async function handleWideAngle(originalFolderPath, newName) {
   const parentDir = path.dirname(originalFolderPath);
@@ -28,19 +24,24 @@ export async function handleWideAngle(originalFolderPath, newName) {
     output: process.stdout,
   });
 
-  const files = await fs.readdir(newFolderPath);
-  const jpgFiles = files.filter(
-    (f) =>
-      f.toLowerCase().endsWith(".jpg") || f.toLowerCase().endsWith(".jpeg"),
-  );
-  const djiFile = jpgFiles.find((f) => f.startsWith("DJI_"));
-  const panoFiles = jpgFiles.filter((f) => !f.startsWith("DJI_"));
+  // 1. Read files and filter for BOTH JPG and TIFF
+  const files = await fs.readdir(originalFolderPath);
+  const imageFiles = files.filter((f) => /\.(jpe?g|tiff?)$/i.test(f));
+
+  // Find the DJI source - Prioritize TIFF if both exist
+  const djiFile =
+    imageFiles.find(
+      (f) => f.startsWith("DJI_") && f.toLowerCase().endsWith(".tif"),
+    ) || imageFiles.find((f) => f.startsWith("DJI_"));
+
+  // This automatically grabs every image that ISN'T the main DJI file
+  const panoFiles = imageFiles.filter((f) => f !== djiFile);
 
   const answer = await new Promise((resolve) => {
     rl.question(
       `[${newName}]: Confirm wide-angle structure?\n` +
-        `  - DJI Main: ${djiFile || "MISSING"}\n` +
-        `  - PANO Refs: ${panoFiles.length} (Expected 9)\n` +
+        `  - DJI Main Source: ${djiFile || "MISSING"}\n` +
+        `  - PANO Refs Found: ${panoFiles.length}\n` + // Dynamically reports 9, 15, etc.
         "Type 'Y' to proceed, 'N' to exit: ",
       (input) => {
         rl.close();
@@ -54,6 +55,7 @@ export async function handleWideAngle(originalFolderPath, newName) {
     process.exit(1);
   }
 
+  // 2. Rename the top-level folder if necessary
   if (originalFolderPath !== newFolderPath) {
     await fs.rename(originalFolderPath, newFolderPath);
   }
@@ -68,6 +70,7 @@ export async function handleWideAngle(originalFolderPath, newName) {
     fs.mkdir(s3Path, { recursive: true }),
   ]);
 
+  // 3. Move ALL reference files to original/ (handles any number of images)
   for (const file of panoFiles) {
     await fs.rename(
       path.join(newFolderPath, file),
@@ -77,27 +80,24 @@ export async function handleWideAngle(originalFolderPath, newName) {
 
   if (djiFile) {
     const srcDji = path.join(newFolderPath, djiFile);
-    const destDji = path.join(modifiedPath, `${newName}.jpg`);
+    const ext = path.extname(djiFile);
+    const destDji = path.join(modifiedPath, `${newName}${ext}`);
+
     await fs.rename(srcDji, destDji);
 
-    const tempPngPath = path.join(s3Path, `wa_${newName}_temp.png`);
-
     try {
-      await execFileAsync("magick", [
-        destDji,
-        "-depth",
-        "8",
-        "-normalize",
-        tempPngPath,
-      ]);
+      // Initialize Sharp: Flatten handles TIFF transparency, Normalize handles contrast
+      const pipeline = sharp(destDji)
+        .flatten({ background: "#ffffff" })
+        .normalize();
 
-      const image = sharp(tempPngPath);
-      const metadata = await image.metadata();
+      const metadata = await pipeline.metadata();
 
-      // GENERATE WIDE-ANGLE DEEP ZOOM TILES
-      // Output: wa_{newName}.dzi and wa_{newName}_files/
-      const dziOutputPath = path.join(s3Path, `wa_${newName}`);
-      await image
+      // 4. GENERATE DEEP ZOOM TILES (Standardized to JPEG for web)
+      const dziOutputPath = path.join(s3Path, newName);
+
+      await pipeline
+        .clone()
         .tile({
           size: 256,
           overlap: 1,
@@ -107,8 +107,9 @@ export async function handleWideAngle(originalFolderPath, newName) {
         })
         .toFile(dziOutputPath);
 
-      // GENERATE THUMBNAIL
-      await image
+      // 5. GENERATE WEB CONTENT THUMBNAIL
+      await pipeline
+        .clone()
         .webp({ lossless: false, quality: THUMBNAIL_QUALITY })
         .resize({
           width: THUMBNAIL_WIDTH,
@@ -117,8 +118,9 @@ export async function handleWideAngle(originalFolderPath, newName) {
         })
         .toFile(path.join(s3Path, THUMBNAIL_FILENAME));
 
-      await fs.unlink(tempPngPath);
-      logger.info(`[${newName}]: ✅ Wide-angle DZI completed`);
+      logger.info(
+        `[${newName}]: ✅ Processed ${panoFiles.length + 1} total images.`,
+      );
 
       return {
         newFolderPath,

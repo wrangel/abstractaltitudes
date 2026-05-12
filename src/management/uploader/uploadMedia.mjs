@@ -26,7 +26,7 @@ async function folderExistsInS3(bucketName, prefix) {
     return data.Contents && data.Contents.length > 0;
   } catch (err) {
     logger.error(
-      `Error checking existence of prefix ${prefix} in bucket ${bucketName}: ${err.message}`
+      `Error checking existence of prefix ${prefix} in bucket ${bucketName}: ${err.message}`,
     );
     return false;
   }
@@ -84,6 +84,7 @@ async function uploadDirectoryToS3(localDir, s3Prefix) {
 export async function uploadMedia(mediaFolderPath, folderName) {
   const s3FolderPath = path.join(mediaFolderPath, "modified", "S3");
 
+  /*
   logger.info(`Checking if S3 folder with prefix ${folderName} exists...`);
   const exists = await folderExistsInS3(BUCKET_NAME, folderName);
   if (exists) {
@@ -91,10 +92,10 @@ export async function uploadMedia(mediaFolderPath, folderName) {
       `S3 folder with prefix ${folderName} already exists. Skipping upload.`
     );
     return;
-  }
+  }*/ // TODO Uncomment
 
   logger.info(
-    `Uploading contents of ${s3FolderPath} to S3 bucket ${BUCKET_NAME} under prefix ${folderName}`
+    `Uploading contents of ${s3FolderPath} to S3 bucket ${BUCKET_NAME} under prefix ${folderName}`,
   );
   await uploadDirectoryToS3(s3FolderPath, folderName);
   logger.info(`Completed upload of folder ${folderName}`);

@@ -1,6 +1,6 @@
 # Abstract Altitudes
 
-Capturing breathtaking aerial imagery and video through drone flights, showcasing stunning landscapes, vibrant cityscapes, and unique perspectives from above.
+Capturing aerial imagery through drone flights, showcasing landscapes & cityscapes, and unique perspectives from above.
 
 ## Table of Contents
 

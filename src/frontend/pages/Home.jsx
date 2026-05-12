@@ -78,7 +78,7 @@ const Home = () => {
         <link rel="canonical" href={DOMAIN} />
         <meta
           name="description"
-          content="Explore drone-captured aerial imagery. From lofty heights, we muse on marvels."
+          content="Explore drone-captured aerial imagery. Peaceful skies."
         />
       </Helmet>
 
@@ -148,7 +148,7 @@ const Home = () => {
         <div className={styles.contentOverlay}>
           <div className={`${styles.textWrapper} ${styles.textShadow}`}>
             <h1>Abstract Altitudes</h1>
-            <h2>Aerial Photography</h2>
+            <h2>Drone Photography</h2>
           </div>
 
           <div

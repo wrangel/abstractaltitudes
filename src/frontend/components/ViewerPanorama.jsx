@@ -64,8 +64,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
-        scrollZoom: false, // we handle wheel ourselves below
-        pinchZoom: true, // keep Hammer.js recogniser active for touch
+        scrollZoom: false,
+        pinchZoom: true,
       },
       stage: {
         pixelRatio: window.devicePixelRatio || 1,
@@ -94,10 +94,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       }
     });
 
-    // domElement() on Marzipano returns the stage wrapper DIV, which is the
-    // parent of the actual <canvas>. We need the canvas for style tweaks but
-    // must register wheel on the wrapper so it catches events over all child
-    // elements.
     const stageEl = viewerRef.current.stage().domElement();
     const canvas =
       stageEl.tagName === "CANVAS"
@@ -108,8 +104,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     canvas.style.opacity = "1";
     canvas.style.cursor = "default";
 
-    // Wheel target: if stageEl is the canvas itself walk up to its parent so
-    // the listener covers the full stage area.
     const wheelTarget =
       stageEl.tagName === "CANVAS"
         ? (stageEl.parentElement ?? stageEl)
@@ -117,7 +111,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     const handleWheel = (e) => {
       e.preventDefault();
-      e.stopPropagation(); // stop the browser from triggering native page zoom
+      e.stopPropagation();
       const view = sceneRef.current?.view();
       if (!view) return;
       const delta = e.deltaY > 0 ? 1.1 : 0.9;
@@ -186,8 +180,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     const limiter = Marzipano.RectilinearView.limit.vfov(
-      (30 * Math.PI) / 180, // min FOV: 30°
-      (120 * Math.PI) / 180, // max FOV: 120°
+      (30 * Math.PI) / 180,
+      (120 * Math.PI) / 180,
     );
     const previousView = sceneRef.current?.view();
     const viewParams = previousView

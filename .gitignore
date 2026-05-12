@@ -1,7 +1,6 @@
 # Dependency directories
 node_modules/
 *.log
-depcheck-report.json
 
 # Build output
 dist/
@@ -24,3 +23,4 @@ build
 # Scripts & backend files - normally tracked, so comment out ignore unless needed
 scripts/prod-deploy.sh
 stats.html
+depcheck-report.json

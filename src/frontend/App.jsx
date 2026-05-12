@@ -18,9 +18,7 @@ function App() {
   return (
     <HelmetProvider>
       <div className="App">
-        <h1 className="visually-hidden">
-          Capturing Breathtaking Aerial Photography
-        </h1>
+        <h1 className="visually-hidden">Peaceful Skies</h1>
 
         <ErrorBoundary>
           <Suspense fallback={<LoadingOverlay />}>

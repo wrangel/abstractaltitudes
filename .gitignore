@@ -1,26 +1,43 @@
-# Dependency directories
+# --- Dependencies ---
 node_modules/
-*.log
+.pnpm-debug.log*
 
-# Build output
+# --- Build & Output ---
+# You had both 'dist' and 'build' in your tree; Vite usually uses 'dist'
 dist/
-
-# OS files
-.DS_Store
-
-# Environment files / secrets
-.env
-env.production
-
-# Other local folders and files
-logs/
-material/
-build
-
-# Ignore local Docker ignore file to avoid adding locally ignored files in the image
-.dockerignore
-
-# Scripts & backend files - normally tracked, so comment out ignore unless needed
-scripts/prod-deploy.sh
+build/
 stats.html
 depcheck-report.json
+
+# --- Environment & Secrets ---
+# Use wildcards to catch .env.local, .env.production, etc.
+.env*
+!.env.example
+env.production
+
+# --- Logs ---
+# This catches the logs folder and any stray log files in the root
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- OS / IDE Files ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Project Specifics ---
+material/
+# Only ignore .dockerignore if you truly want to manage it differently on every machine
+# Usually, .dockerignore IS tracked so the build is consistent.
+# .dockerignore 
+
+# --- Scripts ---
+# If these contain sensitive production IPs or keys, keep them ignored.
+# Otherwise, deployment logic is usually tracked.
+scripts/prod-deploy.sh

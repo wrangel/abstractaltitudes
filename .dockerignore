@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules/
+*.log
+
+# Environment files (secrets)
+.env
+env.production
+
+# Git and Docker ignore files
+.git
+.gitignore
+.dockerignore
+
+# Mac OS system files
+.DS_Store
+
+stats.html
+
+# Local development folders and build artifacts
+logs/
+material/
+src/management/
+build
+
+# Frontend build output folders (if used locally during development)
+dist/
+build/
+
+# Editor/IDE folders
+.vscode/

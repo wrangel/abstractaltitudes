@@ -62,6 +62,10 @@ function Grid() {
                 { href: "https://ptgui.com", label: "PTGui Pro" },
                 { href: "https://www.marzipano.net/", label: "Marzipano" },
                 {
+                  href: "https://openseadragon.github.io/",
+                  label: "OpenSeaDragon",
+                },
+                {
                   href: "https://www.adobe.com/products/photoshop-lightroom.html",
                   label: "Adobe Lightroom",
                 },

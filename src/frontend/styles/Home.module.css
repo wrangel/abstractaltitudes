@@ -20,7 +20,7 @@
   inset: 0;
   overflow: hidden;
   z-index: 0;
-  pointer-events: none; /* ← CHANGED: was missing */
+  pointer-events: none;
 }
 
 .backgroundWrapper canvas {
@@ -34,13 +34,24 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-  object-fit: cover;
 }
 
 .backgroundImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+.backgroundGradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40vh;
+  background: linear-gradient(to top, black 0%, transparent 100%);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .contentOverlay {
@@ -58,12 +69,35 @@
 
 .textWrapper {
   text-align: center;
-  margin-bottom: var(--spacing-medium);
   color: var(--text-color);
 }
 
 .textShadow {
   text-shadow: var(--text-shadow-heavy);
+}
+
+.textClickable {
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  border-radius: var(--overlay-border-radius, 8px);
+  padding: 0.5rem 1rem;
+  margin-bottom: var(--spacing-medium);
+}
+
+.textClickable:hover {
+  opacity: 0.85;
+  transform: scale(1.02);
+}
+
+.textClickable:active {
+  transform: scale(0.98);
+}
+
+.textClickable:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 4px;
 }
 
 /* FORCE INTER THIN - keeps original perfect sizing via CSS vars */
@@ -86,20 +120,6 @@
 .scroll-indicator * {
   font-family: "Inter", sans-serif !important;
   font-weight: 100 !important;
-}
-
-.imageCenterWrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  cursor: pointer;
-}
-
-.image {
-  max-height: 25vh;
-  width: auto;
-  object-fit: contain;
 }
 
 .Home h1 {
@@ -128,8 +148,5 @@
 @media (max-width: 768px) {
   .Home h1 {
     font-size: var(--font-size-medium);
-  }
-  .image {
-    max-height: 20vh;
   }
 }

@@ -4,21 +4,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-      # Optional: Use build cache if BuildKit enabled (adjust host path or remove)
-      # cache_from:
-      #   - type=local,src=/tmp/.buildx-cache/backend
     env_file:
       - env.production
     environment:
       - NODE_ENV=production
       - PORT=8081
-    image: wrangel/abstractaltitudes-backend:2.1 # Adjust the tags also in prod-build.sh
+    image: wrangel/abstractaltitudes-backend:2.1
     ports:
       - "8081:8081"
     restart: unless-stopped
+    networks:
+      - app-network
     deploy:
       resources:
-        limits: # CPU limits are not accepted by Synology
+        limits:
           memory: 1024M
         reservations:
           memory: 512M
@@ -34,12 +33,15 @@ services:
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID}
         VITE_BUNNYCDN_BASE_URL: ${VITE_BUNNYCDN_BASE_URL}
-      # Optional: Use build cache if BuildKit enabled
-      # cache_from:
-      #   - type=local,src=/tmp/.buildx-cache/frontend
     image: wrangel/abstractaltitudes-frontend:2.1
     ports:
       - "3000:80"
     restart: unless-stopped
     depends_on:
       - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

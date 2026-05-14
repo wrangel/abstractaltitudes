@@ -1,7 +1,5 @@
 // src/frontend/constants/index.js
 
-// Use your own marker icons or default markers of Pigeon Maps
-
 // Base domain for your app URLs
 export const DOMAIN = "https://abstractaltitudes.com/";
 

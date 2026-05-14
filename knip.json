@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip/schema.json",
+  "entry": ["src/index.jsx!", "**/*.mjs!"],
+  "project": ["src/**/*.{js,jsx,ts,tsx}", "**/*.mjs"],
+  "ignoreDependencies": ["concurrently", "knip"]
+}

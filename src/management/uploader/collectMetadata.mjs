@@ -2,7 +2,6 @@
 
 import { readdir, readFile } from "fs/promises";
 import path from "path";
-import fetch from "node-fetch"; // for reverse geocoding API calls
 import ExifParser from "exif-parser";
 import logger from "../../backend/utils/logger.mjs";
 import {

@@ -29,7 +29,15 @@ const NavigationMedia = memo(
     }, []);
 
     const handleClose = () => {
-      if (isFullscreen) {
+      if (document.fullscreenElement) {
+        document.addEventListener(
+          "fullscreenchange",
+          function handler() {
+            document.removeEventListener("fullscreenchange", handler);
+            onClose();
+          },
+          { once: true },
+        );
         document.exitFullscreen().catch((err) => {
           console.error(`Error exiting fullscreen: ${err.message}`);
         });

@@ -11,7 +11,7 @@ import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
-const AUTO_ROTATE_DELAY = 3000; // ms
+const AUTO_ROTATE_DELAY = 3000;
 
 function getMaxCubeMapSize() {
   try {
@@ -59,7 +59,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       return;
     }
 
-    // Detect mobile devices (Covers Android and iPhone)
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
@@ -77,7 +76,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         concurrency: isMobile ? 2 : 4,
       },
       renderer: {
-        // Drastically lower limits for mobile screens to avoid layer crashes
         textureStoreCapacity: isMobile ? 24 : 100,
       },
     });
@@ -132,13 +130,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     };
     canvas.addEventListener("webglcontextlost", handleContextLost, false);
 
-    // Safeguard resize loops during aggressive fullscreen mode transitions
+    // Increased to 400ms — mobile fullscreen transitions take longer than 150ms
     const handleFullscreenChange = () => {
       setTimeout(() => {
         if (viewerRef.current) {
-          viewerRef.current.updateSize();
+          try {
+            viewerRef.current.updateSize();
+          } catch (e) {
+            console.warn("updateSize after fullscreen:", e);
+          }
         }
-      }, 150);
+      }, 400);
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
@@ -282,7 +284,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       }
       sceneRef.current = null;
 
-      // Clear out DOM explicitly to cut loose dangling WebGL layer hooks
       if (panoramaElement.current) {
         panoramaElement.current.innerHTML = "";
       }

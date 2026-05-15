@@ -13,6 +13,9 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   const viewerRef = useRef(null);
   const osdInstance = useRef(null);
 
+  /* -------------------------------------------------
+   1. Main OSD Initialization & Teardown
+   ------------------------------------------------- */
   useEffect(() => {
     if (!actualUrl || !viewerRef.current) return;
 
@@ -21,6 +24,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
     const initOSD = () => {
       if (isDestroyed || !viewerRef.current) return;
 
+      // Clear container to prevent duplicate canvases
       viewerRef.current.innerHTML = "";
 
       osdInstance.current = OpenSeadragon({
@@ -35,9 +39,8 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
         visibilityRatio: 1.0,
         constrainDuringPan: true,
         minZoomImageRatio: 1,
-        checkUpdateInterval: 50,
         drawer: "canvas",
-        // Mobile asset reduction optimization limits
+        // Optimization for mobile memory
         maxImageCacheCount: 50,
       });
 
@@ -50,7 +53,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
 
       osdInstance.current.addHandler("open-failed", (error) => {
         if (!isDestroyed) {
-          console.error("❌ OpenSeadragon failed to load:", error);
+          console.error("❌ OpenSeadragon failed:", error);
           setHasError(true);
           setIsLoading(false);
         }
@@ -62,39 +65,53 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
     return () => {
       isDestroyed = true;
       clearTimeout(timer);
-
       if (osdInstance.current) {
-        osdInstance.current.removeAllHandlers();
-        try {
-          osdInstance.current.close();
-          osdInstance.current.destroy();
-        } catch (e) {
-          console.warn("OSD close notice:", e);
-        }
+        osdInstance.current.destroy();
         osdInstance.current = null;
       }
-
       if (viewerRef.current) {
         viewerRef.current.innerHTML = "";
       }
     };
   }, [actualUrl, onLoad]);
 
+  /* -------------------------------------------------
+   2. Fullscreen/Resize Stability Fix
+   ------------------------------------------------- */
+  useEffect(() => {
+    const handleFsResize = () => {
+      if (osdInstance.current) {
+        // We delay for 500ms to allow the mobile browser's
+        // layout transition (shrinking/growing) to finish.
+        setTimeout(() => {
+          if (osdInstance.current && osdInstance.current.viewport) {
+            // Re-sync the internal canvas size with the new DOM size
+            osdInstance.current.forceRedraw();
+            // Optional: reset view to ensure image isn't "lost" off-screen
+            osdInstance.current.viewport.goHome(true);
+          }
+        }, 500);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFsResize);
+    window.addEventListener("resize", handleFsResize);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsResize);
+      window.removeEventListener("resize", handleFsResize);
+    };
+  }, []);
+
   if (hasError) {
     return (
       <div className={styles.ViewerImage} role="alert">
         <div style={{ color: "#fff", textAlign: "center", paddingTop: "20vh" }}>
-          <p>Failed to load high-resolution image: {name}</p>
+          <p>Failed to load: {name}</p>
           <img
             src={thumbnailUrl}
-            alt="Fallback preview"
-            style={{
-              maxWidth: "80%",
-              maxHeight: "60vh",
-              marginTop: "20px",
-              borderRadius: "4px",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
-            }}
+            alt="Fallback"
+            style={{ maxWidth: "80%", marginTop: "20px" }}
           />
         </div>
       </div>
@@ -115,7 +132,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
       {isLoading && (
         <img
           src={thumbnailUrl}
-          alt="Loading high-res preview"
+          alt="Loading"
           style={{
             position: "absolute",
             inset: 0,
@@ -125,18 +142,12 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
             zIndex: 1040,
             filter: "blur(12px)",
             opacity: 0.7,
-            transition: "opacity 0.4s ease",
           }}
         />
       )}
-
       <div
         ref={viewerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          zIndex: 1050,
-        }}
+        style={{ width: "100%", height: "100%", zIndex: 1050 }}
       />
     </div>
   );

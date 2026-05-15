@@ -16,14 +16,8 @@ import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 
-// Lazy load the heavy 360 viewer
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
-/**
- * MediaContent decides which engine to use:
- * 1. Marzipano (ViewerPanorama) for 360 CubeMaps
- * 2. OpenSeadragon (ViewerImage) for Wide-Angle DZI or Standard JPGs
- */
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
   if (item.viewer === "pano") {
     return (
@@ -64,6 +58,12 @@ const Viewer = ({
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Reset loading state whenever the item changes
+  useEffect(() => {
+    setIsLoading(true);
+    setShowMetadata(false);
+  }, [item.id]);
+
   useKeyboardNavigation(onClose, onPrevious, onNext);
 
   const toggleMetadata = useCallback(
@@ -103,7 +103,7 @@ const Viewer = ({
           }}
         >
           <MediaContent
-            key={item.id} // Forces fresh mount when switching items
+            key={item.id}
             item={item}
             isNavigationMode={isNavigationMode}
             onContentLoaded={handleContentLoaded}

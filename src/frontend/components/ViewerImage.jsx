@@ -14,7 +14,6 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   const osdInstance = useRef(null);
 
   useEffect(() => {
-    // Prevent initialization if the URL or the container element is missing
     if (!actualUrl || !viewerRef.current) return;
 
     let isDestroyed = false;
@@ -22,13 +21,10 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
     const initOSD = () => {
       if (isDestroyed || !viewerRef.current) return;
 
-      // Clear the container to prevent multiple canvases if React re-renders
       viewerRef.current.innerHTML = "";
 
-      // Initialize OpenSeadragon instance
       osdInstance.current = OpenSeadragon({
         element: viewerRef.current,
-        // Standard OSD UI icons from CDN
         prefixUrl:
           "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
         tileSources: actualUrl,
@@ -40,11 +36,11 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
         constrainDuringPan: true,
         minZoomImageRatio: 1,
         checkUpdateInterval: 50,
-        // Updated from 'useCanvas' to 'drawer' to fix deprecation warning
         drawer: "canvas",
+        // Mobile asset reduction optimization limits
+        maxImageCacheCount: 50,
       });
 
-      // Handler for successful image loading
       osdInstance.current.addHandler("open", () => {
         if (!isDestroyed) {
           setIsLoading(false);
@@ -52,7 +48,6 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
         }
       });
 
-      // Handler for failed image loading (S3 404, CORS, or Invalid DZI)
       osdInstance.current.addHandler("open-failed", (error) => {
         if (!isDestroyed) {
           console.error("❌ OpenSeadragon failed to load:", error);
@@ -62,34 +57,29 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
       });
     };
 
-    // Execute initialization after a micro-task to ensure DOM readiness
     const timer = setTimeout(initOSD, 1);
 
-    // CLEANUP: Executed when component unmounts or URL changes
     return () => {
       isDestroyed = true;
       clearTimeout(timer);
 
       if (osdInstance.current) {
-        // 1. Unbind all event handlers
         osdInstance.current.removeAllHandlers();
-
-        // 2. Immediately stop any pending tile requests (prevents WebGL context loss errors)
-        osdInstance.current.close();
-
-        // 3. Destroy the viewer and release GPU resources
-        osdInstance.current.destroy();
+        try {
+          osdInstance.current.close();
+          osdInstance.current.destroy();
+        } catch (e) {
+          console.warn("OSD close notice:", e);
+        }
         osdInstance.current = null;
       }
 
-      // 4. Clean up the DOM element manually to be safe
       if (viewerRef.current) {
         viewerRef.current.innerHTML = "";
       }
     };
   }, [actualUrl, onLoad]);
 
-  // Error State Render
   if (hasError) {
     return (
       <div className={styles.ViewerImage} role="alert">
@@ -122,7 +112,6 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
         overflow: "hidden",
       }}
     >
-      {/* Blurry Thumbnail: Serves as a placeholder while high-res tiles load */}
       {isLoading && (
         <img
           src={thumbnailUrl}
@@ -141,7 +130,6 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
         />
       )}
 
-      {/* Target element for OpenSeadragon */}
       <div
         ref={viewerRef}
         style={{

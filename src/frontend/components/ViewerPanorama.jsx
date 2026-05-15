@@ -1,5 +1,3 @@
-// src/frontend/components/ViewerPanorama.jsx
-
 import {
   useRef,
   useLayoutEffect,
@@ -61,6 +59,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       return;
     }
 
+    // Detect mobile devices (Covers Android and iPhone)
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
@@ -73,10 +74,11 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         generateMipmaps: false,
       },
       network: {
-        concurrency: 4,
+        concurrency: isMobile ? 2 : 4,
       },
       renderer: {
-        textureStoreCapacity: 100,
+        // Drastically lower limits for mobile screens to avoid layer crashes
+        textureStoreCapacity: isMobile ? 24 : 100,
       },
     });
 
@@ -126,9 +128,19 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     const handleContextLost = (e) => {
       e.preventDefault();
-      console.warn("WebGL context lost — mobile GPU ran out of resources.");
+      console.warn("WebGL context lost — GPU ran out of resources.");
     };
     canvas.addEventListener("webglcontextlost", handleContextLost, false);
+
+    // Safeguard resize loops during aggressive fullscreen mode transitions
+    const handleFullscreenChange = () => {
+      setTimeout(() => {
+        if (viewerRef.current) {
+          viewerRef.current.updateSize();
+        }
+      }, 150);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
 
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
@@ -138,6 +150,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     return () => {
       wheelTarget.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, [onError]);
 
@@ -213,7 +226,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     }
 
     return () => {
-      viewerRef.current?.destroyScene(sceneRef.current);
+      if (viewerRef.current && sceneRef.current) {
+        viewerRef.current.destroyScene(sceneRef.current);
+      }
       sceneRef.current = null;
     };
   }, [panoPath, levels, webglAbsent, initialViewParameters, onReady, onError]);
@@ -256,13 +271,21 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   );
 
   /* -------------------------------------------------
-   5.  Cleanup
+   5.  Absolute Cleanup
    ------------------------------------------------- */
   useEffect(() => {
     return () => {
-      viewerRef.current?.destroy();
-      viewerRef.current = null;
+      if (viewerRef.current) {
+        viewerRef.current.stopMovement();
+        viewerRef.current.destroy();
+        viewerRef.current = null;
+      }
       sceneRef.current = null;
+
+      // Clear out DOM explicitly to cut loose dangling WebGL layer hooks
+      if (panoramaElement.current) {
+        panoramaElement.current.innerHTML = "";
+      }
     };
   }, []);
 
@@ -274,10 +297,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       <div className={styles.errorOverlay}>
         <div className={styles.errorMessage}>
           <h1>WebGL unsupported</h1>
-          <p>
-            This device or your browser do not support WebGL. WebGL is required
-            to view high-performance 360° panoramas.
-          </p>
+          <p>This device or browser does not support WebGL configurations.</p>
           {panoPath && (
             <img
               src={`${panoPath}/preview.jpg`}

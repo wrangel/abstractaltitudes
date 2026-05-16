@@ -1,5 +1,3 @@
-// src/frontend/hooks/useAutoHideCursor.jsx
-
 import { useState, useRef, useEffect } from "react";
 
 export default function useAutoHideCursor(ref, timeout = 1000) {
@@ -10,7 +8,7 @@ export default function useAutoHideCursor(ref, timeout = 1000) {
     const node = ref.current;
     if (!node) return;
 
-    const isFullscreenForNode = () => document.fullscreenElement === node; // null when not in fullscreen [web:3][web:21]
+    const isFullscreenForNode = () => document.fullscreenElement === node;
 
     const clearTimer = () => {
       if (timerRef.current) {
@@ -22,44 +20,35 @@ export default function useAutoHideCursor(ref, timeout = 1000) {
     const startTimer = () => {
       clearTimer();
       timerRef.current = setTimeout(() => {
-        // Only hide if still fullscreen for this node
-        if (isFullscreenForNode()) {
+        // Re-check ref is still mounted and still fullscreen
+        if (ref.current && isFullscreenForNode()) {
           setHide(true);
         }
       }, timeout);
     };
 
     const showCursorAndMaybeScheduleHide = () => {
-      // Any pointer movement shows cursor again
       setHide(false);
-
-      // If not fullscreen, do not schedule hiding
       if (!isFullscreenForNode()) {
         clearTimer();
         return;
       }
-
       startTimer();
     };
 
     const handleFullscreenChange = () => {
       if (!isFullscreenForNode()) {
-        // Left fullscreen: show cursor and cancel timer
         setHide(false);
         clearTimer();
       } else {
-        // Entered fullscreen: begin auto‑hide cycle
         showCursorAndMaybeScheduleHide();
       }
     };
 
-    // Pointer movement only matters while this node is present
     node.addEventListener("pointermove", showCursorAndMaybeScheduleHide);
-
-    // Listen at document level for fullscreen transitions. [web:24][web:27]
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
-    // If already in fullscreen when hook mounts, start cycle
+    // Only start the hide cycle if already fullscreen when hook mounts
     if (isFullscreenForNode()) {
       showCursorAndMaybeScheduleHide();
     } else {

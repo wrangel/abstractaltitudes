@@ -1,5 +1,3 @@
-// src/frontend/components/ViewerPanorama.jsx
-
 import {
   useRef,
   useLayoutEffect,
@@ -11,33 +9,36 @@ import {
 } from "react";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
+import { useWebGLManager } from "../utils/WebGLManager";
+// Import from the shared utility so probe canvases are created and released
+// exactly once per page load, not once per component mount/render.
+import { hasWebGL, getMaxCubeMapSize } from "../utils/webglSupport";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
-const AUTO_ROTATE_DELAY = 3000; // ms
+const AUTO_ROTATE_DELAY = 3000;
 
-function getMaxCubeMapSize() {
-  try {
-    const canvas = document.createElement("canvas");
-    const gl =
-      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    return gl ? gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE) : 2048;
-  } catch {
-    return 2048;
+// ---------------------------------------------------------------------------
+// Shared teardown helper — used by the eviction path and normal cleanup.
+// ---------------------------------------------------------------------------
+function destroyViewer(viewerRef, sceneRef, panoramaElement) {
+  if (viewerRef.current) {
+    try {
+      viewerRef.current.stopMovement();
+    } catch (_) {}
+    try {
+      viewerRef.current.destroy();
+    } catch (_) {}
+    viewerRef.current = null;
+  }
+  sceneRef.current = null;
+  if (panoramaElement?.current) {
+    panoramaElement.current.innerHTML = "";
   }
 }
 
-function hasWebGL() {
-  try {
-    const canvas = document.createElement("canvas");
-    return !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
-    );
-  } catch {
-    return false;
-  }
-}
-
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 const ViewerPanorama = forwardRef(function ViewerPanorama(
   { panoPath, levels, initialViewParameters, onReady, onError },
   ref,
@@ -47,7 +48,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const sceneRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
+  // True only during a genuine browser-issued GPU context loss, NOT during
+  // our own intentional teardown (guarded by isTearingDownRef).
+  const [contextLost, setContextLost] = useState(false);
   const autorotateRef = useRef(null);
+  const fsTransitionRef = useRef(false);
+  const fsResizeTimerRef = useRef(null);
+  // Set to true before every intentional viewer.destroy() so the
+  // webglcontextlost listener ignores the synthetic event it may fire.
+  const isTearingDownRef = useRef(false);
+
+  const { acquireContext, releaseContext } = useWebGLManager();
 
   /* -------------------------------------------------
    1.  Viewer creation (once, after DOM exists)
@@ -61,6 +72,16 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       return;
     }
 
+    isTearingDownRef.current = false;
+
+    const granted = acquireContext(() => {
+      isTearingDownRef.current = true;
+      destroyViewer(viewerRef, sceneRef, panoramaElement);
+    });
+    if (!granted) return;
+
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
     viewerRef.current = new Marzipano.Viewer(panoramaElement.current, {
       controls: {
         mouseViewMode: "drag",
@@ -72,12 +93,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         preserveDrawingBuffer: false,
         generateMipmaps: false,
       },
-      network: {
-        concurrency: 4,
-      },
-      renderer: {
-        textureStoreCapacity: 100,
-      },
+      network: { concurrency: isMobile ? 2 : 4 },
+      renderer: { textureStoreCapacity: isMobile ? 24 : 100 },
     });
 
     const controls = viewerRef.current.controls();
@@ -85,7 +102,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       viewerRef.current.stopMovement(),
     );
     controls.addEventListener("dragEnd", () => {
-      if (autorotateRef.current) {
+      if (autorotateRef.current && viewerRef.current) {
         viewerRef.current.setIdleMovement(
           AUTO_ROTATE_DELAY,
           autorotateRef.current,
@@ -121,14 +138,90 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       );
       view.setFov(newFov, { duration: 120 });
     };
-
     wheelTarget.addEventListener("wheel", handleWheel, { passive: false });
 
+    // Only respond to genuine GPU-issued context losses. isTearingDownRef is
+    // set true in every intentional destroy path so we ignore the synthetic
+    // event that viewer.destroy() may fire on the canvas.
     const handleContextLost = (e) => {
       e.preventDefault();
-      console.warn("WebGL context lost — mobile GPU ran out of resources.");
+      if (isTearingDownRef.current) return;
+      console.warn("WebGL context lost — stopping render loop.");
+      setContextLost(true);
+      if (viewerRef.current) {
+        try {
+          viewerRef.current.stopMovement();
+        } catch (_) {}
+        try {
+          viewerRef.current.destroy();
+        } catch (_) {}
+        viewerRef.current = null;
+      }
+      sceneRef.current = null;
     };
     canvas.addEventListener("webglcontextlost", handleContextLost, false);
+
+    const handleContextRestored = () => {
+      console.info("WebGL context restored — reinitialising viewer.");
+      isTearingDownRef.current = false;
+      setContextLost(false);
+      setLoaded(false);
+    };
+    canvas.addEventListener(
+      "webglcontextrestored",
+      handleContextRestored,
+      false,
+    );
+
+    const handleFullscreenChange = () => {
+      fsTransitionRef.current = true;
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+
+      // Mac OS fullscreen has an animated transition (~500ms). We wait for it
+      // to fully settle before touching the viewer, otherwise updateSize reads
+      // intermediate dimensions and the scene stays black.
+      //
+      // updateSize() alone only marks the render dimensions dirty — it does
+      // NOT schedule a render frame by itself. We must kick the movement
+      // system to force Marzipano's rAF loop to paint at least one frame.
+      // startMovement on rAF-1 then setIdleMovement on rAF-2 is the only
+      // reliable public API that guarantees an immediate repaint.
+      fsResizeTimerRef.current = setTimeout(() => {
+        fsTransitionRef.current = false;
+        if (!viewerRef.current) return;
+
+        try {
+          viewerRef.current.updateSize();
+        } catch (e) {
+          console.warn("updateSize after fullscreen:", e);
+          return;
+        }
+
+        requestAnimationFrame(() => {
+          if (!viewerRef.current) return;
+          try {
+            if (autorotateRef.current) {
+              viewerRef.current.startMovement(autorotateRef.current);
+            }
+          } catch (_) {}
+          requestAnimationFrame(() => {
+            if (!viewerRef.current) return;
+            try {
+              viewerRef.current.updateSize();
+            } catch (_) {}
+            if (autorotateRef.current) {
+              try {
+                viewerRef.current.setIdleMovement(
+                  AUTO_ROTATE_DELAY,
+                  autorotateRef.current,
+                );
+              } catch (_) {}
+            }
+          });
+        });
+      }, 600);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
 
     autorotateRef.current = Marzipano.autorotate({
       yawSpeed: 0.05,
@@ -136,10 +229,15 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     return () => {
+      isTearingDownRef.current = true;
       wheelTarget.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
+      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+      // releaseContext() omitted here — Effect #5 is the sole owner.
     };
-  }, [onError]);
+  }, [onError, acquireContext, releaseContext]);
 
   /* -------------------------------------------------
    2.  Scene creation / update
@@ -153,9 +251,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       !Array.isArray(levels) ||
       !levels.length ||
       webglAbsent
-    ) {
+    )
       return;
-    }
+
+    let isEffectActive = true;
 
     const maxSize = getMaxCubeMapSize();
     const safeLevels = levels.map((l) => {
@@ -173,7 +272,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
       { cubeMapPreviewUrl: `${panoPath}/preview.jpg` },
     );
-
     source.addEventListener("error", (err) => {
       console.error("Tile load error:", err);
       onError?.(err);
@@ -199,12 +297,21 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       view,
       pinFirstLevel: false,
     });
-    sceneRef.current.switchTo({ transitionDuration: 1000 });
 
-    setLoaded(true);
-    onReady?.();
+    try {
+      if (isEffectActive && viewerRef.current) {
+        sceneRef.current.switchTo({ transitionDuration: 1000 });
+      }
+    } catch (e) {
+      console.warn("switchTo failed:", e);
+    }
 
-    if (viewerRef.current && autorotateRef.current) {
+    if (isEffectActive) {
+      setLoaded(true);
+      onReady?.();
+    }
+
+    if (isEffectActive && viewerRef.current && autorotateRef.current) {
       viewerRef.current.setIdleMovement(
         AUTO_ROTATE_DELAY,
         autorotateRef.current,
@@ -213,10 +320,29 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     }
 
     return () => {
-      viewerRef.current?.destroyScene(sceneRef.current);
+      isEffectActive = false;
+      if (fsTransitionRef.current) return;
+      if (viewerRef.current && sceneRef.current) {
+        try {
+          viewerRef.current.destroyScene(sceneRef.current);
+        } catch (e) {
+          console.warn("destroyScene skipped:", e);
+        }
+      }
       sceneRef.current = null;
     };
-  }, [panoPath, levels, webglAbsent, initialViewParameters, onReady, onError]);
+  }, [
+    panoPath,
+    levels,
+    webglAbsent,
+    contextLost,
+    initialViewParameters,
+    onReady,
+    onError,
+  ]);
+  //                                  ^^^^^^^^^^
+  // contextLost in deps: when GPU recovers, this effect re-runs and rebuilds
+  // the scene against the fresh viewer that Effect #1 re-initialized.
 
   /* -------------------------------------------------
    3.  View-parameter sync
@@ -256,15 +382,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   );
 
   /* -------------------------------------------------
-   5.  Cleanup
+   5.  Absolute cleanup (single owner of releaseContext)
    ------------------------------------------------- */
   useEffect(() => {
     return () => {
-      viewerRef.current?.destroy();
-      viewerRef.current = null;
-      sceneRef.current = null;
+      isTearingDownRef.current = true;
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+      fsTransitionRef.current = false;
+      destroyViewer(viewerRef, sceneRef, panoramaElement);
+      releaseContext();
     };
-  }, []);
+  }, [releaseContext]);
 
   /* -------------------------------------------------
    6.  Render
@@ -274,10 +402,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       <div className={styles.errorOverlay}>
         <div className={styles.errorMessage}>
           <h1>WebGL unsupported</h1>
-          <p>
-            This device or your browser do not support WebGL. WebGL is required
-            to view high-performance 360° panoramas.
-          </p>
+          <p>This device or browser does not support WebGL configurations.</p>
           {panoPath && (
             <img
               src={`${panoPath}/preview.jpg`}
@@ -291,6 +416,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
               }}
             />
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (contextLost) {
+    return (
+      <div className={styles.errorOverlay}>
+        <div className={styles.errorMessage}>
+          <h1>Display connection lost</h1>
+          <p>The GPU context was interrupted. Waiting for recovery&hellip;</p>
         </div>
       </div>
     );

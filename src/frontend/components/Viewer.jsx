@@ -8,7 +8,7 @@ import {
   lazy,
 } from "react";
 import NavigationMedia from "./NavigationMedia";
-import ViewerImage from "./ViewerImage"; // OpenSeadragon / DZI Component
+import ViewerImage from "./ViewerImage";
 import PopupMetadata from "./PopupMetadata";
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
@@ -16,16 +16,9 @@ import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 
-// Lazy load the heavy 360 viewer
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
-/**
- * MediaContent decides which engine to use:
- * 1. Marzipano (ViewerPanorama) for 360 CubeMaps
- * 2. OpenSeadragon (ViewerImage) for Wide-Angle DZI or Standard JPGs
- */
 const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
-  // If the item is specifically a 360 panorama
   if (item.viewer === "pano") {
     return (
       <ErrorBoundary>
@@ -41,12 +34,9 @@ const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
     );
   }
 
-  // For Wide-Angle (DZI) or standard DJI photos
-  // ViewerImage should be your component that uses OpenSeadragon
   return (
     <ErrorBoundary>
       <ViewerImage
-        // Prioritize DZI path for high-res tiling, fallback to standard image path
         actualUrl={item.dziPath || item.imagePath}
         thumbnailUrl={item.thumbnailUrl}
         name={item.name}
@@ -67,6 +57,12 @@ const Viewer = ({
   const viewerRef = useRef(null);
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Reset loading state whenever the item changes
+  useEffect(() => {
+    setIsLoading(true);
+    setShowMetadata(false);
+  }, [item.id]);
 
   useKeyboardNavigation(onClose, onPrevious, onNext);
 
@@ -97,10 +93,6 @@ const Viewer = ({
     >
       {isLoading && <LoadingOverlay thumbnailUrl={item.thumbnailUrl} />}
 
-      {/* 
-          Container for the actual media. 
-          The inset: 0 ensures the child (OSD or Marzipano) fills the screen.
-      */}
       {(item.imagePath || item.panoPath || item.dziPath) && (
         <div
           style={{
@@ -111,7 +103,7 @@ const Viewer = ({
           }}
         >
           <MediaContent
-            key={item.id} // Key ensures fresh mount when switching items
+            key={item.id}
             item={item}
             isNavigationMode={isNavigationMode}
             onContentLoaded={handleContentLoaded}

@@ -41,3 +41,6 @@ material/
 # If these contain sensitive production IPs or keys, keep them ignored.
 # Otherwise, deployment logic is usually tracked.
 scripts/prod-deploy.sh
+
+gather_code.js
+project_code_dump.md

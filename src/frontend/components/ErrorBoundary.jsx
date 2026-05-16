@@ -1,12 +1,6 @@
-// src/frontend/components/ErrorBoundary.jsx
-
 import React from "react";
 import LoadingErrorHandler from "./LoadingErrorHandler";
 
-/**
- * ErrorBoundary component to catch JavaScript errors in child components
- * and display a consistent error UI using LoadingErrorHandler.
- */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -14,30 +8,30 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    // Update state to display fallback UI
-    return {
-      hasError: true,
-      errorMessage: error.message || "An error occurred.",
-    };
+    // error can be null or a non-Error object when thrown by WebGL internals
+    let message = "An error occurred.";
+    if (error != null) {
+      if (typeof error.message === "string" && error.message) {
+        message = error.message;
+      } else if (typeof error === "string" && error) {
+        message = error;
+      }
+    }
+    return { hasError: true, errorMessage: message };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details for monitoring
     console.error("Uncaught error:", error, errorInfo);
-    // Optionally call an external logging service here
   }
 
   handleRetry = () => {
-    // Reset error state to attempt re-render of children
     this.setState({ hasError: false, errorMessage: null });
   };
 
   render() {
     if (this.state.hasError) {
-      // Render LoadingErrorHandler with error styling and retry button
       return (
         <LoadingErrorHandler isLoading={false} error={this.state.errorMessage}>
-          {/* Provide a retry button to reset the error */}
           <button
             onClick={this.handleRetry}
             aria-label="Retry"
@@ -53,8 +47,6 @@ class ErrorBoundary extends React.Component {
         </LoadingErrorHandler>
       );
     }
-
-    // Render normally if no error
     return this.props.children;
   }
 }

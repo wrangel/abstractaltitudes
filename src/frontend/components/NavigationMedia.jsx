@@ -18,7 +18,6 @@ const NavigationMedia = memo(
       const handleFullscreenChange = () => {
         setIsFullscreen(!!document.fullscreenElement);
       };
-
       document.addEventListener("fullscreenchange", handleFullscreenChange);
       return () => {
         document.removeEventListener(
@@ -28,22 +27,19 @@ const NavigationMedia = memo(
       };
     }, []);
 
-    const handleClose = () => {
+    // Only exits fullscreen — does NOT close the modal.
+    // The modal's own X button (in FullScreenModal) handles closing.
+    const handleExitFullscreen = () => {
       if (document.fullscreenElement) {
-        document.addEventListener(
-          "fullscreenchange",
-          function handler() {
-            document.removeEventListener("fullscreenchange", handler);
-            onClose();
-          },
-          { once: true },
-        );
         document.exitFullscreen().catch((err) => {
           console.error(`Error exiting fullscreen: ${err.message}`);
         });
-      } else {
-        onClose();
       }
+    };
+
+    // Used by the non-fullscreen close button in the fab menu.
+    const handleClose = () => {
+      onClose();
     };
 
     return (
@@ -142,7 +138,7 @@ const NavigationMedia = memo(
             <button
               className={styles.fabButton}
               onClick={handleClose}
-              aria-label="Close media navigation"
+              aria-label="Close viewer"
               type="button"
             >
               <svg
@@ -158,11 +154,12 @@ const NavigationMedia = memo(
           </div>
         )}
 
+        {/* In fullscreen: only exit fullscreen, do NOT close the modal */}
         {isFullscreen && (
           <button
             className={styles.fabButton}
-            onClick={handleClose}
-            aria-label="Exit full screen and close"
+            onClick={handleExitFullscreen}
+            aria-label="Exit full screen"
             type="button"
           >
             <svg

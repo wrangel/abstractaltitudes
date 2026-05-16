@@ -6,6 +6,7 @@ import { preload } from "swr";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingOverlay from "./components/LoadingOverlay";
+import { WebGLManagerProvider } from "./utils/WebGLManager";
 import { COMBINED_DATA_URL } from "./constants";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
@@ -17,18 +18,20 @@ const Grid = lazy(() => import("./pages/Grid"));
 function App() {
   return (
     <HelmetProvider>
-      <div className="App">
-        <h1 className="visually-hidden">Peaceful Skies</h1>
+      <WebGLManagerProvider>
+        <div className="App">
+          <h1 className="visually-hidden">Peaceful Skies</h1>
 
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingOverlay />}>
-            <Home />
-            <div id="main-content">
-              <Grid />
-            </div>
-          </Suspense>
-        </ErrorBoundary>
-      </div>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingOverlay />}>
+              <Home />
+              <div id="main-content">
+                <Grid />
+              </div>
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      </WebGLManagerProvider>
     </HelmetProvider>
   );
 }

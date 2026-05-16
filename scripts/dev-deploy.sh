@@ -18,6 +18,8 @@ else
   echo -e "${YELLOW}⚠️  Docker not running — skipping.${NC}"
 fi
 
+pnpm self-update 
+
 # FULL UPGRADE (-u flag)
 if [[ "$1" == "-u" ]]; then
   echo -e "${GREEN}🚀📦 FULL UPGRADE: Latest secure packages...${NC}"

@@ -1,6 +1,4 @@
-// src/frontend/pages/Home.js
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
@@ -55,6 +53,11 @@ const Home = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
+  // Track whether the background pano should be mounted.
+  // We unmount it while the popup is open to free the WebGL context,
+  // then remount it when the popup closes.
+  const [showBackgroundPano, setShowBackgroundPano] = useState(true);
+
   useEffect(() => {
     if (items.length === 0) return;
 
@@ -83,9 +86,19 @@ const Home = () => {
 
   const openRandomViewer = useCallback(() => {
     if (mediaItems.length === 0) return;
+    // Unmount the background pano before opening popup to free the WebGL context
+    setShowBackgroundPano(false);
     setCurrentIndex(getSecureRandomIndex(mediaItems.length));
     setIsViewerOpen(true);
   }, [mediaItems]);
+
+  const handleViewerClose = useCallback(() => {
+    setIsViewerOpen(false);
+    setCurrentIndex(null);
+    // Remount background pano after a short delay to let the popup's
+    // WebGL context fully release before we create a new one
+    setTimeout(() => setShowBackgroundPano(true), 300);
+  }, []);
 
   const scrollToGrid = () => {
     document
@@ -105,7 +118,7 @@ const Home = () => {
       </Helmet>
 
       <div className={styles.backgroundWrapper}>
-        {canUsePano && backgroundPano ? (
+        {canUsePano && backgroundPano && showBackgroundPano ? (
           <ViewerPanorama
             panoPath={backgroundPano.panoPath}
             levels={backgroundPano.levels}
@@ -133,7 +146,7 @@ const Home = () => {
         <PopupViewer
           item={mediaItems[currentIndex]}
           isOpen={isViewerOpen}
-          onClose={() => setIsViewerOpen(false)}
+          onClose={handleViewerClose}
           onNext={() =>
             setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
           }

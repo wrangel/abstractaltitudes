@@ -1,17 +1,11 @@
 # Project Code Dump
-Generated on: 2026-05-15T17:42:54.630Z
+Generated on: 2026-05-16T18:44:57.501Z
 
 ## File: src/frontend/components/ErrorBoundary.jsx
 ```javascript
-// src/frontend/components/ErrorBoundary.jsx
-
 import React from "react";
 import LoadingErrorHandler from "./LoadingErrorHandler";
 
-/**
- * ErrorBoundary component to catch JavaScript errors in child components
- * and display a consistent error UI using LoadingErrorHandler.
- */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -19,30 +13,30 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    // Update state to display fallback UI
-    return {
-      hasError: true,
-      errorMessage: error.message || "An error occurred.",
-    };
+    // error can be null or a non-Error object when thrown by WebGL internals
+    let message = "An error occurred.";
+    if (error != null) {
+      if (typeof error.message === "string" && error.message) {
+        message = error.message;
+      } else if (typeof error === "string" && error) {
+        message = error;
+      }
+    }
+    return { hasError: true, errorMessage: message };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details for monitoring
     console.error("Uncaught error:", error, errorInfo);
-    // Optionally call an external logging service here
   }
 
   handleRetry = () => {
-    // Reset error state to attempt re-render of children
     this.setState({ hasError: false, errorMessage: null });
   };
 
   render() {
     if (this.state.hasError) {
-      // Render LoadingErrorHandler with error styling and retry button
       return (
         <LoadingErrorHandler isLoading={false} error={this.state.errorMessage}>
-          {/* Provide a retry button to reset the error */}
           <button
             onClick={this.handleRetry}
             aria-label="Retry"
@@ -58,8 +52,6 @@ class ErrorBoundary extends React.Component {
         </LoadingErrorHandler>
       );
     }
-
-    // Render normally if no error
     return this.props.children;
   }
 }
@@ -365,7 +357,6 @@ const NavigationMedia = memo(
       const handleFullscreenChange = () => {
         setIsFullscreen(!!document.fullscreenElement);
       };
-
       document.addEventListener("fullscreenchange", handleFullscreenChange);
       return () => {
         document.removeEventListener(
@@ -375,22 +366,19 @@ const NavigationMedia = memo(
       };
     }, []);
 
-    const handleClose = () => {
+    // Only exits fullscreen — does NOT close the modal.
+    // The modal's own X button (in FullScreenModal) handles closing.
+    const handleExitFullscreen = () => {
       if (document.fullscreenElement) {
-        document.addEventListener(
-          "fullscreenchange",
-          function handler() {
-            document.removeEventListener("fullscreenchange", handler);
-            onClose();
-          },
-          { once: true },
-        );
         document.exitFullscreen().catch((err) => {
           console.error(`Error exiting fullscreen: ${err.message}`);
         });
-      } else {
-        onClose();
       }
+    };
+
+    // Used by the non-fullscreen close button in the fab menu.
+    const handleClose = () => {
+      onClose();
     };
 
     return (
@@ -489,7 +477,7 @@ const NavigationMedia = memo(
             <button
               className={styles.fabButton}
               onClick={handleClose}
-              aria-label="Close media navigation"
+              aria-label="Close viewer"
               type="button"
             >
               <svg
@@ -505,11 +493,12 @@ const NavigationMedia = memo(
           </div>
         )}
 
+        {/* In fullscreen: only exit fullscreen, do NOT close the modal */}
         {isFullscreen && (
           <button
             className={styles.fabButton}
-            onClick={handleClose}
-            aria-label="Exit full screen and close"
+            onClick={handleExitFullscreen}
+            aria-label="Exit full screen"
             type="button"
           >
             <svg
@@ -1082,6 +1071,9 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
   const viewerRef = useRef(null);
   const osdInstance = useRef(null);
 
+  /* -------------------------------------------------
+   1. Main OSD Initialization & Teardown
+   ------------------------------------------------- */
   useEffect(() => {
     if (!actualUrl || !viewerRef.current) return;
 
@@ -1090,6 +1082,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
     const initOSD = () => {
       if (isDestroyed || !viewerRef.current) return;
 
+      // Clear container to prevent duplicate canvases
       viewerRef.current.innerHTML = "";
 
       osdInstance.current = OpenSeadragon({
@@ -1104,9 +1097,8 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
         visibilityRatio: 1.0,
         constrainDuringPan: true,
         minZoomImageRatio: 1,
-        checkUpdateInterval: 50,
         drawer: "canvas",
-        // Mobile asset reduction optimization limits
+        // Optimization for mobile memory
         maxImageCacheCount: 50,
       });
 
@@ -1119,7 +1111,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
 
       osdInstance.current.addHandler("open-failed", (error) => {
         if (!isDestroyed) {
-          console.error("❌ OpenSeadragon failed to load:", error);
+          console.error("❌ OpenSeadragon failed:", error);
           setHasError(true);
           setIsLoading(false);
         }
@@ -1131,39 +1123,53 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
     return () => {
       isDestroyed = true;
       clearTimeout(timer);
-
       if (osdInstance.current) {
-        osdInstance.current.removeAllHandlers();
-        try {
-          osdInstance.current.close();
-          osdInstance.current.destroy();
-        } catch (e) {
-          console.warn("OSD close notice:", e);
-        }
+        osdInstance.current.destroy();
         osdInstance.current = null;
       }
-
       if (viewerRef.current) {
         viewerRef.current.innerHTML = "";
       }
     };
   }, [actualUrl, onLoad]);
 
+  /* -------------------------------------------------
+   2. Fullscreen/Resize Stability Fix
+   ------------------------------------------------- */
+  useEffect(() => {
+    const handleFsResize = () => {
+      if (osdInstance.current) {
+        // We delay for 500ms to allow the mobile browser's
+        // layout transition (shrinking/growing) to finish.
+        setTimeout(() => {
+          if (osdInstance.current && osdInstance.current.viewport) {
+            // Re-sync the internal canvas size with the new DOM size
+            osdInstance.current.forceRedraw();
+            // Optional: reset view to ensure image isn't "lost" off-screen
+            osdInstance.current.viewport.goHome(true);
+          }
+        }, 500);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFsResize);
+    window.addEventListener("resize", handleFsResize);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsResize);
+      window.removeEventListener("resize", handleFsResize);
+    };
+  }, []);
+
   if (hasError) {
     return (
       <div className={styles.ViewerImage} role="alert">
         <div style={{ color: "#fff", textAlign: "center", paddingTop: "20vh" }}>
-          <p>Failed to load high-resolution image: {name}</p>
+          <p>Failed to load: {name}</p>
           <img
             src={thumbnailUrl}
-            alt="Fallback preview"
-            style={{
-              maxWidth: "80%",
-              maxHeight: "60vh",
-              marginTop: "20px",
-              borderRadius: "4px",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
-            }}
+            alt="Fallback"
+            style={{ maxWidth: "80%", marginTop: "20px" }}
           />
         </div>
       </div>
@@ -1184,7 +1190,7 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
       {isLoading && (
         <img
           src={thumbnailUrl}
-          alt="Loading high-res preview"
+          alt="Loading"
           style={{
             position: "absolute",
             inset: 0,
@@ -1194,18 +1200,12 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
             zIndex: 1040,
             filter: "blur(12px)",
             opacity: 0.7,
-            transition: "opacity 0.4s ease",
           }}
         />
       )}
-
       <div
         ref={viewerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          zIndex: 1050,
-        }}
+        style={{ width: "100%", height: "100%", zIndex: 1050 }}
       />
     </div>
   );
@@ -1228,33 +1228,36 @@ import {
 } from "react";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
+import { useWebGLManager } from "../utils/WebGLManager";
+// Import from the shared utility so probe canvases are created and released
+// exactly once per page load, not once per component mount/render.
+import { hasWebGL, getMaxCubeMapSize } from "../utils/webglSupport";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
 const AUTO_ROTATE_DELAY = 3000;
 
-function getMaxCubeMapSize() {
-  try {
-    const canvas = document.createElement("canvas");
-    const gl =
-      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    return gl ? gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE) : 2048;
-  } catch {
-    return 2048;
+// ---------------------------------------------------------------------------
+// Shared teardown helper — used by the eviction path and normal cleanup.
+// ---------------------------------------------------------------------------
+function destroyViewer(viewerRef, sceneRef, panoramaElement) {
+  if (viewerRef.current) {
+    try {
+      viewerRef.current.stopMovement();
+    } catch (_) {}
+    try {
+      viewerRef.current.destroy();
+    } catch (_) {}
+    viewerRef.current = null;
+  }
+  sceneRef.current = null;
+  if (panoramaElement?.current) {
+    panoramaElement.current.innerHTML = "";
   }
 }
 
-function hasWebGL() {
-  try {
-    const canvas = document.createElement("canvas");
-    return !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
-    );
-  } catch {
-    return false;
-  }
-}
-
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 const ViewerPanorama = forwardRef(function ViewerPanorama(
   { panoPath, levels, initialViewParameters, onReady, onError },
   ref,
@@ -1264,7 +1267,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const sceneRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [webglAbsent, setWebglAbsent] = useState(false);
+  // True only during a genuine browser-issued GPU context loss, NOT during
+  // our own intentional teardown (guarded by isTearingDownRef).
+  const [contextLost, setContextLost] = useState(false);
   const autorotateRef = useRef(null);
+  const fsTransitionRef = useRef(false);
+  const fsResizeTimerRef = useRef(null);
+  // Set to true before every intentional viewer.destroy() so the
+  // webglcontextlost listener ignores the synthetic event it may fire.
+  const isTearingDownRef = useRef(false);
+
+  const { acquireContext, releaseContext } = useWebGLManager();
 
   /* -------------------------------------------------
    1.  Viewer creation (once, after DOM exists)
@@ -1277,6 +1290,14 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       onError?.(new Error("WebGL not supported"));
       return;
     }
+
+    isTearingDownRef.current = false;
+
+    const granted = acquireContext(() => {
+      isTearingDownRef.current = true;
+      destroyViewer(viewerRef, sceneRef, panoramaElement);
+    });
+    if (!granted) return;
 
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
@@ -1291,12 +1312,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
         preserveDrawingBuffer: false,
         generateMipmaps: false,
       },
-      network: {
-        concurrency: isMobile ? 2 : 4,
-      },
-      renderer: {
-        textureStoreCapacity: isMobile ? 24 : 100,
-      },
+      network: { concurrency: isMobile ? 2 : 4 },
+      renderer: { textureStoreCapacity: isMobile ? 24 : 100 },
     });
 
     const controls = viewerRef.current.controls();
@@ -1304,7 +1321,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       viewerRef.current.stopMovement(),
     );
     controls.addEventListener("dragEnd", () => {
-      if (autorotateRef.current) {
+      if (autorotateRef.current && viewerRef.current) {
         viewerRef.current.setIdleMovement(
           AUTO_ROTATE_DELAY,
           autorotateRef.current,
@@ -1340,26 +1357,70 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       );
       view.setFov(newFov, { duration: 120 });
     };
-
     wheelTarget.addEventListener("wheel", handleWheel, { passive: false });
 
+    // Only respond to genuine GPU-issued context losses. isTearingDownRef is
+    // set true in every intentional destroy path so we ignore the synthetic
+    // event that viewer.destroy() may fire on the canvas.
     const handleContextLost = (e) => {
       e.preventDefault();
-      console.warn("WebGL context lost — GPU ran out of resources.");
+      if (isTearingDownRef.current) return;
+      console.warn("WebGL context lost — stopping render loop.");
+      setContextLost(true);
+      if (viewerRef.current) {
+        try {
+          viewerRef.current.stopMovement();
+        } catch (_) {}
+        try {
+          viewerRef.current.destroy();
+        } catch (_) {}
+        viewerRef.current = null;
+      }
+      sceneRef.current = null;
     };
     canvas.addEventListener("webglcontextlost", handleContextLost, false);
 
-    // Increased to 400ms — mobile fullscreen transitions take longer than 150ms
+    const handleContextRestored = () => {
+      console.info("WebGL context restored — reinitialising viewer.");
+      isTearingDownRef.current = false;
+      setContextLost(false);
+      setLoaded(false);
+    };
+    canvas.addEventListener(
+      "webglcontextrestored",
+      handleContextRestored,
+      false,
+    );
+
     const handleFullscreenChange = () => {
-      setTimeout(() => {
-        if (viewerRef.current) {
-          try {
-            viewerRef.current.updateSize();
-          } catch (e) {
-            console.warn("updateSize after fullscreen:", e);
-          }
+      fsTransitionRef.current = true;
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+
+      // Mac OS fullscreen animations take longer than other platforms.
+      // We wait for the animation to settle (600ms), then updateSize so
+      // Marzipano knows the new canvas dimensions, then schedule a second
+      // render pass one rAF later to force a full repaint. Without the
+      // explicit render call the canvas stays black even though the context
+      // is healthy — the GPU compositor clears it during the transition and
+      // Marzipano won't redraw until the next movement event.
+      fsResizeTimerRef.current = setTimeout(() => {
+        fsTransitionRef.current = false;
+        if (!viewerRef.current) return;
+        try {
+          viewerRef.current.updateSize();
+        } catch (e) {
+          console.warn("updateSize after fullscreen:", e);
+          return;
         }
-      }, 400);
+        // Force an immediate repaint so the scene is visible right away.
+        requestAnimationFrame(() => {
+          if (viewerRef.current) {
+            try {
+              viewerRef.current.updateSize();
+            } catch (_) {}
+          }
+        });
+      }, 600);
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
@@ -1369,11 +1430,15 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     });
 
     return () => {
+      isTearingDownRef.current = true;
       wheelTarget.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
+      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+      // releaseContext() omitted here — Effect #5 is the sole owner.
     };
-  }, [onError]);
+  }, [onError, acquireContext, releaseContext]);
 
   /* -------------------------------------------------
    2.  Scene creation / update
@@ -1387,9 +1452,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       !Array.isArray(levels) ||
       !levels.length ||
       webglAbsent
-    ) {
+    )
       return;
-    }
+
+    let isEffectActive = true;
 
     const maxSize = getMaxCubeMapSize();
     const safeLevels = levels.map((l) => {
@@ -1407,7 +1473,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       `${panoPath}/{z}/{f}/{y}/{x}.jpg`,
       { cubeMapPreviewUrl: `${panoPath}/preview.jpg` },
     );
-
     source.addEventListener("error", (err) => {
       console.error("Tile load error:", err);
       onError?.(err);
@@ -1433,12 +1498,21 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       view,
       pinFirstLevel: false,
     });
-    sceneRef.current.switchTo({ transitionDuration: 1000 });
 
-    setLoaded(true);
-    onReady?.();
+    try {
+      if (isEffectActive && viewerRef.current) {
+        sceneRef.current.switchTo({ transitionDuration: 1000 });
+      }
+    } catch (e) {
+      console.warn("switchTo failed:", e);
+    }
 
-    if (viewerRef.current && autorotateRef.current) {
+    if (isEffectActive) {
+      setLoaded(true);
+      onReady?.();
+    }
+
+    if (isEffectActive && viewerRef.current && autorotateRef.current) {
       viewerRef.current.setIdleMovement(
         AUTO_ROTATE_DELAY,
         autorotateRef.current,
@@ -1447,12 +1521,29 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     }
 
     return () => {
+      isEffectActive = false;
+      if (fsTransitionRef.current) return;
       if (viewerRef.current && sceneRef.current) {
-        viewerRef.current.destroyScene(sceneRef.current);
+        try {
+          viewerRef.current.destroyScene(sceneRef.current);
+        } catch (e) {
+          console.warn("destroyScene skipped:", e);
+        }
       }
       sceneRef.current = null;
     };
-  }, [panoPath, levels, webglAbsent, initialViewParameters, onReady, onError]);
+  }, [
+    panoPath,
+    levels,
+    webglAbsent,
+    contextLost,
+    initialViewParameters,
+    onReady,
+    onError,
+  ]);
+  //                                  ^^^^^^^^^^
+  // contextLost in deps: when GPU recovers, this effect re-runs and rebuilds
+  // the scene against the fresh viewer that Effect #1 re-initialized.
 
   /* -------------------------------------------------
    3.  View-parameter sync
@@ -1492,22 +1583,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   );
 
   /* -------------------------------------------------
-   5.  Absolute Cleanup
+   5.  Absolute cleanup (single owner of releaseContext)
    ------------------------------------------------- */
   useEffect(() => {
     return () => {
-      if (viewerRef.current) {
-        viewerRef.current.stopMovement();
-        viewerRef.current.destroy();
-        viewerRef.current = null;
-      }
-      sceneRef.current = null;
-
-      if (panoramaElement.current) {
-        panoramaElement.current.innerHTML = "";
-      }
+      isTearingDownRef.current = true;
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+      fsTransitionRef.current = false;
+      destroyViewer(viewerRef, sceneRef, panoramaElement);
+      releaseContext();
     };
-  }, []);
+  }, [releaseContext]);
 
   /* -------------------------------------------------
    6.  Render
@@ -1531,6 +1617,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
               }}
             />
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (contextLost) {
+    return (
+      <div className={styles.errorOverlay}>
+        <div className={styles.errorMessage}>
+          <h1>Display connection lost</h1>
+          <p>The GPU context was interrupted. Waiting for recovery&hellip;</p>
         </div>
       </div>
     );
@@ -2119,9 +2216,7 @@ export default React.memo(Grid);
 
 ## File: src/frontend/pages/Home.jsx
 ```javascript
-// src/frontend/pages/Home.js
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
@@ -2176,6 +2271,11 @@ const Home = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
+  // Track whether the background pano should be mounted.
+  // We unmount it while the popup is open to free the WebGL context,
+  // then remount it when the popup closes.
+  const [showBackgroundPano, setShowBackgroundPano] = useState(true);
+
   useEffect(() => {
     if (items.length === 0) return;
 
@@ -2204,9 +2304,19 @@ const Home = () => {
 
   const openRandomViewer = useCallback(() => {
     if (mediaItems.length === 0) return;
+    // Unmount the background pano before opening popup to free the WebGL context
+    setShowBackgroundPano(false);
     setCurrentIndex(getSecureRandomIndex(mediaItems.length));
     setIsViewerOpen(true);
   }, [mediaItems]);
+
+  const handleViewerClose = useCallback(() => {
+    setIsViewerOpen(false);
+    setCurrentIndex(null);
+    // Remount background pano after a short delay to let the popup's
+    // WebGL context fully release before we create a new one
+    setTimeout(() => setShowBackgroundPano(true), 300);
+  }, []);
 
   const scrollToGrid = () => {
     document
@@ -2226,7 +2336,7 @@ const Home = () => {
       </Helmet>
 
       <div className={styles.backgroundWrapper}>
-        {canUsePano && backgroundPano ? (
+        {canUsePano && backgroundPano && showBackgroundPano ? (
           <ViewerPanorama
             panoPath={backgroundPano.panoPath}
             levels={backgroundPano.levels}
@@ -2254,7 +2364,7 @@ const Home = () => {
         <PopupViewer
           item={mediaItems[currentIndex]}
           isOpen={isViewerOpen}
-          onClose={() => setIsViewerOpen(false)}
+          onClose={handleViewerClose}
           onNext={() =>
             setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
           }
@@ -3478,20 +3588,120 @@ body {
 
 ```
 
+## File: src/frontend/utils/WebGLManager.jsx
+```javascript
+// src/frontend/context/WebGLManager.jsx
+//
+// Enforces a single active Marzipano WebGL context across the whole app.
+// Any component that wants to create a viewer must first call acquireContext().
+// When it unmounts or no longer needs the context it calls releaseContext().
+// If another viewer already holds the context, acquireContext() returns false
+// and the caller should skip viewer initialisation.
+
+import { createContext, useContext, useRef, useCallback } from "react";
+
+const WebGLManagerContext = createContext(null);
+
+export function WebGLManagerProvider({ children }) {
+  // Stores a cleanup callback provided by the current context owner.
+  const ownerCleanupRef = useRef(null);
+
+  /**
+   * Try to acquire the global WebGL context slot.
+   * @param {() => void} cleanup  Called when another viewer displaces this one.
+   * @returns {boolean}  true = you have the slot; false = denied (shouldn't happen
+   *                     with the forced-takeover model, but kept for safety).
+   */
+  const acquireContext = useCallback((cleanup) => {
+    // If someone already owns it, forcibly release them first so the
+    // browser can GC the old context before we create the new one.
+    if (ownerCleanupRef.current) {
+      try {
+        ownerCleanupRef.current();
+      } catch (e) {
+        console.warn("WebGLManager: error evicting previous owner", e);
+      }
+    }
+    ownerCleanupRef.current = cleanup ?? null;
+    return true;
+  }, []);
+
+  /**
+   * Release the slot. Only the current owner should call this.
+   */
+  const releaseContext = useCallback(() => {
+    ownerCleanupRef.current = null;
+  }, []);
+
+  return (
+    <WebGLManagerContext.Provider value={{ acquireContext, releaseContext }}>
+      {children}
+    </WebGLManagerContext.Provider>
+  );
+}
+
+export function useWebGLManager() {
+  const ctx = useContext(WebGLManagerContext);
+  if (!ctx) {
+    throw new Error("useWebGLManager must be used inside WebGLManagerProvider");
+  }
+  return ctx;
+}
+
+```
+
 ## File: src/frontend/utils/webglSupport.jsx
 ```javascript
 // src/frontend/utils/webglSupport.js
+//
+// Module-scope memoization: the probe canvas is created ONCE per page load,
+// the result cached, and the GL context explicitly released immediately after
+// reading so the browser slot is freed before Marzipano needs it.
+// Calling hasWebGL() or getMaxCubeMapSize() from a React component body or
+// effect is therefore free — no new canvas is created on subsequent calls.
+
+let _webglSupported = null;
 
 export function hasWebGL() {
+  if (_webglSupported !== null) return _webglSupported;
   try {
     const canvas = document.createElement("canvas");
-    return !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
-    );
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) {
+      _webglSupported = false;
+      return false;
+    }
+    // Release the context immediately so the browser can reclaim the slot
+    // before the real Marzipano viewer is created.
+    const ext = gl.getExtension("WEBGL_lose_context");
+    ext?.loseContext();
+    _webglSupported = true;
   } catch {
-    return false;
+    _webglSupported = false;
   }
+  return _webglSupported;
+}
+
+let _maxCubeMapSize = null;
+
+export function getMaxCubeMapSize() {
+  if (_maxCubeMapSize !== null) return _maxCubeMapSize;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) {
+      _maxCubeMapSize = 2048;
+      return 2048;
+    }
+    _maxCubeMapSize = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE);
+    const ext = gl.getExtension("WEBGL_lose_context");
+    ext?.loseContext();
+  } catch {
+    _maxCubeMapSize = 2048;
+  }
+  return _maxCubeMapSize;
 }
 
 ```
@@ -3569,7 +3779,7 @@ export default defineConfig({
     "prod": "./scripts/prod-build.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1046.0",
+    "@aws-sdk/client-s3": "^3.1047.0",
     "@fontsource-variable/inter": "^5.2.8",
     "compression": "^1.8.1",
     "concurrently": "^9.2.1",
@@ -3579,7 +3789,7 @@ export default defineConfig({
     "express-static-gzip": "^3.0.1",
     "fs-extra": "^11.3.5",
     "helmet": "^8.1.0",
-    "knip": "^6.13.1",
+    "knip": "^6.14.0",
     "marzipano": "^0.10.2",
     "masonic": "^4.1.0",
     "mongoose": "^9.6.2",
@@ -3596,8 +3806,8 @@ export default defineConfig({
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/lib-storage": "^3.1046.0",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@aws-sdk/lib-storage": "^3.1047.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "adm-zip": "^0.5.17",
     "exif-parser": "^0.1.12",
     "node-fetch": "^3.3.2",

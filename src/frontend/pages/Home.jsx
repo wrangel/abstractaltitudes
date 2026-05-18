@@ -53,14 +53,20 @@ const Home = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
-  // Track whether the background pano should be mounted.
-  // We unmount it while the popup is open to free the WebGL context,
-  // then remount it when the popup closes.
-  const [showBackgroundPano, setShowBackgroundPano] = useState(true);
+  // Stable callback refs so ViewerPanorama's Effect #1 deps never change
+  const handleBackgroundReadyRef = useRef(() => setBackgroundPanoReady(true));
+  const handleBackgroundErrorRef = useRef(null);
+  const handleBackgroundReady = useCallback(
+    () => setBackgroundPanoReady(true),
+    [],
+  );
+  const handleBackgroundError = useCallback((err) => {
+    console.error("Background pano error:", err);
+    setBackgroundPano(null);
+  }, []);
 
   useEffect(() => {
     if (items.length === 0) return;
-
     if (canUsePano) {
       const panoItems = items.filter(isValidPanoItem);
       if (panoItems.length > 0) {
@@ -86,18 +92,14 @@ const Home = () => {
 
   const openRandomViewer = useCallback(() => {
     if (mediaItems.length === 0) return;
-    // Unmount the background pano before opening popup to free the WebGL context
-    setShowBackgroundPano(false);
     setCurrentIndex(getSecureRandomIndex(mediaItems.length));
     setIsViewerOpen(true);
   }, [mediaItems]);
 
   const handleViewerClose = useCallback(() => {
     setIsViewerOpen(false);
-    setCurrentIndex(null);
-    // Remount background pano after a short delay to let the popup's
-    // WebGL context fully release before we create a new one
-    setTimeout(() => setShowBackgroundPano(true), 300);
+    // Do NOT clear currentIndex — keeps PopupViewer mounted so
+    // ViewerPanorama retains its WebGL context between opens.
   }, []);
 
   const scrollToGrid = () => {
@@ -105,6 +107,12 @@ const Home = () => {
       .getElementById("main-content")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  const popupItem = currentIndex !== null ? mediaItems[currentIndex] : null;
+
+  // Never have two ViewerPanorama instances alive simultaneously —
+  // they would evict each other via WebGLManager causing a chaos loop.
+  const showBackgroundPano = canUsePano && backgroundPano && !popupItem;
 
   return (
     <>
@@ -118,16 +126,13 @@ const Home = () => {
       </Helmet>
 
       <div className={styles.backgroundWrapper}>
-        {canUsePano && backgroundPano && showBackgroundPano ? (
+        {showBackgroundPano ? (
           <ViewerPanorama
             panoPath={backgroundPano.panoPath}
             levels={backgroundPano.levels}
             initialViewParameters={backgroundPano.initialViewParameters}
-            onReady={() => setBackgroundPanoReady(true)}
-            onError={(err) => {
-              console.error("Background pano error:", err);
-              setBackgroundPano(null);
-            }}
+            onReady={handleBackgroundReady}
+            onError={handleBackgroundError}
           />
         ) : backgroundImage ? (
           <img
@@ -142,9 +147,9 @@ const Home = () => {
         <div className={styles.backgroundGradient} aria-hidden="true" />
       </div>
 
-      {isViewerOpen && currentIndex !== null && (
+      {popupItem && (
         <PopupViewer
-          item={mediaItems[currentIndex]}
+          item={popupItem}
           isOpen={isViewerOpen}
           onClose={handleViewerClose}
           onNext={() =>

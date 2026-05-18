@@ -18,34 +18,6 @@ import useAutoHideCursor from "../hooks/useAutoHideCursor";
 
 const ViewerPanorama = lazy(() => import("./ViewerPanorama"));
 
-const MediaContent = memo(({ item, isNavigationMode, onContentLoaded }) => {
-  if (item.viewer === "pano") {
-    return (
-      <ErrorBoundary>
-        <Suspense fallback={<LoadingOverlay />}>
-          <ViewerPanorama
-            panoPath={item.panoPath}
-            levels={item.levels}
-            initialViewParameters={item.initialViewParameters}
-            onReady={onContentLoaded}
-          />
-        </Suspense>
-      </ErrorBoundary>
-    );
-  }
-
-  return (
-    <ErrorBoundary>
-      <ViewerImage
-        actualUrl={item.dziPath || item.imagePath}
-        thumbnailUrl={item.thumbnailUrl}
-        name={item.name}
-        onLoad={onContentLoaded}
-      />
-    </ErrorBoundary>
-  );
-});
-
 const Viewer = ({
   item,
   onClose,
@@ -55,6 +27,8 @@ const Viewer = ({
   toggleMode,
 }) => {
   const viewerRef = useRef(null);
+  const panoramaRef = useRef(null);
+  const fsResizeTimerRef = useRef(null);
   const [showMetadata, setShowMetadata] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,6 +57,23 @@ const Viewer = ({
     }
   }, []);
 
+  // Own the fullscreenchange listener at this level so it fires even on the
+  // first open, before ViewerPanorama has finished lazy-loading and mounting.
+  // ViewerPanorama exposes forceRepaint() via its imperative ref handle.
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+      fsResizeTimerRef.current = setTimeout(() => {
+        panoramaRef.current?.forceRepaint();
+      }, 600);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (fsResizeTimerRef.current) clearTimeout(fsResizeTimerRef.current);
+    };
+  }, []);
+
   const hideCursor = useAutoHideCursor(viewerRef, 800);
 
   return (
@@ -102,12 +93,32 @@ const Viewer = ({
             inset: 0,
           }}
         >
-          <MediaContent
-            key={item.id}
-            item={item}
-            isNavigationMode={isNavigationMode}
-            onContentLoaded={handleContentLoaded}
-          />
+          {item.viewer === "pano" ? (
+            // No key — never remount the panorama viewer between items.
+            // ViewerPanorama handles panoPath changes internally via Effect #2.
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingOverlay />}>
+                <ViewerPanorama
+                  ref={panoramaRef}
+                  panoPath={item.panoPath}
+                  levels={item.levels}
+                  initialViewParameters={item.initialViewParameters}
+                  onReady={handleContentLoaded}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          ) : (
+            // key is fine here — ViewerImage/OpenSeadragon is cheap to remount
+            // and needs a full reset when switching between image items.
+            <ErrorBoundary key={item.id}>
+              <ViewerImage
+                actualUrl={item.dziPath || item.imagePath}
+                thumbnailUrl={item.thumbnailUrl}
+                name={item.name}
+                onLoad={handleContentLoaded}
+              />
+            </ErrorBoundary>
+          )}
         </div>
       )}
 

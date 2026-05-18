@@ -18,7 +18,12 @@ else
   echo -e "${YELLOW}⚠️  Docker not running — skipping.${NC}"
 fi
 
-pnpm self-update 
+# ==============================================================================
+# DEPENDENCY MANAGEMENT (Sandboxed to prevent edge-version warnings from killing the script)
+# ==============================================================================
+set +e # Temporarily disable strict error checking
+
+pnpm self-update --silent > /dev/null 2>&1 || true
 
 # FULL UPGRADE (-u flag)
 if [[ "$1" == "-u" ]]; then
@@ -26,7 +31,7 @@ if [[ "$1" == "-u" ]]; then
   if command -v brew &> /dev/null; then
     brew update && brew upgrade && brew cleanup
   fi
-  corepack prepare pnpm@latest --activate
+  corepack prepare pnpm@latest --activate 2>/dev/null
   
   rm -rf node_modules pnpm-lock.yaml
   echo -e "${GREEN}📈 Updating ALL packages to LATEST...${NC}"
@@ -41,16 +46,18 @@ else
   pnpm install --ignore-scripts
 fi
 
+set -e # Re-enable strict error checking for static analysis and servers
+# ==============================================================================
+
 echo -e "\n${GREEN}🔍 RUNNING STATIC ANALYSIS${NC}"
 
-# 1. KNIP (Unused files and exports)
+# 1. KNIP (Run local package bin directly since it is in dependencies)
 echo -e "${YELLOW}Checking for unused files/exports (Knip)...${NC}"
 pnpm knip --reporter json > knip-report.json 2>/dev/null || true
 
-# 2. DEPCHECK (Unused dependencies)
+# 2. DEPCHECK (Force '--yes' flag to prevent interactive download prompt hang)
 echo -e "${YELLOW}Checking for unused packages (depcheck)...${NC}"
-# We ignore concurrently and knip because they are CLI tools
-pnpm dlx depcheck . --json --ignores="concurrently,knip,globals" > depcheck-report.json 2>/dev/null || true
+pnpm --yes dlx depcheck . --json --ignores="concurrently,knip,globals" > depcheck-report.json 2>/dev/null || true
 
 # SUMMARY SECTION
 if command -v jq &> /dev/null; then
@@ -85,4 +92,3 @@ pnpm concurrently \
   --prefix-colors "yellow,cyan" \
   "node --env-file=.env ./src/backend/server.mjs" \
   "pnpm run frontend:dev"
-  

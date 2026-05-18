@@ -1,6 +1,5 @@
-// src/frontend/pages/Grid.js
+// src/frontend/pages/Grid.jsx
 
-// src/frontend/pages/Grid.js
 import React, { useCallback } from "react";
 import PortfolioGrid from "../components/PortfolioGrid";
 import PopupViewer from "../components/PopupViewer";
@@ -42,6 +41,10 @@ function Grid() {
     );
   }
 
+  // Build the item to pass — keep the last selectedItem alive even while
+  // isModalOpen is false so ViewerPanorama is never unmounted mid-session.
+  const viewerItem = selectedItem ? { ...selectedItem, isFirst, isLast } : null;
+
   return (
     <>
       <div className={styles.Grid}>
@@ -82,14 +85,15 @@ function Grid() {
         </footer>
       </div>
 
-      {isModalOpen && selectedItem && (
+      {/* Always mounted once an item has been selected — never conditionally
+          removed so ViewerPanorama keeps its WebGL context alive. */}
+      {viewerItem && (
         <PopupViewer
-          item={{ ...selectedItem, isFirst, isLast }}
+          item={viewerItem}
           isOpen={isModalOpen}
           onClose={onClose}
           onNext={onNext}
           onPrevious={onPrevious}
-          isNavigationMode={true}
         />
       )}
     </>

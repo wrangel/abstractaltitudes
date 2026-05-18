@@ -22,8 +22,10 @@ export const useItemViewer = (items = []) => {
   }, []);
 
   const handleClosePopup = useCallback(() => {
+    // Only close the modal — do NOT clear selectedItemId.
+    // Keeping selectedItemId alive means Grid keeps PopupViewer mounted,
+    // which keeps ViewerPanorama and its WebGL context alive between opens.
     setIsModalOpen(false);
-    setSelectedItemId(null);
   }, []);
 
   const handleNextItem = useCallback(() => {
@@ -32,8 +34,7 @@ export const useItemViewer = (items = []) => {
     setSelectedItemId((currentId) => {
       const currentIdx = items.findIndex((item) => item.id === currentId);
       if (currentIdx >= 0 && currentIdx < items.length - 1) {
-        const nextId = items[currentIdx + 1].id;
-        return nextId;
+        return items[currentIdx + 1].id;
       }
       return currentId;
     });

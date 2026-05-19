@@ -92,7 +92,6 @@ export async function handleImage(originalFolderPath, newName) {
       ]);
 
       const image = sharp(tempPngPath);
-      const metadata = await image.metadata();
 
       // GENERATE DEEP ZOOM TILES
       // This creates {newName}.dzi and {newName}_files/
@@ -122,13 +121,11 @@ export async function handleImage(originalFolderPath, newName) {
 
       return {
         newFolderPath,
-        originalWidth: metadata.width,
-        originalHeight: metadata.height,
       };
     } catch (error) {
       logger.error(`[${newName}]: Processing failed`, error);
     }
   }
 
-  return { newFolderPath, originalWidth: null, originalHeight: null };
+  return { newFolderPath };
 }

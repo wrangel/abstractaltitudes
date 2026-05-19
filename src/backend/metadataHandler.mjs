@@ -66,8 +66,6 @@ function processDocument(doc, presignedUrls) {
     latitude: doc.latitude,
     longitude: doc.longitude,
     thumbnailUrl: urls.thumbnailUrl,
-    originalWidth: doc.originalWidth || null, // TODO Kill
-    originalHeight: doc.originalHeight || null, // TODO Kill
     thumbnailWidth: THUMBNAIL_WIDTH,
     thumbnailHeight: THUMBNAIL_HEIGHT,
     ...(isPano ? { panoPath: urls.actualUrl } : { imagePath: urls.actualUrl }), // actualUrl becomes panoPath for panos and imagePath for images

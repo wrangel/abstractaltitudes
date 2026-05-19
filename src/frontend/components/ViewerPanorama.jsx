@@ -6,7 +6,6 @@ import {
   memo,
   forwardRef,
   useImperativeHandle,
-  useCallback,
 } from "react";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
@@ -45,15 +44,14 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   const autorotateRef = useRef(null);
   const fsTransitionRef = useRef(false);
   const isTearingDownRef = useRef(false);
-  // Tracks the retry interval for forceRepaint so it can be cancelled on unmount
   const repaintPollRef = useRef(null);
 
   const { acquireContext, releaseContext } = useWebGLManager();
 
-  // Stable refs for callbacks so Effect #1 deps never change
   const onErrorRef = useRef(onError);
   const acquireContextRef = useRef(acquireContext);
   const releaseContextRef = useRef(releaseContext);
+
   useEffect(() => {
     onErrorRef.current = onError;
   }, [onError]);
@@ -65,7 +63,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   }, [releaseContext]);
 
   /* -------------------------------------------------
-   1.  Viewer creation — runs ONCE (empty deps, stable via refs above)
+   1.  Viewer creation — runs ONCE
    ------------------------------------------------- */
   useEffect(() => {
     if (!panoramaElement.current || viewerRef.current) return;
@@ -181,7 +179,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       canvas.removeEventListener("webglcontextrestored", handleContextRestored);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — all callbacks accessed via stable refs
+  }, []);
 
   /* -------------------------------------------------
    2.  Scene creation / update
@@ -263,8 +261,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       viewerRef.current.startMovement(autorotateRef.current);
     }
 
-    // If we're inside a fullscreen container when the scene is created,
-    // call updateSize so Marzipano knows the actual fullscreen dimensions.
     if (isEffectActive && document.fullscreenElement && viewerRef.current) {
       try {
         viewerRef.current.updateSize();
@@ -340,9 +336,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           viewerRef.current.startMovement(autorotateRef.current);
         }
       },
-      // Called by Viewer's fullscreenchange handler 600ms after fullscreen fires.
-      // If the viewer is still initialising (eviction/recreation in progress),
-      // we poll every 100ms until both viewer and scene are ready, then repaint.
       forceRepaint: () => {
         if (repaintPollRef.current) clearInterval(repaintPollRef.current);
 
@@ -387,7 +380,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
           return;
         }
 
-        // Viewer/scene not ready yet — poll until they are (up to 3s)
         let attempts = 0;
         repaintPollRef.current = setInterval(() => {
           attempts++;
@@ -413,11 +405,18 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       if (repaintPollRef.current) clearInterval(repaintPollRef.current);
       isTearingDownRef.current = true;
       fsTransitionRef.current = false;
+
+      // 🛠️ DESTROY THE INSTANCE IMMEDIATELY
       destroyViewer(viewerRef, sceneRef, panoramaElement);
-      releaseContextRef.current();
+
+      // 🛠️ THE BUG FIX: Defer the global context token handoff back to the
+      // baseline Background manager by pushing it to the next macro-task loop.
+      setTimeout(() => {
+        releaseContextRef.current();
+      }, 25);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — releaseContext accessed via stable ref
+  }, []);
 
   /* -------------------------------------------------
    6.  Render

@@ -91,8 +91,6 @@ export async function handleWideAngle(originalFolderPath, newName) {
         .flatten({ background: "#ffffff" })
         .normalize();
 
-      const metadata = await pipeline.metadata();
-
       // 4. GENERATE DEEP ZOOM TILES (Standardized to JPEG for web)
       const dziOutputPath = path.join(s3Path, newName);
 
@@ -124,13 +122,11 @@ export async function handleWideAngle(originalFolderPath, newName) {
 
       return {
         newFolderPath,
-        originalWidth: metadata.width,
-        originalHeight: metadata.height,
       };
     } catch (error) {
       logger.error(`[${newName}]: Processing failed`, error);
     }
   }
 
-  return { newFolderPath, originalWidth: null, originalHeight: null };
+  return { newFolderPath };
 }

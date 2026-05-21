@@ -1,3 +1,4 @@
+// src/frontend/components/ViewerPanorama.jsx
 import {
   useRef,
   useLayoutEffect,
@@ -6,6 +7,7 @@ import {
   memo,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from "react";
 import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
@@ -32,9 +34,10 @@ function destroyViewer(viewerRef, sceneRef, panoramaElement) {
 }
 
 const ViewerPanorama = forwardRef(function ViewerPanorama(
-  { panoPath, levels, initialViewParameters, onReady, onError },
+  { panoPath, levels, initialViewParameters, onReady, onError, suspended = false },
   ref,
 ) {
+  const instanceId = useMemo(() => Math.random().toString(36).substring(7), []);
   const panoramaElement = useRef(null);
   const viewerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -63,9 +66,10 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   }, [releaseContext]);
 
   /* -------------------------------------------------
-   1.  Viewer creation — runs ONCE
-   ------------------------------------------------- */
+    1.  Viewer creation — runs when suspended transitions to false
+    ------------------------------------------------- */
   useEffect(() => {
+    if (suspended) return;
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
@@ -79,7 +83,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     const granted = acquireContextRef.current(() => {
       isTearingDownRef.current = true;
       destroyViewer(viewerRef, sceneRef, panoramaElement);
-    });
+    }, instanceId);
     if (!granted) return;
 
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
@@ -179,11 +183,23 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       canvas.removeEventListener("webglcontextrestored", handleContextRestored);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [suspended]);
 
   /* -------------------------------------------------
-   2.  Scene creation / update
-   ------------------------------------------------- */
+    1b. Suspension — release context without unmounting
+    ------------------------------------------------- */
+  useEffect(() => {
+    if (!suspended) return;
+    if (!viewerRef.current) return;
+    isTearingDownRef.current = true;
+    destroyViewer(viewerRef, sceneRef, panoramaElement);
+    releaseContextRef.current(instanceId);
+    isTearingDownRef.current = false;
+  }, [suspended, instanceId]);
+
+  /* -------------------------------------------------
+    2.  Scene creation / update
+    ------------------------------------------------- */
   useEffect(() => {
     if (!panoramaElement.current) return;
     if (
@@ -301,11 +317,12 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     contextLost,
     initialViewParameters,
     onReady,
+    suspended,
   ]);
 
   /* -------------------------------------------------
-   3.  View-parameter sync
-   ------------------------------------------------- */
+    3.  View-parameter sync
+    ------------------------------------------------- */
   useLayoutEffect(() => {
     if (!sceneRef.current || !initialViewParameters) return;
     const v = sceneRef.current.view();
@@ -315,8 +332,8 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   }, [initialViewParameters]);
 
   /* -------------------------------------------------
-   4.  Imperative API
-   ------------------------------------------------- */
+    4.  Imperative API
+    ------------------------------------------------- */
   useImperativeHandle(
     ref,
     () => ({
@@ -398,29 +415,32 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   );
 
   /* -------------------------------------------------
-   5.  Absolute cleanup
-   ------------------------------------------------- */
+    5.  Absolute cleanup
+    ------------------------------------------------- */
+  /* -------------------------------------------------
+    5.  Absolute cleanup
+    ------------------------------------------------- */
   useEffect(() => {
     return () => {
       if (repaintPollRef.current) clearInterval(repaintPollRef.current);
       isTearingDownRef.current = true;
       fsTransitionRef.current = false;
-
-      // 🛠️ DESTROY THE INSTANCE IMMEDIATELY
       destroyViewer(viewerRef, sceneRef, panoramaElement);
 
-      // 🛠️ THE BUG FIX: Defer the global context token handoff back to the
-      // baseline Background manager by pushing it to the next macro-task loop.
-      setTimeout(() => {
-        releaseContextRef.current();
-      }, 25);
+      // Update this call to pass the instanceId:
+      requestAnimationFrame(() => {
+        try {
+          releaseContextRef.current(instanceId);
+        } catch (e) {
+          console.warn("Context release skipped:", e);
+        }
+      });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [instanceId]);
 
   /* -------------------------------------------------
-   6.  Render
-   ------------------------------------------------- */
+    6.  Render
+    ------------------------------------------------- */
   if (webglAbsent) {
     return (
       <div className={styles.errorOverlay}>
@@ -450,7 +470,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       <div className={styles.errorOverlay}>
         <div className={styles.errorMessage}>
           <h1>Display connection lost</h1>
-          <p>The GPU context was interrupted. Waiting for recovery&hellip;</p>
+          <p>The GPU context was interrupted. Waiting for recovery…</p>
         </div>
       </div>
     );

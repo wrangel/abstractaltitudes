@@ -4,6 +4,7 @@
 import NodeCache from "node-cache";
 import crypto from "crypto";
 import { URL } from "url";
+import logger from "./logger.mjs";
 
 const urlCache = new NodeCache({ stdTTL: 300 }); // 5-min cache
 
@@ -68,7 +69,7 @@ export async function signedUrl(path, params = {}) {
     urlCache.set(fullPath, signedUrl);
     return signedUrl;
   } catch (err) {
-    console.error("[signedUrl] error:", err);
+    logger.error("[signedUrl] error:", { err });
     throw err;
   }
 }

@@ -18,6 +18,8 @@ const requiredEnvVars = [
   "MONGODB_SERVER",
   "MONGODB_DB",
   "CORS_ORIGINS",
+  "VITE_BUNNYCDN_BASE_URL",
+  "BUNNYCDN_TOKEN_SECRET",
 ];
 
 requiredEnvVars.forEach((v) => {
@@ -105,15 +107,6 @@ app.use("/api", apiLimiter);
 app.get("/healthz", (_, res) => res.status(200).send("ok"));
 app.use("/api", combinedDataRoute);
 app.use("/api", bunnySignRoute);
-
-app.get("/api/test-mongo", async (req, res) => {
-  try {
-    await mongoose.connection.db.admin().ping();
-    res.json({ message: "MongoDB connection successful" });
-  } catch (error) {
-    res.status(500).json({ error: "MongoDB connection test failed" });
-  }
-});
 
 // SPA Fallback - Now covered by globalLimiter
 app.get("/*path", (req, res) => {

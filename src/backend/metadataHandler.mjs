@@ -47,8 +47,7 @@ function processDocument(doc, presignedUrls) {
   const entry = presignedUrls.find((e) => e.name === doc.name);
   const urls = entry?.urls || {};
 
-  // Detect if this is a pano based on URL containing "/tiles"
-  const isPano = doc.type === "pano"; // TODO Kill
+  const isPano = doc.type === "pano";
 
   // Correctly access nested initialViewParameters
   const initialViewParameters = doc.initialViewParameters || {
@@ -143,7 +142,7 @@ function formatRoadWithLineBreaks(road, maxLength) {
       // Split very long words if needed
       if (word.length > maxLength) {
         for (let i = 0; i < word.length; i += maxLength) {
-          lines.push(word.substr(i, maxLength));
+          lines.push(word.slice(i, i + maxLength));
         }
       } else {
         currentLine = word;
@@ -175,6 +174,11 @@ export const beautify = async (mongoData, presignedUrls) => {
     mongoData,
     presignedUrls,
   );
+
+  if (onlyInMongo.length > 0)
+    logger.warn("Items in MongoDB missing from storage:", { onlyInMongo });
+  if (onlyInAWS.length > 0)
+    logger.warn("Items in storage missing from MongoDB:", { onlyInAWS });
 
   try {
     return intersectedData.map((doc) => processDocument(doc, presignedUrls));

@@ -151,4 +151,6 @@ const islandSchema = new mongoose.Schema({
   ],
 });
 
+islandSchema.index({ dateTime: -1 });
+
 export const Island = mongoose.model("Island", islandSchema);

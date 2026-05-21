@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
@@ -53,9 +53,6 @@ const Home = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
-  // Stable callback refs so ViewerPanorama's Effect #1 deps never change
-  const handleBackgroundReadyRef = useRef(() => setBackgroundPanoReady(true));
-  const handleBackgroundErrorRef = useRef(null);
   const handleBackgroundReady = useCallback(
     () => setBackgroundPanoReady(true),
     [],

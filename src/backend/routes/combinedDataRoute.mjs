@@ -26,18 +26,17 @@ router.get("/combined-data", async (req, res, next) => {
       return next(error);
     }
 
-    // Add isFirst and isLast flags
-    combinedData.forEach((item, index) => {
-      item.isFirst = index === 0;
-      item.isLast = index === combinedData.length - 1;
-    });
+    const decorated = combinedData.map((item, index) => ({
+      ...item,
+      isFirst: index === 0,
+      isLast: index === combinedData.length - 1,
+    }));
 
-    setCachedData(cacheKey, combinedData);
+    setCachedData(cacheKey, decorated);
 
-    // Optional: Set cache-control headers for client caching
     res.set("Cache-Control", "public, max-age=300");
 
-    res.status(200).json(combinedData);
+    res.status(200).json(decorated);
   } catch (error) {
     logger.error("Error fetching combined data", { error });
     next(error); // Forward to global error handler middleware

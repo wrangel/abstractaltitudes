@@ -2,7 +2,7 @@
 
 import express from "express";
 import logger from "../utils/logger.mjs";
-import { signedUrl } from "../urlHandler.mjs";
+import { signedUrl } from "../utils/bunnyToken.mjs";
 
 const router = express.Router();
 

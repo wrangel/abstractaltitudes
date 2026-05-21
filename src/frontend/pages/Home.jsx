@@ -53,13 +53,6 @@ const Home = () => {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
-  // Incremented every time the popup closes so the background VP gets a
-  // completely fresh React fiber (new key → new instance → null refs →
-  // Effect #1 runs clean). Without this, React can carry over stale fiber
-  // state from the previous mount and the Effect #1 guard
-  // `if (viewerRef.current) return` silently skips viewer creation.
-  const [bgKey, setBgKey] = useState(0);
-
   // Stable callback refs so ViewerPanorama's Effect #1 deps never change
   const handleBackgroundReadyRef = useRef(() => setBackgroundPanoReady(true));
   const handleBackgroundErrorRef = useRef(null);
@@ -106,10 +99,6 @@ const Home = () => {
   const handleViewerClose = useCallback(() => {
     setIsViewerOpen(false);
     setCurrentIndex(null);
-    // Force a completely fresh ViewerPanorama fiber for the background.
-    // A new key guarantees null refs on mount so Effect #1's guard
-    // `if (viewerRef.current) return` never skips viewer creation.
-    setBgKey((k) => k + 1);
   }, []);
 
   const scrollToGrid = () => {
@@ -120,15 +109,10 @@ const Home = () => {
 
   const popupItem = currentIndex !== null ? mediaItems[currentIndex] : null;
 
-  // Never have two ViewerPanorama instances alive simultaneously —
-  // they would evict each other via WebGLManager causing a chaos loop.
-  // Tie visibility directly to isViewerOpen: when the modal is open the
-  // popup's ViewerPanorama holds the WebGL context; when it's closed
-  // (FullScreenModal returns null → popup VP unmounts) the background
-  // VP can safely remount and re-acquire it.
-  // Do NOT use !popupItem here — currentIndex stays set after close in
-  // Grid and would keep showBackgroundPano false forever.
-  const showBackgroundPano = canUsePano && backgroundPano && !isViewerOpen;
+  // The background VP stays mounted the whole time; it just suspends
+  // (releases context, pauses Marzipano) while the popup is open so the
+  // two instances never hold the WebGL context simultaneously.
+  const showBackgroundPano = canUsePano && !!backgroundPano;
 
   return (
     <>
@@ -144,12 +128,12 @@ const Home = () => {
       <div className={styles.backgroundWrapper}>
         {showBackgroundPano ? (
           <ViewerPanorama
-            key={bgKey}
             panoPath={backgroundPano.panoPath}
             levels={backgroundPano.levels}
             initialViewParameters={backgroundPano.initialViewParameters}
             onReady={handleBackgroundReady}
             onError={handleBackgroundError}
+            unmanaged
           />
         ) : backgroundImage ? (
           <img

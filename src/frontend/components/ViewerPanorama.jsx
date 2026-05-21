@@ -34,7 +34,7 @@ function destroyViewer(viewerRef, sceneRef, panoramaElement) {
 }
 
 const ViewerPanorama = forwardRef(function ViewerPanorama(
-  { panoPath, levels, initialViewParameters, onReady, onError, suspended = false },
+  { panoPath, levels, initialViewParameters, onReady, onError, unmanaged = false },
   ref,
 ) {
   const instanceId = useMemo(() => Math.random().toString(36).substring(7), []);
@@ -66,10 +66,9 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   }, [releaseContext]);
 
   /* -------------------------------------------------
-    1.  Viewer creation — runs when suspended transitions to false
+    1.  Viewer creation — runs ONCE
     ------------------------------------------------- */
   useEffect(() => {
-    if (suspended) return;
     if (!panoramaElement.current || viewerRef.current) return;
 
     if (!hasWebGL()) {
@@ -80,11 +79,13 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
 
     isTearingDownRef.current = false;
 
-    const granted = acquireContextRef.current(() => {
-      isTearingDownRef.current = true;
-      destroyViewer(viewerRef, sceneRef, panoramaElement);
-    }, instanceId);
-    if (!granted) return;
+    if (!unmanaged) {
+      const granted = acquireContextRef.current(() => {
+        isTearingDownRef.current = true;
+        destroyViewer(viewerRef, sceneRef, panoramaElement);
+      }, instanceId);
+      if (!granted) return;
+    }
 
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
@@ -183,19 +184,7 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       canvas.removeEventListener("webglcontextrestored", handleContextRestored);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suspended]);
-
-  /* -------------------------------------------------
-    1b. Suspension — release context without unmounting
-    ------------------------------------------------- */
-  useEffect(() => {
-    if (!suspended) return;
-    if (!viewerRef.current) return;
-    isTearingDownRef.current = true;
-    destroyViewer(viewerRef, sceneRef, panoramaElement);
-    releaseContextRef.current(instanceId);
-    isTearingDownRef.current = false;
-  }, [suspended, instanceId]);
+  }, []);
 
   /* -------------------------------------------------
     2.  Scene creation / update
@@ -317,7 +306,6 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     contextLost,
     initialViewParameters,
     onReady,
-    suspended,
   ]);
 
   /* -------------------------------------------------
@@ -427,15 +415,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
       fsTransitionRef.current = false;
       destroyViewer(viewerRef, sceneRef, panoramaElement);
 
-      // Update this call to pass the instanceId:
-      requestAnimationFrame(() => {
-        try {
-          releaseContextRef.current(instanceId);
-        } catch (e) {
-          console.warn("Context release skipped:", e);
-        }
-      });
+      if (!unmanaged) {
+        requestAnimationFrame(() => {
+          try {
+            releaseContextRef.current(instanceId);
+          } catch (e) {
+            console.warn("Context release skipped:", e);
+          }
+        });
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instanceId]);
 
   /* -------------------------------------------------

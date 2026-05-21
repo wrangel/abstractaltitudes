@@ -133,7 +133,7 @@ const Home = () => {
             initialViewParameters={backgroundPano.initialViewParameters}
             onReady={handleBackgroundReady}
             onError={handleBackgroundError}
-            suspended={isViewerOpen}
+            unmanaged
           />
         ) : backgroundImage ? (
           <img

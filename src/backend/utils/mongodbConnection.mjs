@@ -6,14 +6,13 @@ import logger from "../utils/logger.mjs";
 const connectDB = async () => {
   try {
     await mongoose.connect(
-      `mongodb+srv://${process.env.MONGODB_DB_USER}:${encodeURIComponent(
+      `mongodb://${process.env.MONGODB_DB_USER}:${encodeURIComponent(
         process.env.MONGODB_DB_PASSWORD
       )}@${process.env.MONGODB_SERVER}/${
         process.env.MONGODB_DB
-      }?retryWrites=true&w=majority`,
+      }?tls=true&authSource=admin&retryWrites=true&w=majority`,
       {
         serverSelectionTimeoutMS: 10000,
-        // DO NOT include useNewUrlParser or useUnifiedTopology here
       }
     );
     logger.info("Successfully connected to MongoDB");

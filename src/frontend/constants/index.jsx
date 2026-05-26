@@ -10,3 +10,4 @@ const API_BASE_URL = (() => {
 })();
 
 export const COMBINED_DATA_URL = `${API_BASE_URL}/combined-data`;
+export const ITEMS_URL = `${API_BASE_URL}/items`;

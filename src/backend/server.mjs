@@ -10,6 +10,7 @@ import logger from "./utils/logger.mjs";
 import { connectDB, closeDB } from "./utils/mongodbConnection.mjs";
 import combinedDataRoute from "./routes/combinedDataRoute.mjs";
 import bunnySignRoute from "./routes/bunnySignRoute.mjs";
+import clickRoute from "./routes/clickRoute.mjs";
 import expressStaticGzip from "express-static-gzip";
 
 const requiredEnvVars = [
@@ -107,6 +108,7 @@ app.use("/api", apiLimiter);
 app.get("/healthz", (_, res) => res.status(200).send("ok"));
 app.use("/api", combinedDataRoute);
 app.use("/api", bunnySignRoute);
+app.use("/api", clickRoute);
 
 // SPA Fallback - Now covered by globalLimiter
 app.get("/*path", (req, res) => {

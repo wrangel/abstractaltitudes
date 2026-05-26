@@ -149,6 +149,16 @@ const islandSchema = new mongoose.Schema({
       fallbackOnly: { type: Boolean, default: false },
     },
   ],
+
+  /**
+   * Number of times this item has been opened by a visitor.
+   * Private — not exposed in the public API response.
+   * Incremented via POST /api/items/:id/click.
+   */
+  clicks: {
+    type: Number,
+    default: 0,
+  },
 });
 
 islandSchema.index({ dateTime: -1 });

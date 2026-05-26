@@ -5,6 +5,7 @@ import PortfolioGrid from "../components/PortfolioGrid";
 import PopupViewer from "../components/PopupViewer";
 import { useItems } from "../hooks/useItems";
 import { useItemViewer } from "../hooks/useItemViewer";
+import { useClickCounter } from "../hooks/useClickCounter";
 import LoadingOverlay from "../components/LoadingOverlay";
 import ErrorBoundary from "../components/ErrorBoundary";
 import styles from "../styles/Grid.module.css";
@@ -21,11 +22,19 @@ function Grid() {
     handlePreviousItem,
   } = useItemViewer(items);
 
+  const { recordClick } = useClickCounter();
+
   const currentIndex = items.findIndex((item) => item.id === selectedItem?.id);
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === items.length - 1;
 
-  const onItemClick = useCallback(handleItemClick, [handleItemClick]);
+  const onItemClick = useCallback(
+    (item) => {
+      recordClick(item.id);
+      handleItemClick(item);
+    },
+    [handleItemClick, recordClick],
+  );
   const onClose = useCallback(handleClosePopup, [handleClosePopup]);
   const onNext = useCallback(handleNextItem, [handleNextItem]);
   const onPrevious = useCallback(handlePreviousItem, [handlePreviousItem]);

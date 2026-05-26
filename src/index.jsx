@@ -10,6 +10,15 @@ import "./frontend/styles/Global.css";
 // Import Inter variable font here
 import "@fontsource-variable/inter";
 
+// Owner opt-out: visiting https://abstractaltitudes.com/#aa-owner sets a
+// persistent localStorage flag that suppresses click tracking.
+// Bookmark that URL once per browser — no DevTools needed.
+// Clear with: localStorage.removeItem('aa_owner')
+if (window.location.hash === "#aa-owner") {
+  localStorage.setItem("aa_owner", "1");
+  history.replaceState(null, "", window.location.pathname);
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(

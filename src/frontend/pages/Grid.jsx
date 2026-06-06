@@ -39,7 +39,7 @@ function Grid() {
   const onNext = useCallback(handleNextItem, [handleNextItem]);
   const onPrevious = useCallback(handlePreviousItem, [handlePreviousItem]);
 
-  if (isLoading) return <LoadingOverlay ariaLive="polite" />;
+  if (isLoading) return <LoadingOverlay />;
 
   if (error) {
     return (

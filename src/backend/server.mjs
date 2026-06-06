@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 import logger from "./utils/logger.mjs";
 import { connectDB, closeDB } from "./utils/mongodbConnection.mjs";
 import combinedDataRoute from "./routes/combinedDataRoute.mjs";
-import bunnySignRoute from "./routes/bunnySignRoute.mjs";
 import clickRoute from "./routes/clickRoute.mjs";
 import expressStaticGzip from "express-static-gzip";
 
@@ -20,7 +19,6 @@ const requiredEnvVars = [
   "MONGODB_DB",
   "CORS_ORIGINS",
   "VITE_BUNNYCDN_BASE_URL",
-  "BUNNYCDN_TOKEN_SECRET",
 ];
 
 requiredEnvVars.forEach((v) => {
@@ -109,7 +107,6 @@ app.use("/api", apiLimiter);
 // Endpoints
 app.get("/healthz", (_, res) => res.status(200).send("ok"));
 app.use("/api", combinedDataRoute);
-app.use("/api", bunnySignRoute);
 app.use("/api", clickRoute);
 
 // SPA Fallback - Now covered by globalLimiter

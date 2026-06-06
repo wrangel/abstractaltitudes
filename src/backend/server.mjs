@@ -37,6 +37,8 @@ const corsOrigins = process.env.CORS_ORIGINS.split(",")
 const app = express();
 const PORT = process.env.PORT || 8081;
 
+app.set("trust proxy", 1);
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || corsOrigins.includes(origin)) {

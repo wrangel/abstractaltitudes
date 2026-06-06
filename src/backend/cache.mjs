@@ -11,11 +11,12 @@
 import NodeCache from "node-cache";
 import logger from "./utils/logger.mjs";
 
-const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 }); // Cache TTL of 60 seconds, cleanup every 120 seconds
+// Cache TTL of 60 seconds, cleanup every 120 seconds
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 
 /**
  * Retrieves cached data by key.
- * Logs cache hit or miss for observability.
+ * Logs cache hit or miss at debug level for low-noise observability.
  * @param {string} key - Cache key
  * @returns {*} Cached value or undefined if not found
  */
@@ -23,15 +24,15 @@ export const getCachedData = (key) => {
   try {
     const data = cache.get(key);
     if (data) {
-      logger.info(`[CACHE METRICS] Cache hit for key=${key}`);
+      logger.debug(`[CACHE] Cache hit for key=${key}`);
     } else {
-      logger.info(`[CACHE METRICS] Cache miss for key=${key}`);
+      logger.debug(`[CACHE] Cache miss for key=${key}`);
     }
     return data;
   } catch (error) {
     logger.error(
       `[CACHE ERROR] getCachedData failed for key=${key}: ${error.message}`,
-      { error }
+      { error },
     );
     return undefined;
   }
@@ -46,28 +47,28 @@ export const getCachedData = (key) => {
 export const setCachedData = (key, value) => {
   try {
     cache.set(key, value);
-    logger.info(`[CACHE METRICS] Cache set for key=${key}`);
+    logger.debug(`[CACHE] Cache set for key=${key}`);
   } catch (error) {
     logger.error(
       `[CACHE ERROR] setCachedData failed for key=${key}: ${error.message}`,
-      { error }
+      { error },
     );
   }
 };
 
 /**
  * Deletes a cache entry by key.
- * Useful for manual invalidation in specific scenarios.
+ * Useful for manual invalidation when underlying data updates.
  * @param {string} key - Cache key
  */
 export const invalidateCache = (key) => {
   try {
     cache.del(key);
-    logger.info(`[CACHE METRICS] Cache invalidated for key=${key}`);
+    logger.info(`[CACHE] Cache explicitly invalidated for key=${key}`);
   } catch (error) {
     logger.error(
       `[CACHE ERROR] invalidateCache failed for key=${key}: ${error.message}`,
-      { error }
+      { error },
     );
   }
 };

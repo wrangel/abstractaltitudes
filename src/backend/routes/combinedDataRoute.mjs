@@ -13,11 +13,12 @@ router.get("/combined-data", async (req, res, next) => {
   try {
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-      logger.info("[CACHE HIT] Returning cached combined-data");
+      // Keep this! It's great context for your API logs
+      logger.info("[API] Combined-data served from cache");
       return res.status(200).json(cachedData);
     }
 
-    logger.info("[CACHE MISS] Fetching fresh combined-data");
+    logger.info("[API] Cache miss. Fetching fresh combined-data from DB");
     const combinedData = await getCombinedData();
 
     if (!Array.isArray(combinedData)) {
@@ -34,12 +35,13 @@ router.get("/combined-data", async (req, res, next) => {
 
     setCachedData(cacheKey, decorated);
 
+    // Good practice: Tells browsers/CDNs they can cache it for 5 mins too
     res.set("Cache-Control", "public, max-age=300");
 
     res.status(200).json(decorated);
   } catch (error) {
     logger.error("Error fetching combined data", { error });
-    next(error); // Forward to global error handler middleware
+    next(error);
   }
 });
 

@@ -14,8 +14,8 @@ const PortfolioGrid = ({ items, onItemClick }) => {
     ? w / 2 - 24
     : w / 3 - 24;
 
-  const renderItem = ({ data, width }) => (
-    <PortfolioItem item={data} width={width} onItemClick={onItemClick} />
+  const renderItem = ({ data }) => (
+    <PortfolioItem item={data} onItemClick={onItemClick} />
   );
 
   return (

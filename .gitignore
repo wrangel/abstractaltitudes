@@ -44,3 +44,6 @@ scripts/prod-deploy.sh
 
 gather_code.js
 project_code_dump.md
+
+# Knip report output
+knip-report.json

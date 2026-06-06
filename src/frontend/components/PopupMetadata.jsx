@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import LazyImage from "./LazyImage";
 import styles from "../styles/PopupMetadata.module.css";
 
 const PopupMetadata = ({
   metadata,
   latitude,
   longitude,
-  panoramaUrl,
-  panoramaThumbUrl,
   onClose,
   isVisible,
 }) => {
@@ -148,15 +145,6 @@ const PopupMetadata = ({
       <div className={styles.content}>
         <pre>{metadata}</pre>
 
-        {isVisible && panoramaUrl && (
-          <LazyImage
-            src={panoramaUrl}
-            placeholderSrc={panoramaThumbUrl}
-            alt="Panorama view"
-            className={styles.panoramaImage}
-          />
-        )}
-
         {isVisible &&
           (isBelowThreshold ? (
             <a
@@ -187,8 +175,6 @@ PopupMetadata.propTypes = {
   metadata: PropTypes.string.isRequired,
   latitude: PropTypes.number.isRequired,
   longitude: PropTypes.number.isRequired,
-  panoramaUrl: PropTypes.string,
-  panoramaThumbUrl: PropTypes.string,
   onClose: PropTypes.func.isRequired,
   isVisible: PropTypes.bool.isRequired,
 };

@@ -24,7 +24,6 @@ const Viewer = ({
   onNext,
   onPrevious,
   isNavigationMode,
-  toggleMode,
 }) => {
   const viewerRef = useRef(null);
   const panoramaRef = useRef(null);
@@ -128,7 +127,6 @@ const Viewer = ({
         onPrevious={onPrevious}
         onToggleMetadata={toggleMetadata}
         isNavigationMode={isNavigationMode}
-        toggleMode={toggleMode}
         onToggleFullScreen={toggleFullScreen}
         isFirst={item.isFirst}
         isLast={item.isLast}

@@ -26,8 +26,8 @@ Capturing aerial imagery through drone flights, showcasing landscapes & cityscap
 
 ## Technologies Used
 
-- **Frontend**: React 18 + Vite
-- **Backend**: Node.js 20 + Express
+- **Frontend**: React 19 + Vite
+- **Backend**: Node.js 26 + Express
 - **DB**: MongoDB Atlas (collection `abstractaltitudes`)
 - **Object Storage**: AWS S3 bucket
 - **Image Processing**: Sharp
@@ -40,7 +40,7 @@ Capturing aerial imagery through drone flights, showcasing landscapes & cityscap
 2. AWS S3 bucket (and IAM keys with `PutObject`, `DeleteObject`, `ListBucket`)
 3. Mapbox account (https://mapbox.com) – enable **Geocoding API**
 4. Google Cloud account – enable **Maps JavaScript API** (key reserved for future use)
-5. Node ≥ 20 & pnpm ≥ 9
+5. Node ≥ 26 & pnpm ≥ 11
 6. Docker Desktop (only if you run the containerised version)
 
 ## Environment Variables
@@ -50,7 +50,7 @@ Put them in `.env` (local dev) **and** `env.production` (build time) unless the 
 
 | Variable                   | Example / Hint                    | Scope         | Purpose                                                |
 | -------------------------- | --------------------------------- | ------------- | ------------------------------------------------------ |
-| `MONGODB_SERVER`           | `cluster0.xxxxx.mongodb.net`      | both          | MongoDB Atlas host                                     |
+| `MONGODB_SERVER`           | `host-00-00.xxx.mongodb.net:27017,host-00-01.xxx.mongodb.net:27017,host-00-02.xxx.mongodb.net:27017` | both | MongoDB Atlas replica-set hosts (comma-separated, with port) |
 | `MONGODB_DB`               | `abstractaltitudes`               | both          | database name                                          |
 | `MONGODB_DB_USER`          | `dbUser`                          | both          | Atlas DB user                                          |
 | `MONGODB_DB_PASSWORD`      | `superSecretPw`                   | both          | Atlas DB password                                      |
@@ -63,6 +63,9 @@ Put them in `.env` (local dev) **and** `env.production` (build time) unless the 
 | `VITE_GOOGLE_MAPS_API_KEY` | `AIzaSyA……`                       | both          | Google services (reserved)                             |
 | `VITE_API_URL`             | `http://localhost:8081/api`       | **dev only**  | front-end → back-end route                             |
 | `VITE_API_URL`             | `/api`                            | **prod only** | same route, root-relative                              |
+| `VITE_BUNNYCDN_BASE_URL`   | `https://yourzone.b-cdn.net`      | both          | BunnyCDN pull zone base URL for tiles & thumbnails     |
+| `CORS_ORIGINS`             | `https://abstractaltitudes.com`   | both          | comma-separated allowed CORS origins                   |
+| `VITE_GOOGLE_MAPS_MAP_ID`  | `abc123def456`                    | both          | Google Maps Map ID for styled map                      |
 
 ---
 

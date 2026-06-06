@@ -1,17 +1,11 @@
 // src/frontend/components/PopupViewer.jsx
 
-import React, { useState, useCallback } from "react";
+import React from "react";
 import FullScreenModal from "./FullScreenModal";
 import Viewer from "./Viewer";
 import ErrorBoundary from "./ErrorBoundary";
 
 const PopupViewer = ({ item, isOpen, onClose, onNext, onPrevious }) => {
-  const [isNavigationMode, setIsNavigationMode] = useState(true);
-
-  const toggleMode = useCallback(() => {
-    setIsNavigationMode((prevMode) => !prevMode);
-  }, []);
-
   // Never return null — doing so unmounts Viewer and destroys the WebGL
   // context. Visibility is controlled by FullScreenModal via display:none.
   return (
@@ -29,12 +23,10 @@ const PopupViewer = ({ item, isOpen, onClose, onNext, onPrevious }) => {
         >
           <Viewer
             item={item}
-            isOpen={isOpen}
             onClose={onClose}
             onNext={onNext}
             onPrevious={onPrevious}
-            isNavigationMode={isNavigationMode}
-            toggleMode={toggleMode}
+            isNavigationMode={true}
           />
         </div>
       </FullScreenModal>

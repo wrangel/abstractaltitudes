@@ -1,4 +1,4 @@
-// src/backend/management/uploader/handlePano.mjs - COMPLETE MODIFIED VERSION
+// src/backend/management/uploader/handlePano.mjs
 
 import fs from "fs/promises";
 import path from "path";
@@ -268,29 +268,40 @@ export async function handlePano(mediaFolderPath, folderName) {
         `[${folderName}]: Could not delete extraction folder: ${err.message}`,
       );
     }
-
     // Create thumbnail.webp from renamed JPG
     const modifiedFiles = await fs.readdir(modifiedPath);
     const jpgFile = modifiedFiles.find((f) => /\.(jpe?g)$/i.test(f));
+
     if (!jpgFile) {
       logger.warn(
         `[${folderName}]: No JPG found in modified folder for thumbnail`,
       );
       return extractedProperties;
     }
+
     const inputPath = path.join(modifiedPath, jpgFile);
     const thumbnailPath = path.join(s3Folder, THUMBNAIL_FILENAME);
+
     logger.info(`[${folderName}]: Creating thumbnail.webp at ${thumbnailPath}`);
-    await sharp(inputPath)
-      .resize({
-        width: THUMBNAIL_WIDTH,
-        height: THUMBNAIL_HEIGHT,
-        fit: "inside",
-        position: sharp.strategy.attention,
-      })
-      .webp({ quality: THUMBNAIL_QUALITY })
-      .toFile(thumbnailPath);
-    logger.info(`[${folderName}]: Created thumbnail.webp successfully`);
+
+    try {
+      await sharp(inputPath)
+        .resize({
+          width: THUMBNAIL_WIDTH,
+          height: THUMBNAIL_HEIGHT,
+          fit: "inside",
+          // position: sharp.strategy.attention MUST BE REMOVED
+        })
+        .webp({ quality: THUMBNAIL_QUALITY })
+        .toFile(thumbnailPath);
+
+      logger.info(`[${folderName}]: Created thumbnail.webp successfully`);
+    } catch (sharpError) {
+      logger.error(
+        `[${folderName}]: Sharp failed to generate thumbnail - ${sharpError.message}`,
+      );
+      throw sharpError; // Re-throw to be caught by your main catch block
+    }
 
     return extractedProperties;
   } catch (err) {

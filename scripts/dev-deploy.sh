@@ -29,7 +29,7 @@ pnpm self-update --silent > /dev/null 2>&1 || true
 if [[ "$1" == "-u" ]]; then
   echo -e "${GREEN}🚀📦 FULL UPGRADE: Latest secure packages...${NC}"
   if command -v brew &> /dev/null; then
-    brew update && brew upgrade && brew cleanup
+    brew update && brew upgrade && brew cleanup && brew autoremove
   fi
   corepack prepare pnpm@latest --activate 2>/dev/null
   

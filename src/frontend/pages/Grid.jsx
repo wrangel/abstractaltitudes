@@ -13,8 +13,6 @@ import styles from "../styles/Grid.module.css";
 function Grid() {
   const { items, isLoading, error, refetch } = useItems();
 
-  console.log(items);
-
   const {
     selectedItem,
     isModalOpen,

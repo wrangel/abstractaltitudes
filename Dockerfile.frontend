@@ -2,7 +2,7 @@
 FROM node:23-slim AS build
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package*.json pnpm-lock.yaml ./
+COPY package*.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
 RUN --mount=type=cache,target=/root/.pnpm-store \
     pnpm install --frozen-lockfile --ignore-scripts
 COPY . .

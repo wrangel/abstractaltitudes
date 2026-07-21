@@ -3,10 +3,10 @@ FROM node:slim AS build
 WORKDIR /app
 RUN npm install -g pnpm
 # Copy only necessary files first for caching
-COPY package*.json pnpm-lock.yaml ./
+COPY package*.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
 # Cache pnpm store between builds for speed
 RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile --ignore-scripts
+    pnpm install --frozen-lockfile --ignore-scripts --prod
 COPY . .
 # Optional build step if needed
 # RUN pnpm run build
@@ -16,7 +16,6 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 # Create logs directory with proper ownership and permissions
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app/logs
-RUN npm install -g pnpm
 USER appuser
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/src ./src

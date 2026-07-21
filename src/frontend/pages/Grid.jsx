@@ -67,6 +67,13 @@ function Grid() {
 
         <footer className={styles.finalFooter}>
           <div className={styles.footerContent}>
+            <a
+              href="mailto:contact@abstractaltitudes.anonaddy.com"
+              className={styles.contactLink}
+            >
+              Get in touch
+            </a>
+
             <ul className={styles.creditsList}>
               {[
                 { href: "https://github.com/wrangel", label: "wrangel" },

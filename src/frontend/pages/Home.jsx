@@ -87,11 +87,15 @@ const Home = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const openRandomViewer = useCallback(() => {
+  const openBackgroundViewer = useCallback(() => {
     if (mediaItems.length === 0) return;
-    setCurrentIndex(getSecureRandomIndex(mediaItems.length));
+    const backgroundItem = canUsePano ? backgroundPano : backgroundImage;
+    const idx = backgroundItem
+      ? mediaItems.findIndex((item) => item.id === backgroundItem.id)
+      : -1;
+    setCurrentIndex(idx !== -1 ? idx : getSecureRandomIndex(mediaItems.length));
     setIsViewerOpen(true);
-  }, [mediaItems]);
+  }, [mediaItems, canUsePano, backgroundPano, backgroundImage]);
 
   const handleViewerClose = useCallback(() => {
     setIsViewerOpen(false);
@@ -169,12 +173,12 @@ const Home = () => {
         <div className={styles.contentOverlay}>
           <div
             className={`${styles.textWrapper} ${styles.textShadow} ${styles.textClickable}`}
-            onClick={openRandomViewer}
+            onClick={openBackgroundViewer}
             role="button"
             tabIndex={0}
-            aria-label="View random portfolio item"
+            aria-label="View this portfolio item"
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") openRandomViewer();
+              if (e.key === "Enter" || e.key === " ") openBackgroundViewer();
             }}
           >
             <h1>Abstract Altitudes</h1>

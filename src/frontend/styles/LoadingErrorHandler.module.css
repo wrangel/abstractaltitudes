@@ -14,7 +14,7 @@
 .message {
   font-size: var(--message-font-size);
   color: var(--message-color);
-  font-family: var(--font-family);
+  font-family: var(--font-stack);
   text-align: center;
   max-width: 600px;
   line-height: 1.4;

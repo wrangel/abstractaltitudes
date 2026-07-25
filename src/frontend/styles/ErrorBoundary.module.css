@@ -6,7 +6,7 @@
   border: 0.0625rem solid var(--error-border-color);
   background-color: var(--error-bg-color);
   color: var(--error-text-color);
-  font-family: var(--font-family);
+  font-family: var(--font-stack);
   max-width: 600px;
   margin: var(--spacing-large) auto;
   border-radius: var(--popup-border-radius);

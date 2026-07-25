@@ -103,14 +103,14 @@
 /* FORCE INTER THIN - keeps original perfect sizing via CSS vars */
 .Home h1,
 .Home h1 span {
-  font-family: "Inter", sans-serif !important;
+  font-family: "Inter Variable", sans-serif !important;
   font-weight: 100 !important;
   -webkit-font-smoothing: antialiased !important;
   -moz-osx-font-smoothing: grayscale !important;
 }
 
 .Home h2 {
-  font-family: "Inter", sans-serif !important;
+  font-family: "Inter Variable", sans-serif !important;
   font-weight: 100 !important;
   font-style: italic !important;
   -webkit-font-smoothing: antialiased !important;
@@ -118,7 +118,7 @@
 }
 
 .scroll-indicator * {
-  font-family: "Inter", sans-serif !important;
+  font-family: "Inter Variable", sans-serif !important;
   font-weight: 100 !important;
 }
 

@@ -7,8 +7,8 @@
 
   /* Cross-platform stack */
   --font-stack:
-    Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+    "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 
   /* Core design colors */
   --primary-color: #4da6ff;

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/knip/schema.json",
-  "entry": ["src/index.jsx!", "**/*.mjs!"],
+  "entry": ["**/*.mjs!"],
   "project": ["src/**/*.{js,jsx,ts,tsx}", "**/*.mjs"],
-  "ignoreDependencies": ["concurrently", "knip"]
+  "ignoreDependencies": ["concurrently"]
 }

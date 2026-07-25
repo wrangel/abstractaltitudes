@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
@@ -6,8 +6,9 @@ import styles from "../styles/Home.module.css";
 import { DOMAIN } from "../constants";
 import { useViewportSize } from "../hooks/useViewportSize";
 import PopupViewer from "../components/PopupViewer";
-import ViewerPanorama from "../components/ViewerPanorama";
 import { hasWebGL } from "../utils/webglSupport";
+
+const ViewerPanorama = lazy(() => import("../components/ViewerPanorama"));
 
 function getSecureRandomIndex(max) {
   const array = new Uint32Array(1);
@@ -128,14 +129,20 @@ const Home = () => {
 
       <div className={styles.backgroundWrapper}>
         {showBackgroundPano ? (
-          <ViewerPanorama
-            panoPath={backgroundPano.panoPath}
-            levels={backgroundPano.levels}
-            initialViewParameters={backgroundPano.initialViewParameters}
-            onReady={handleBackgroundReady}
-            onError={handleBackgroundError}
-            unmanaged
-          />
+          <Suspense
+            fallback={
+              <div className={styles.backgroundFallback} aria-hidden="true" />
+            }
+          >
+            <ViewerPanorama
+              panoPath={backgroundPano.panoPath}
+              levels={backgroundPano.levels}
+              initialViewParameters={backgroundPano.initialViewParameters}
+              onReady={handleBackgroundReady}
+              onError={handleBackgroundError}
+              unmanaged
+            />
+          </Suspense>
         ) : backgroundImage ? (
           <img
             src={backgroundImage.thumbnailUrl}

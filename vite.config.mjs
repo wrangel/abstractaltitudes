@@ -29,14 +29,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            // use package name as chunk id for better splitting
-            const parts = id.split("node_modules/");
-            if (parts.length > 1) {
-              const pkgName = parts[1].split("/")[0];
-              return `vendor_${pkgName}`;
-            }
-          }
+          if (!id.includes("node_modules")) return;
+          // Take the LAST node_modules segment so pnpm's virtual store
+          // (node_modules/.pnpm/pkg@1.0.0/node_modules/pkg/...) resolves to
+          // the real package name instead of ".pnpm".
+          const segments = id.split("node_modules/");
+          const pkgPath = segments[segments.length - 1];
+          const [first, second] = pkgPath.split("/");
+          const pkgName = first.startsWith("@") ? `${first}/${second}` : first;
+          return `vendor_${pkgName.replace(/[@/]/g, "_")}`;
         },
       },
     },

@@ -2,7 +2,6 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter as Router } from "react-router-dom";
 import App from "./frontend/App";
 import reportWebVitals from "./frontend/reportWebVitals";
 import "./frontend/styles/Global.css";
@@ -23,9 +22,7 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
   <React.StrictMode>
-    <Router>
-      <App />
-    </Router>
+    <App />
   </React.StrictMode>
 );
 

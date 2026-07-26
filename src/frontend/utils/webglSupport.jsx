@@ -1,10 +1,14 @@
 // src/frontend/utils/webglSupport.js
 //
-// Module-scope memoization: the probe canvas is created ONCE per page load,
-// the result cached, and the GL context explicitly released immediately after
-// reading so the browser slot is freed before Marzipano needs it.
-// Calling hasWebGL() or getMaxCubeMapSize() from a React component body or
-// effect is therefore free — no new canvas is created on subsequent calls.
+// Module-scope memoization: the probe canvas is created ONCE per page load
+// and the result cached. Calling hasWebGL() or getMaxCubeMapSize() from a
+// React component body or effect is therefore free after the first call.
+//
+// Note: this used to call WEBGL_lose_context on the probe context immediately
+// after creating it, to free the slot before Marzipano's real context. That
+// was removed — it's unverified whether an immediate lose+recreate cycle is
+// reliable across devices, and letting the throwaway canvas/context be
+// garbage-collected normally is the standard, low-risk approach.
 
 let _webglSupported = null;
 
@@ -15,15 +19,13 @@ export function hasWebGL() {
     const gl =
       canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     if (!gl) {
+      console.warn("hasWebGL: getContext('webgl') returned no context");
       _webglSupported = false;
       return false;
     }
-    // Release the context immediately so the browser can reclaim the slot
-    // before the real Marzipano viewer is created.
-    const ext = gl.getExtension("WEBGL_lose_context");
-    ext?.loseContext();
     _webglSupported = true;
-  } catch {
+  } catch (err) {
+    console.warn("hasWebGL: probe threw", err);
     _webglSupported = false;
   }
   return _webglSupported;
@@ -42,9 +44,8 @@ export function getMaxCubeMapSize() {
       return 2048;
     }
     _maxCubeMapSize = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE);
-    const ext = gl.getExtension("WEBGL_lose_context");
-    ext?.loseContext();
-  } catch {
+  } catch (err) {
+    console.warn("getMaxCubeMapSize: probe threw", err);
     _maxCubeMapSize = 2048;
   }
   return _maxCubeMapSize;

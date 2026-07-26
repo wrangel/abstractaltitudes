@@ -52,7 +52,17 @@
   text-align: center;
 }
 
+.errorMessage {
+  max-width: 500px;
+  padding: 0 1.5rem;
+}
+
 .errorMessage h1 {
   font-weight: bold;
   margin-bottom: 0.5rem;
+}
+
+.errorMessage p {
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
 }

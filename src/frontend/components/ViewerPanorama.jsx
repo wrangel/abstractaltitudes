@@ -435,8 +435,17 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
     return (
       <div className={styles.errorOverlay}>
         <div className={styles.errorMessage}>
-          <h1>WebGL unsupported</h1>
-          <p>This device or browser does not support WebGL configurations.</p>
+          <h1>Interactive 360° view unavailable</h1>
+          <p>
+            Your browser blocked the technology (WebGL) this panorama needs —
+            usually a content or ad blocker, not a device limitation. It's
+            safe to allow: this site only uses it to render the photo, not
+            for tracking.
+          </p>
+          <p>
+            On iOS Safari: tap the "aA" icon in the address bar and choose
+            "Turn off Content Blockers" for this site, then reload.
+          </p>
           {panoPath && (
             <img
               src={`${panoPath}/preview.jpg`}

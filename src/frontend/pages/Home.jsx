@@ -25,17 +25,10 @@ function isValidPanoItem(item) {
   );
 }
 
-function isAppleBrowser() {
-  return (
-    /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) &&
-    typeof window.ApplePaySession !== "undefined"
-  );
-}
-
 const Home = () => {
   const { items } = useItems();
 
-  const canUsePano = !isAppleBrowser() && hasWebGL();
+  const canUsePano = hasWebGL();
 
   const [backgroundPano, setBackgroundPano] = useState(null);
   const [backgroundImage, setBackgroundImage] = useState(null);

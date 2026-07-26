@@ -29,8 +29,6 @@ const ViewerImage = ({ actualUrl, thumbnailUrl, name, onLoad }) => {
 
       osdInstance.current = OpenSeadragon({
         element: viewerRef.current,
-        prefixUrl:
-          "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
         tileSources: actualUrl,
         crossOriginPolicy: "Anonymous",
         loadTilesWithAjax: true,

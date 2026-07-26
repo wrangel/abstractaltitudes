@@ -27,18 +27,12 @@ router.get("/combined-data", async (req, res, next) => {
       return next(error);
     }
 
-    const decorated = combinedData.map((item, index) => ({
-      ...item,
-      isFirst: index === 0,
-      isLast: index === combinedData.length - 1,
-    }));
-
-    setCachedData(cacheKey, decorated);
+    setCachedData(cacheKey, combinedData);
 
     // Good practice: Tells browsers/CDNs they can cache it for 5 mins too
     res.set("Cache-Control", "public, max-age=300");
 
-    res.status(200).json(decorated);
+    res.status(200).json(combinedData);
   } catch (error) {
     logger.error("Error fetching combined data", { error });
     next(error);

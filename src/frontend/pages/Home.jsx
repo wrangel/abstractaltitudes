@@ -109,7 +109,12 @@ const Home = () => {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const popupItem = currentIndex !== null ? mediaItems[currentIndex] : null;
+  // isFirst/isLast forced false: navigation below wraps around via modulo,
+  // so there's never a true boundary — both nav arrows should always show.
+  const popupItem =
+    currentIndex !== null
+      ? { ...mediaItems[currentIndex], isFirst: false, isLast: false }
+      : null;
 
   // The background VP stays mounted the whole time; it just suspends
   // (releases context, pauses Marzipano) while the popup is open so the

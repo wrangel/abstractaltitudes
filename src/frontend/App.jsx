@@ -2,15 +2,10 @@
 
 import React, { Suspense, lazy } from "react";
 import { HelmetProvider } from "react-helmet-async";
-import { preload } from "swr";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingOverlay from "./components/LoadingOverlay";
 import { WebGLManagerProvider } from "./utils/WebGLManager";
-import { COMBINED_DATA_URL } from "./constants";
-
-const fetcher = (url) => fetch(url).then((res) => res.json());
-preload(COMBINED_DATA_URL, fetcher);
 
 const Home = lazy(() => import("./pages/Home"));
 const Grid = lazy(() => import("./pages/Grid"));

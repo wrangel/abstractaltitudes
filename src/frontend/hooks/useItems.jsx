@@ -8,6 +8,10 @@ let cachedItems = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Shared in-flight request so concurrent hook instances (Home + Grid both
+// mount and call useItems() at once) issue one network request, not one each.
+let inFlightRequest = null;
+
 // 🔥 Use your backend's datetime field here
 // Assumes every item has item.dateTime (ISO string or similar)
 const parseItemDate = (item) => {
@@ -30,6 +34,36 @@ const isSameArray = (a, b) => {
   return true;
 };
 
+// Performs the actual network fetch + sort, and updates the shared cache.
+// Wrapped in inFlightRequest by callers so it only ever runs once at a time.
+async function fetchAndSortItems() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(COMBINED_DATA_URL, {
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const arrayData = Array.isArray(data) ? data : [];
+
+    // 🔥 Canonical sort: newest first
+    const sortedData = sortItemsByDateDesc(arrayData);
+
+    cachedItems = [...sortedData];
+    cacheTimestamp = Date.now();
+
+    return sortedData;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export const useItems = () => {
   const [items, setItems] = useState(cachedItems ? [...cachedItems] : []);
   const [isLoading, setIsLoading] = useState(!cachedItems);
@@ -49,35 +83,18 @@ export const useItems = () => {
       return;
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(COMBINED_DATA_URL, {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!inFlightRequest) {
+        inFlightRequest = fetchAndSortItems().finally(() => {
+          inFlightRequest = null;
+        });
       }
-
-      const data = await response.json();
-
-      const arrayData = Array.isArray(data) ? data : [];
-
-      // 🔥 Canonical sort: newest first
-      const sortedData = sortItemsByDateDesc(arrayData);
+      const sortedData = await inFlightRequest;
 
       setItems((prev) => (isSameArray(prev, sortedData) ? prev : sortedData));
-
-      // Cache the sorted result
-      cachedItems = [...sortedData];
-      cacheTimestamp = Date.now();
     } catch (e) {
       if (e.name === "AbortError") {
         setError("Request timed out. Please try again.");
@@ -85,7 +102,6 @@ export const useItems = () => {
         setError("Failed to load items. Please try again later.");
       }
     } finally {
-      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }, []);

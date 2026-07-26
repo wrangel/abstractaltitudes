@@ -29,7 +29,8 @@ Capturing aerial imagery through drone flights, showcasing landscapes & cityscap
 - **Frontend**: React 19 + Vite
 - **Backend**: Node.js 26 + Express
 - **DB**: MongoDB Atlas (collection `abstractaltitudes`)
-- **Object Storage**: AWS S3 bucket
+- **Object Storage**: AWS S3 bucket (originals/archival)
+- **CDN / Delivery**: BunnyCDN (thumbnails, images, pano tiles)
 - **Image Processing**: Sharp
 - **Reverse Geocoding**: Mapbox
 - **Containerisation**: Docker / Docker Compose
@@ -167,7 +168,8 @@ MIT – see [LICENSE](LICENSE)
 
 ## Contact
 
-GitHub: [@wrangel](https://github.com/wrangel)
+GitHub: [@wrangel](https://github.com/wrangel)  
+Email: [contact@abstractaltitudes.anonaddy.com](mailto:contact@abstractaltitudes.anonaddy.com)
 
 ## Acknowledgments
 

@@ -3,7 +3,7 @@
 import { memo, useCallback } from "react";
 import PropTypes from "prop-types";
 import styles from "../styles/PortfolioItem.module.css";
-import { describeItem } from "../utils/describeItem";
+import { describeItem } from "../../shared/describeItem.mjs";
 
 /**
  * PortfolioItem component renders a single clickable portfolio item with accessibility support.

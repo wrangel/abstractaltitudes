@@ -123,6 +123,32 @@ pnpm manage handle-media # ingest new imagery
 pnpm manage:dry handle-media -n # ingest new imagery, but do not upload it neither to AWS nor Mongo db
 ```
 
+## Per-photo pages (SEO)
+
+Each photo is addressable at `/photo/<slug>/`. Opening the viewer pushes that
+URL; Back closes it. Nothing unmounts — the URL and the React tree are
+independent, which is what keeps `ViewerPanorama`'s WebGL context alive.
+
+`pnpm frontend:build` runs `scripts/prerender-photos.mjs` after Vite. It fetches
+`$VITE_API_URL/combined-data` and writes a static
+`build/photo/<slug>/index.html` per photo, with title, description, Open Graph
+tags and `ImageObject` JSON-LD baked in, plus `build/sitemap.xml`. nginx's
+existing `try_files` serves them — no nginx or backend change involved.
+
+Two things to know:
+
+- **Deploy the backend before rebuilding the frontend.** Slugs and place fields
+  come from the API. Against an older backend the script writes nothing and
+  says so rather than emitting broken pages.
+- **New photos need a frontend rebuild** to get their own page. Until then they
+  still load and work, just with the generic site-wide metadata.
+
+The script never fails a build; if the API is unreachable it warns and skips,
+leaving the checked-in `public/sitemap.xml` as the fallback. Metadata defaults
+live between the `<!-- seo:start -->` / `<!-- seo:end -->` markers in
+`index.html` — that block is what gets replaced per photo, so keep anything the
+photo pages also need (favicons, manifest, site-level JSON-LD) outside it.
+
 ## Media Upload Folder Layout
 
 Place drone media folders inside INPUT_DIRECTORY ($INPUT_DIRECTORY). collectMetadata auto-detects type by file count/pattern:

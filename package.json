@@ -6,7 +6,7 @@
   "packageManager": "pnpm@11.17.0",
   "scripts": {
     "frontend:dev": "vite",
-    "frontend:build": "vite build",
+    "frontend:build": "vite build && node scripts/prerender-photos.mjs",
     "frontend:preview": "vite preview",
     "dev": "./scripts/dev-deploy.sh",
     "manage": "./scripts/manage-tasks.sh",

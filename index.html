@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="canonical" href="https://abstractaltitudes.com/" />
 
     <!-- Adaptive favicons -->
     <link
@@ -19,13 +18,21 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- seo:start -->
+    <!-- Everything between these markers is REPLACED per photo by
+         scripts/prerender-photos.mjs at build time. Edit the defaults here
+         freely, but keep the markers and keep this block self-contained:
+         anything the photo pages must also have (favicons, manifest, the
+         site-level JSON-LD below) belongs outside it. -->
+    <title>Abstract Altitudes - Aerial Photography</title>
+    <link rel="canonical" href="https://abstractaltitudes.com/" />
     <meta
       name="description"
       content="Aerial and 360° drone photography: landscapes and cityscapes seen from lofty heights, in immersive panoramas and high-resolution stills."
     />
-    <link rel="apple-touch-icon" href="/logo192.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>Abstract Altitudes - Aerial Photography</title>
 
     <!-- Open Graph / social share preview -->
     <meta property="og:type" content="website" />
@@ -42,7 +49,8 @@
 
     <!-- TODO: switch to summary_large_image once a 1200x630 hero image exists
          at /og-image.jpg and og:image points at it. A square logo in a wide
-         card crops badly, so keep the small card until then. -->
+         card crops badly, so keep the small card until then. Photo pages
+         already use summary_large_image — they have a real photo to show. -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Abstract Altitudes - Aerial Photography" />
     <meta
@@ -50,6 +58,7 @@
       content="Aerial and 360° drone photography: landscapes and cityscapes seen from lofty heights, in immersive panoramas and high-resolution stills."
     />
     <meta name="twitter:image" content="https://abstractaltitudes.com/logo512.png" />
+    <!-- seo:end -->
 
     <!-- Bing Site Verification Meta Tag -->
     <meta name="msvalidate.01" content="EAB83D86CB896177B56D68D6B59DAC8C" />

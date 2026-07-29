@@ -16,6 +16,21 @@ ENV VITE_MAPBOX_PUBLIC_TOKEN=${VITE_MAPBOX_PUBLIC_TOKEN}
 ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
 ENV VITE_GOOGLE_MAPS_MAP_ID=${VITE_GOOGLE_MAPS_MAP_ID}
 ENV VITE_BUNNYCDN_BASE_URL=${VITE_BUNNYCDN_BASE_URL}
+
+# Prerendering is mandatory for a production image: the gallery footer links to
+# /places/, and the sitemap is generated here. Without this the build would warn
+# and ship an image whose "Browse by location" link 404s into the SPA fallback.
+#
+# The prerender needs an absolute API URL. VITE_API_URL is "/api" in production
+# (browser-relative, proxied by nginx), so it is resolved against SITE_ORIGIN;
+# override with PRERENDER_API_URL to build against a different host. This means
+# the build machine must be able to reach the live API.
+ENV REQUIRE_PRERENDER=1
+ARG SITE_ORIGIN
+ARG PRERENDER_API_URL
+ENV SITE_ORIGIN=${SITE_ORIGIN}
+ENV PRERENDER_API_URL=${PRERENDER_API_URL}
+
 RUN pnpm run frontend:build
 
 FROM nginx:1.28-alpine

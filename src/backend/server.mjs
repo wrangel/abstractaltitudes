@@ -7,7 +7,11 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import logger from "./utils/logger.mjs";
-import { connectDB, closeDB } from "./utils/mongodbConnection.mjs";
+import {
+  connectWithRetry,
+  closeDB,
+  isDatabaseConnected,
+} from "./utils/mongodbConnection.mjs";
 import combinedDataRoute from "./routes/combinedDataRoute.mjs";
 import clickRoute from "./routes/clickRoute.mjs";
 import expressStaticGzip from "express-static-gzip";
@@ -114,8 +118,21 @@ const apiLimiter = rateLimit({
 
 app.use("/api", apiLimiter);
 
-// Endpoints
+// Liveness: the process is up and serving. Deliberately independent of the
+// database — a container that is running should not be killed and restarted
+// because a downstream service is briefly unreachable.
 app.get("/healthz", (_, res) => res.status(200).send("ok"));
+
+// Readiness: can this instance actually serve data? Referenced by the rate
+// limiter's skip list above but never implemented until now, so it fell
+// through to the SPA fallback and tried to send a build/index.html that does
+// not exist in the backend image.
+app.get("/ready", (_, res) => {
+  const connected = isDatabaseConnected();
+  res
+    .status(connected ? 200 : 503)
+    .json({ ready: connected, database: connected ? "connected" : "connecting" });
+});
 app.use("/api", combinedDataRoute);
 app.use("/api", clickRoute);
 
@@ -131,12 +148,24 @@ app.use((err, req, res, next) => {
 });
 
 mongoose.set("strictQuery", false);
-connectDB().then(() => {
-  const server = app.listen(PORT, () => logger.info(`Server on port ${PORT}`));
-  process.on("SIGTERM", async () => {
-    await closeDB();
-    server.close(() => process.exit(0));
-  });
-});
+
+// Listen first, connect second. The database is not a precondition for being
+// able to answer /healthz and /ready, and gating app.listen() on it meant one
+// failed connect took the whole process down before it could report anything.
+const server = app.listen(PORT, () => logger.info(`Server on port ${PORT}`));
+
+// Fire and forget: retries with backoff internally and never rejects.
+connectWithRetry();
+
+const shutdown = async (signal) => {
+  logger.info(`${signal} received, shutting down`);
+  await closeDB();
+  server.close(() => process.exit(0));
+  // Don't hang forever on lingering keep-alive sockets.
+  setTimeout(() => process.exit(0), 10000).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 export { closeDB };

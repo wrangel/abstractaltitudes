@@ -32,7 +32,17 @@ function fail(message) {
 const apiUrl = env.VITE_API_URL;
 if (!apiUrl) fail("VITE_API_URL is not set");
 
-const res = await fetch(`${apiUrl.replace(/\/+$/, "")}/combined-data`);
+// As in refresh-photo-data.mjs: report the failure code, never the URL. It is
+// environment-derived and may embed credentials that would end up in a log.
+let res;
+try {
+  res = await fetch(`${apiUrl.replace(/\/+$/, "")}/combined-data`);
+} catch (err) {
+  fail(
+    `Could not reach the API (${err.cause?.code ?? err.name}). ` +
+      "Check VITE_API_URL and that the backend is running.",
+  );
+}
 if (!res.ok) fail(`API returned HTTP ${res.status}`);
 
 try {

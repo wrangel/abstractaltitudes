@@ -31,6 +31,28 @@ export function hasWebGL() {
   return _webglSupported;
 }
 
+/**
+ * Whether this browser will let an arbitrary element go fullscreen.
+ *
+ * On iOS/iPadOS every browser is WKWebView, and element fullscreen is an
+ * opt-in the host app must enable (WKPreferences.isElementFullscreenEnabled,
+ * off by default). Safari turns it on; third-party browsers such as
+ * DuckDuckGo do not, so `requestFullscreen` is simply absent there and
+ * calling it throws synchronously — a `.catch()` never sees it.
+ *
+ * Checked once per load rather than memoised lazily: the answer cannot change
+ * within a page lifetime.
+ *
+ * @returns {boolean} True when a fullscreen button is worth showing.
+ */
+export function canUseFullscreen() {
+  if (typeof document === "undefined") return false;
+  return Boolean(
+    document.fullscreenEnabled &&
+      typeof document.documentElement.requestFullscreen === "function",
+  );
+}
+
 let _maxCubeMapSize = null;
 
 export function getMaxCubeMapSize() {

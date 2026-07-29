@@ -13,6 +13,7 @@ import PopupMetadata from "./PopupMetadata";
 import LoadingOverlay from "./LoadingOverlay";
 import useKeyboardNavigation from "../hooks/useKeyboardNavigation";
 import ErrorBoundary from "./ErrorBoundary";
+import { canUseFullscreen } from "../utils/webglSupport";
 import styles from "../styles/Viewer.module.css";
 import useAutoHideCursor from "../hooks/useAutoHideCursor";
 
@@ -48,7 +49,10 @@ const Viewer = ({
 
   const toggleFullScreen = useCallback(() => {
     const node = viewerRef.current;
-    if (!node) return;
+    // Guard before calling: where element fullscreen is unavailable (iOS
+    // browsers other than Safari) requestFullscreen is undefined, so the call
+    // throws synchronously and the .catch below would never run.
+    if (!node || !canUseFullscreen()) return;
     if (!document.fullscreenElement) {
       node.requestFullscreen().catch((err) => console.error(err));
     } else {

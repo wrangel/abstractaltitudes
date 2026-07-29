@@ -1,5 +1,9 @@
 import { memo, useState, useEffect } from "react";
 import styles from "../styles/Navigation.module.css";
+import { canUseFullscreen } from "../utils/webglSupport";
+
+// Constant for the page lifetime, so it is read once rather than per render.
+const FULLSCREEN_AVAILABLE = canUseFullscreen();
 
 const NavigationMedia = memo(
   ({
@@ -98,7 +102,7 @@ const NavigationMedia = memo(
           </>
         )}
 
-        {!isFullscreen && (
+        {!isFullscreen && FULLSCREEN_AVAILABLE && (
           <div className={styles.fabMenu}>
             <button
               className={styles.fabButton}

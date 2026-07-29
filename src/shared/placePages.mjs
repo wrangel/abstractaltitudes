@@ -12,7 +12,7 @@
 
 import { slugify } from "./slug.mjs";
 import { describeItem } from "./describeItem.mjs";
-import { escapeHtml, photoUrl } from "./photoMeta.mjs";
+import { escapeHtml, photoPath } from "./photoMeta.mjs";
 import { sizedImageUrl, thumbnailSrcSet } from "./imageUrl.mjs";
 
 // Below this, a hub page is thinner than the pages it links to, which is the
@@ -112,7 +112,7 @@ ${body}
  * Renders a thumbnail grid linking into the SPA's photo pages, capped at
  * MAX_PHOTOS_PER_GRID with a note when it truncates.
  */
-function photoGrid(items, origin) {
+function photoGrid(items) {
   const shown = items.slice(0, MAX_PHOTOS_PER_GRID);
   const hidden = items.length - shown.length;
   const note = hidden
@@ -122,7 +122,7 @@ function photoGrid(items, origin) {
   const cells = shown
     .map(
       (item) => `        <li>
-          <a href="${e(photoUrl(item, origin))}">
+          <a href="${e(photoPath(item))}">
             <img src="${e(sizedImageUrl(item.thumbnailUrl, 480))}" srcset="${e(thumbnailSrcSet(item.thumbnailUrl))}" sizes="(max-width: 600px) 100vw, 300px" alt="${e(describeItem(item))}" loading="lazy" decoding="async" width="480" height="320" />
             <span>${e(describeItem(item))}</span>
           </a>
@@ -267,7 +267,7 @@ ${bigRegions
       <p class="lede">${list.length} drone photograph${list.length === 1 ? "" : "s"} and 360° panoramas captured across ${e(country)}.</p>
 ${regionLinks}
       <h2>Photographs</h2>
-${photoGrid(countryGridOrder(list, bigRegions), origin)}`,
+${photoGrid(countryGridOrder(list, bigRegions))}`,
       }),
     });
 
@@ -286,7 +286,7 @@ ${photoGrid(countryGridOrder(list, bigRegions), origin)}`,
           body: `${breadcrumbHtml(regionTrail)}
       <h1>Aerial photography of ${e(region)}</h1>
       <p class="lede">${rList.length} drone photograph${rList.length === 1 ? "" : "s"} and 360° panoramas captured in ${e(region)}, ${e(country)}.</p>
-${photoGrid(rList, origin)}`,
+${photoGrid(rList)}`,
         }),
       });
     }

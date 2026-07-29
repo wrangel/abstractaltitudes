@@ -21,6 +21,7 @@ import { loadEnv } from "vite";
 
 import { buildPhotoSeoBlock, buildSitemap } from "../src/shared/photoMeta.mjs";
 import { buildPlacePages } from "../src/shared/placePages.mjs";
+import { buildOgImage } from "./lib/ogImage.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.join(__dirname, "..");
@@ -126,6 +127,22 @@ async function main() {
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, "index.html"), html, "utf8");
     written++;
+  }
+
+  // Refresh the share card from the newest non-panorama. Vite has already
+  // copied public/og-image.jpg into build/, so any failure here simply leaves
+  // that committed image in place rather than shipping a broken og:image.
+  try {
+    const { item } = await buildOgImage({
+      items: usable,
+      outPath: path.join(BUILD_DIR, "og-image.jpg"),
+    });
+    console.log(`[prerender] Share card rendered from ${item.slug}`);
+  } catch (err) {
+    console.warn(
+      `[prerender] Share card not regenerated (${err.message}); ` +
+        "keeping the committed public/og-image.jpg.",
+    );
   }
 
   const placePages = buildPlacePages(usable, ORIGIN);

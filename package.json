@@ -8,6 +8,7 @@
     "frontend:dev": "vite",
     "frontend:build": "vite build && node scripts/prerender-photos.mjs",
     "frontend:preview": "vite preview",
+    "test:unit": "node --test \"tests/**/*.test.mjs\"",
     "dev": "./scripts/dev-deploy.sh",
     "manage": "./scripts/manage-tasks.sh",
     "manage:dry": "./scripts/manage-tasks.sh -n",

@@ -46,7 +46,19 @@ function toJsonLd(data) {
  * @returns {string} Absolute URL.
  */
 export function photoUrl(item, origin) {
-  return `${origin}/photo/${item.slug}/`;
+  return `${origin}${photoPath(item)}`;
+}
+
+/**
+ * Same target as photoUrl but host-relative — what internal links should use,
+ * so pages stay clickable on localhost, in preview, and behind any hostname.
+ * Absolute form is reserved for canonical/og:url/sitemap, where it is required.
+ *
+ * @param {Object} item - Item with a slug.
+ * @returns {string} e.g. "/photo/zermatt-valais-switzerland-pa-1/"
+ */
+export function photoPath(item) {
+  return `/photo/${item.slug}/`;
 }
 
 /**
@@ -71,15 +83,36 @@ export function photoTitle(item) {
  * @returns {string} Description text (unescaped).
  */
 export function photoDescription(item) {
-  const base = describeItem(item);
-  const captured = item?.dateTime ? new Date(item.dateTime) : null;
-  if (!captured || Number.isNaN(captured.getTime())) return `${base}.`;
+  const place = formatPlace(item);
+  const kind =
+    item?.viewer === "pano"
+      ? "360° aerial panorama"
+      : "Aerial drone photograph";
 
-  const when = captured.toLocaleDateString("en-GB", {
-    year: "numeric",
-    month: "long",
-  });
-  return `${base}. Captured ${when} by drone.`;
+  const captured = item?.dateTime ? new Date(item.dateTime) : null;
+  const when =
+    captured && !Number.isNaN(captured.getTime())
+      ? captured.toLocaleDateString("en-GB", { year: "numeric", month: "long" })
+      : "";
+
+  const altitude =
+    typeof item?.altitude === "number" && Number.isFinite(item.altitude)
+      ? `${item.altitude.toFixed(0)} m above sea level`
+      : "";
+
+  // Aim for the 120-160 character window search engines display. The unique
+  // signal (place, altitude, date) leads; the closing clause only fills out
+  // entries whose place name is short, so it is not appended everywhere.
+  const lead = place ? `${kind} of ${place}` : kind;
+  const detail = [altitude && `captured at ${altitude}`, when && `in ${when}`]
+    .filter(Boolean)
+    .join(" ");
+
+  let text = detail ? `${lead}, ${detail}.` : `${lead}.`;
+  if (text.length < 120) {
+    text += " Explore the full-resolution, zoomable image.";
+  }
+  return text;
 }
 
 /**

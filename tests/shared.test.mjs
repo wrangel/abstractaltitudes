@@ -16,6 +16,7 @@ import {
   photoPath,
   photoUrl,
   photoTitle,
+  photoDescription,
   buildPhotoSeoBlock,
   buildSitemap,
 } from "../src/shared/photoMeta.mjs";
@@ -159,6 +160,30 @@ test("titles lead with the place and distinguish panoramas", () => {
   );
 });
 
+test("descriptions of complete records fill the displayed 120-160 window", () => {
+  for (const over of [
+    {},
+    { viewer: "pano" },
+    { location: "Höfn", region: "Austurland", country: "Iceland" },
+  ]) {
+    const d = photoDescription(item(over));
+    assert.ok(
+      d.length >= 120 && d.length <= 165,
+      `description was ${d.length} chars: ${d}`,
+    );
+  }
+});
+
+test("sparse records stay short rather than padded with filler", () => {
+  // Missing region AND altitude leaves too little real material to reach 120.
+  // Inventing boilerplate to hit a character count is worse for both readers
+  // and search engines than a genuinely shorter line, so this asserts a floor,
+  // not the display window.
+  const d = photoDescription(item({ region: "", altitude: undefined }));
+  assert.ok(d.length >= 100 && d.length <= 165, `was ${d.length}: ${d}`);
+  assert.ok(d.includes("Zermatt"), "still leads with the real place");
+});
+
 // ---------------------------------------------------------------------------
 // CDN resizing.
 // ---------------------------------------------------------------------------
@@ -206,6 +231,33 @@ test("photos in a page-less region still get linked from the country page", () =
   const country = pages.find((p) => p.path === "places/bigland");
   assert.ok(!pages.some((p) => p.path.includes("small")), "no page for Small");
   assert.ok(country.html.includes("/photo/orphan/"), "linked on country page");
+});
+
+test("photos in a country too small for a page are still linked from the index", () => {
+  const items = [
+    ...many(MIN_PHOTOS_PER_PAGE, { country: "Bigland", region: "Big" }),
+    ...many(1, { country: "Croatia", region: "Istria", slug: "croatia-one" }),
+    ...many(2, { country: "Slovenia", region: "Gorenjska" }).map((it, i) => ({
+      ...it,
+      slug: `slovenia-${i}`,
+    })),
+  ];
+  const pages = buildPlacePages(items, ORIGIN);
+  const index = pages.find((p) => p.path === "places");
+
+  assert.ok(
+    !pages.some((p) => /croatia|slovenia/.test(p.path)),
+    "no thin country pages are created",
+  );
+  // But every one of their photos must still be reachable by a crawler.
+  for (const slug of ["croatia-one", "slovenia-0", "slovenia-1"]) {
+    assert.ok(
+      index.html.includes(`/photo/${slug}/`),
+      `${slug} must be linked from /places/`,
+    );
+  }
+  assert.match(index.html, /Elsewhere/);
+  assert.match(index.html, /Croatia and Slovenia|Slovenia and Croatia/);
 });
 
 test("grids cap and say so", () => {

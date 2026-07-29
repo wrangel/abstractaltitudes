@@ -152,6 +152,30 @@ function countryGridOrder(list, bigRegions) {
   ];
 }
 
+/** Joins names as "a, b and c". */
+function listNames(names) {
+  if (names.length <= 1) return e(names[0] ?? "");
+  return `${names.slice(0, -1).map(e).join(", ")} and ${e(names[names.length - 1])}`;
+}
+
+/**
+ * Description for a hub page, aimed at the 120-160 character window search
+ * engines display. Naming the largest regions keeps each country's text
+ * genuinely distinct rather than a template with one word swapped.
+ */
+function placeDescription(count, where, regions) {
+  const noun = count === 1 ? "photograph" : "photographs";
+  let text = `Browse ${count} aerial drone ${noun} and 360° panoramas captured across ${where}.`;
+  const named = regions.slice(0, 3);
+  if (named.length) {
+    text += ` Includes ${named.slice(0, -1).join(", ")}${named.length > 1 ? " and " : ""}${named[named.length - 1]}.`;
+  }
+  if (text.length < 120) {
+    text += " Shot from above, in high resolution.";
+  }
+  return text;
+}
+
 function breadcrumbJsonLd(trail, origin) {
   return JSON.stringify(
     {
@@ -194,12 +218,24 @@ export function buildPlacePages(items, origin) {
   const byCountry = groupBy(withCountry, (item) => item.country);
   const pages = [];
 
-  const countries = [...byCountry.entries()]
+  const allCountries = [...byCountry.entries()]
     .map(([country, list]) => ({ country, list, slug: slugify(country) }))
-    .filter((entry) => entry.slug && entry.list.length >= MIN_PHOTOS_PER_PAGE)
+    .filter((entry) => entry.slug)
     .sort((a, b) => b.list.length - a.list.length);
 
+  const countries = allCountries.filter(
+    (entry) => entry.list.length >= MIN_PHOTOS_PER_PAGE,
+  );
+
   if (countries.length === 0) return [];
+
+  // Countries too small for a page of their own. Their photos would otherwise
+  // have no internal link at all — the country page that would have carried
+  // them does not exist — so the index lists them directly. Keeps the
+  // no-thin-pages rule without stranding photos.
+  const strays = allCountries
+    .filter((entry) => entry.list.length < MIN_PHOTOS_PER_PAGE)
+    .flatMap((entry) => entry.list);
 
   // ---- /places/ ----------------------------------------------------------
   const indexTrail = [
@@ -210,7 +246,7 @@ export function buildPlacePages(items, origin) {
     path: "places",
     html: layout({
       title: "Aerial Photography by Location | Abstract Altitudes",
-      description: `Browse drone photography by country — ${countries
+      description: `Browse drone photography by country — ${allCountries
         .map((c) => c.country)
         .join(", ")}.`,
       canonical: `${origin}/places/`,
@@ -225,7 +261,16 @@ ${countries
       `        <li><a href="/places/${e(c.slug)}/">${e(c.country)}</a> — ${c.list.length} photo${c.list.length === 1 ? "" : "s"}</li>`,
   )
   .join("\n")}
-      </ul>`,
+      </ul>
+${
+  strays.length
+    ? `      <h2>Elsewhere</h2>
+      <p class="lede">Single visits to ${listNames([
+        ...new Set(strays.map((s) => s.country)),
+      ])} — not enough for a page each, but here they are.</p>
+${photoGrid(strays)}`
+    : ""
+}`,
     }),
   });
 
@@ -259,7 +304,7 @@ ${bigRegions
       path: `places/${slug}`,
       html: layout({
         title: `Aerial Photography of ${country} | Abstract Altitudes`,
-        description: `${list.length} drone photographs and 360° panoramas captured across ${country}.`,
+        description: placeDescription(list.length, country, bigRegions.map((r) => r.region)),
         canonical: `${origin}/places/${slug}/`,
         jsonLd: breadcrumbJsonLd(countryTrail, origin),
         body: `${breadcrumbHtml(countryTrail)}
@@ -280,7 +325,7 @@ ${photoGrid(countryGridOrder(list, bigRegions))}`,
         path: `places/${slug}/${rSlug}`,
         html: layout({
           title: `Aerial Photography of ${region}, ${country} | Abstract Altitudes`,
-          description: `${rList.length} drone photographs and 360° panoramas captured in ${region}, ${country}.`,
+          description: placeDescription(rList.length, `${region}, ${country}`, []),
           canonical: `${origin}/places/${slug}/${rSlug}/`,
           jsonLd: breadcrumbJsonLd(regionTrail, origin),
           body: `${breadcrumbHtml(regionTrail)}

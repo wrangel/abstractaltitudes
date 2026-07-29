@@ -9,7 +9,6 @@ import { WebGLManagerProvider } from "./utils/WebGLManager";
 const Home = lazy(() => import("./pages/Home"));
 const Grid = lazy(() => import("./pages/Grid"));
 
-// test
 function App() {
   return (
     <WebGLManagerProvider>

@@ -3,6 +3,7 @@
 import { memo, useCallback } from "react";
 import PropTypes from "prop-types";
 import styles from "../styles/PortfolioItem.module.css";
+import { describeItem } from "../utils/describeItem";
 
 /**
  * PortfolioItem component renders a single clickable portfolio item with accessibility support.
@@ -39,6 +40,10 @@ const PortfolioItem = memo(({ item, onItemClick }) => {
     return null;
   }
 
+  // Both of these used to be the raw Mongo ObjectId — useless to screen
+  // readers and to Google Images alike.
+  const description = describeItem(item);
+
   return (
     <div
       className={styles.portfolioItem}
@@ -46,13 +51,9 @@ const PortfolioItem = memo(({ item, onItemClick }) => {
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={`View portfolio item ${item.id}`}
+      aria-label={`View ${description}`}
     >
-      <img
-        src={item.thumbnailUrl}
-        alt={item.id || "Portfolio item"}
-        loading="lazy"
-      />
+      <img src={item.thumbnailUrl} alt={description} loading="lazy" />
     </div>
   );
 });
@@ -61,6 +62,11 @@ PortfolioItem.propTypes = {
   item: PropTypes.shape({
     id: PropTypes.string.isRequired,
     thumbnailUrl: PropTypes.string.isRequired,
+    viewer: PropTypes.oneOf(["pano", "img"]),
+    location: PropTypes.string,
+    region: PropTypes.string,
+    country: PropTypes.string,
+    altitude: PropTypes.number,
   }).isRequired,
   onItemClick: PropTypes.func.isRequired,
 };

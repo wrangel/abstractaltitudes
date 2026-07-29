@@ -1,7 +1,6 @@
 // src/frontend/App.jsx
 
 import React, { Suspense, lazy } from "react";
-import { HelmetProvider } from "react-helmet-async";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingOverlay from "./components/LoadingOverlay";
@@ -12,22 +11,20 @@ const Grid = lazy(() => import("./pages/Grid"));
 
 function App() {
   return (
-    <HelmetProvider>
-      <WebGLManagerProvider>
-        <div className="App">
-          <h1 className="visually-hidden">Peaceful Skies</h1>
-
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingOverlay />}>
-              <Home />
-              <div id="main-content">
-                <Grid />
-              </div>
-            </Suspense>
-          </ErrorBoundary>
-        </div>
-      </WebGLManagerProvider>
-    </HelmetProvider>
+    <WebGLManagerProvider>
+      <div className="App">
+        {/* The page's single <h1> lives in Home ("Abstract Altitudes").
+            A second, visually-hidden one here split the heading outline. */}
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingOverlay />}>
+            <Home />
+            <main id="main-content">
+              <Grid />
+            </main>
+          </Suspense>
+        </ErrorBoundary>
+      </div>
+    </WebGLManagerProvider>
   );
 }
 

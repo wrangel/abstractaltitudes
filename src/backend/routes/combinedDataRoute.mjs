@@ -11,6 +11,10 @@ router.get("/combined-data", async (req, res, next) => {
   const cacheKey = "combined-data";
 
   try {
+    // Same Cache-Control on both paths — previously only the cache-miss
+    // branch set it, so a cached hit shipped with no caching header at all.
+    res.set("Cache-Control", "public, max-age=300");
+
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
       // Keep this! It's great context for your API logs
@@ -28,9 +32,6 @@ router.get("/combined-data", async (req, res, next) => {
     }
 
     setCachedData(cacheKey, combinedData);
-
-    // Good practice: Tells browsers/CDNs they can cache it for 5 mins too
-    res.set("Cache-Control", "public, max-age=300");
 
     res.status(200).json(combinedData);
   } catch (error) {

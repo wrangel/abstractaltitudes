@@ -61,6 +61,13 @@ function processDocument(doc, presignedUrls) {
     drone: doc.drone,
     dateTime: doc.dateTime,
     metadata: formatMetadata(doc),
+    // Structured place fields alongside the formatted display string.
+    // The string is for the metadata popup; these are what alt text,
+    // per-photo <title>s and ImageObject JSON-LD need.
+    location: doc.location,
+    region: doc.region,
+    country: doc.country,
+    altitude: doc.altitude,
     latitude: doc.latitude,
     longitude: doc.longitude,
     thumbnailUrl: urls.thumbnailUrl,

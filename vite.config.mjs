@@ -7,13 +7,16 @@ export default defineConfig({
     react({
       jsxInclude: ["**/*.jsx", "**/*.js"],
     }),
-    visualizer({
-      open: true,
-      filename: "stats.html",
-      gzipSize: true,
-      brotliSize: true,
-    }),
-  ],
+    // Opt-in only: `ANALYZE=1 pnpm frontend:build`. It used to run on every
+    // build and try to open a browser, which breaks in Docker and CI.
+    process.env.ANALYZE &&
+      visualizer({
+        open: true,
+        filename: "stats.html",
+        gzipSize: true,
+        brotliSize: true,
+      }),
+  ].filter(Boolean),
   server: {
     port: 3000,
     proxy: {
@@ -37,7 +40,16 @@ export default defineConfig({
           const pkgPath = segments[segments.length - 1];
           const [first, second] = pkgPath.split("/");
           const pkgName = first.startsWith("@") ? `${first}/${second}` : first;
-          return `vendor_${pkgName.replace(/[@/]/g, "_")}`;
+
+          // Group into a few meaningful chunks. Emitting one chunk per
+          // package meant dozens of tiny requests; the only splits that
+          // actually pay off are the two heavy viewers, which are lazy.
+          if (pkgName === "marzipano") return "vendor_marzipano";
+          if (pkgName === "openseadragon") return "vendor_openseadragon";
+          if (pkgName === "react" || pkgName === "react-dom") {
+            return "vendor_react";
+          }
+          return "vendor";
         },
       },
     },

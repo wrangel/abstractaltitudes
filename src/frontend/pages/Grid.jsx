@@ -35,10 +35,6 @@ function Grid() {
     },
     [handleItemClick, recordClick],
   );
-  const onClose = useCallback(handleClosePopup, [handleClosePopup]);
-  const onNext = useCallback(handleNextItem, [handleNextItem]);
-  const onPrevious = useCallback(handlePreviousItem, [handlePreviousItem]);
-
   if (isLoading) return <LoadingOverlay />;
 
   if (error) {
@@ -107,9 +103,9 @@ function Grid() {
         <PopupViewer
           item={viewerItem}
           isOpen={isModalOpen}
-          onClose={onClose}
-          onNext={onNext}
-          onPrevious={onPrevious}
+          onClose={handleClosePopup}
+          onNext={handleNextItem}
+          onPrevious={handlePreviousItem}
         />
       )}
     </>

@@ -25,6 +25,11 @@ import {
   MIN_PHOTOS_PER_PAGE,
   MAX_PHOTOS_PER_GRID,
 } from "../src/shared/placePages.mjs";
+import {
+  t,
+  resolveLanguage,
+  SUPPORTED_LANGUAGES,
+} from "../src/frontend/utils/i18n.mjs";
 
 const ORIGIN = "https://abstractaltitudes.com";
 
@@ -333,4 +338,56 @@ test("describeItem always returns something useful", () => {
   assert.equal(formatPlace(null), "");
   // An id must never leak into alt text again.
   assert.ok(!describeItem(item()).includes("1".repeat(24)));
+});
+
+// ---------------------------------------------------------------------------
+// Localised messages. These only appear when something on the visitor's device
+// is blocking the panorama, and they instruct them to change an OS setting —
+// so a missing key would leave someone stuck with no idea what to do.
+// ---------------------------------------------------------------------------
+const MESSAGE_KEYS = [
+  "webglTitle",
+  "webglBody",
+  "webglFix",
+  "webglSafari",
+];
+
+test("every supported language defines every message", () => {
+  for (const lang of SUPPORTED_LANGUAGES) {
+    for (const key of MESSAGE_KEYS) {
+      const value = t(key, lang);
+      assert.ok(value.length > 0, `${lang}.${key} is empty`);
+      // A key that fell through to English is a missing translation, not a
+      // translation that happens to match — none of these are identical.
+      if (lang !== "en") {
+        assert.notEqual(value, t(key, "en"), `${lang}.${key} is untranslated`);
+      }
+    }
+  }
+});
+
+test("each language names Lockdown Mode as Apple localises it", () => {
+  // The visitor has to find this setting in their own Settings app, so the
+  // string must match Apple's wording, not a literal translation.
+  assert.match(t("webglFix", "en"), /Lockdown Mode/);
+  assert.match(t("webglFix", "de"), /Blockierungsmodus/);
+  assert.match(t("webglFix", "fr"), /Mode Isolement/);
+  assert.match(t("webglFix", "it"), /Modalità di isolamento/);
+});
+
+test("language resolution prefers the device list and falls back to English", () => {
+  assert.equal(resolveLanguage(["de-CH", "de"]), "de", "regional → base");
+  assert.equal(resolveLanguage(["fr-CA"]), "fr");
+  assert.equal(
+    resolveLanguage(["ja-JP", "it-IT"]),
+    "it",
+    "skips unsupported, takes the next preference",
+  );
+  assert.equal(resolveLanguage(["ja-JP"]), "en", "unsupported falls back");
+  assert.equal(resolveLanguage([]), "en");
+  assert.equal(resolveLanguage([null, undefined, ""]), "en");
+});
+
+test("unknown message keys return empty rather than undefined", () => {
+  assert.equal(t("nope", "de"), "");
 });

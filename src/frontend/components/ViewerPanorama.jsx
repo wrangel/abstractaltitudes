@@ -13,6 +13,7 @@ import Marzipano from "marzipano";
 import styles from "../styles/ViewerPanorama.module.css";
 import { useWebGLManager } from "../utils/WebGLManager";
 import { hasWebGL, getMaxCubeMapSize } from "../utils/webglSupport";
+import { t, resolveLanguage } from "../utils/i18n.mjs";
 
 const DEFAULT_VIEW = { yaw: 0, pitch: 0, fov: Math.PI / 4 };
 const AUTO_ROTATE_DELAY = 3000;
@@ -434,31 +435,18 @@ const ViewerPanorama = forwardRef(function ViewerPanorama(
   if (webglAbsent) {
     return (
       <div className={styles.errorOverlay}>
-        <div className={styles.errorMessage}>
-          <h1>Interactive 360° view unavailable</h1>
+        {/* Shown in the device's language: it tells the visitor which setting
+            to change, and they need to find that setting in their own
+            localised Settings app. The previous copy blamed content blockers
+            and pointed at "Turn off Content Blockers", which does nothing for
+            Lockdown Mode — the actual cause on iOS/iPadOS. */}
+        <div className={styles.errorMessage} lang={resolveLanguage()}>
+          <h1>{t("webglTitle")}</h1>
+          <p>{t("webglBody")}</p>
           <p>
-            Your browser blocked the technology (WebGL) this panorama needs —
-            usually a content or ad blocker, not a device limitation. It's
-            safe to allow: this site only uses it to render the photo, not
-            for tracking.
+            <strong>{t("webglFix")}</strong>
           </p>
-          <p>
-            On iOS Safari: tap the "aA" icon in the address bar and choose
-            "Turn off Content Blockers" for this site, then reload.
-          </p>
-          {panoPath && (
-            <img
-              src={`${panoPath}/preview.jpg`}
-              alt="Panorama preview"
-              className={styles.thumbnail}
-              style={{
-                width: "100%",
-                maxWidth: "1024px",
-                display: "block",
-                margin: "0 auto",
-              }}
-            />
-          )}
+          <p>{t("webglSafari")}</p>
         </div>
       </div>
     );

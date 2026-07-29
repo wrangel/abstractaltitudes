@@ -32,6 +32,21 @@
   user-select: text;
 }
 
+/* The metadata is a newline-joined string rendered in a <pre> to keep its line
+   breaks. <pre> carries UA defaults of `font-family: monospace` and a smaller
+   font-size applied to the element itself, which beat the font inherited from
+   .popup — so this block rendered in monospace at 14.4px while the rest of the
+   site was Inter at 16px. Inheriting explicitly restores it.
+   pre-wrap rather than the default pre so an unusually long road name wraps
+   instead of overflowing the popup. */
+.content pre {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
 .maplink {
   display: block;
   margin-top: var(--spacing-small);

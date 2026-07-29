@@ -3,6 +3,7 @@ import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
 import styles from "../styles/Home.module.css";
 import { hasWebGL } from "../utils/webglSupport";
+import { sizedImageUrl, thumbnailSrcSet } from "../../shared/imageUrl.mjs";
 
 const ViewerPanorama = lazy(() => import("../components/ViewerPanorama"));
 // See the note in Grid.jsx: keeps OpenSeadragon out of the initial download.
@@ -134,7 +135,9 @@ const Home = () => {
           </Suspense>
         ) : backgroundImage ? (
           <img
-            src={backgroundImage.thumbnailUrl}
+            src={sizedImageUrl(backgroundImage.thumbnailUrl, 1200)}
+            srcSet={thumbnailSrcSet(backgroundImage.thumbnailUrl)}
+            sizes="100vw"
             alt=""
             aria-hidden="true"
             className={styles.backgroundImage}

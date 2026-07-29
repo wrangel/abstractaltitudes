@@ -56,9 +56,27 @@ const KEEP = [
   "thumbnailUrl",
 ];
 
-const res = await fetch(`${API_URL.replace(/\/+$/, "")}/combined-data`);
+// Neither the URL nor a raw fetch error is logged. Both derive from the
+// environment, and a connection string may legitimately embed credentials
+// (http://user:pass@host/api) that would then sit in CI output for anyone with
+// access to the build. Naming the variables to check is just as actionable
+// without putting a secret-bearing value in a log.
+let res;
+try {
+  res = await fetch(`${API_URL.replace(/\/+$/, "")}/combined-data`);
+} catch (err) {
+  console.error(
+    `[data] Could not reach the API (${err.cause?.code ?? err.name}). ` +
+      "Check VITE_API_URL / PRERENDER_API_URL and that the backend is running.",
+  );
+  process.exit(1);
+}
+
 if (!res.ok) {
-  console.error(`[data] API returned HTTP ${res.status} from ${API_URL}`);
+  console.error(
+    `[data] API returned HTTP ${res.status}. ` +
+      "Check VITE_API_URL / PRERENDER_API_URL.",
+  );
   process.exit(1);
 }
 

@@ -38,13 +38,41 @@ const env = {
 const ORIGIN = (env.SITE_ORIGIN || "https://abstractaltitudes.com")
   .trim()
   .replace(/\/+$/, "");
-const API_URL = env.VITE_API_URL;
+
+// In production VITE_API_URL is "/api" — correct for the browser, which
+// resolves it against the site origin and lets nginx proxy it, but not
+// something Node can fetch during a build. Resolve relative values against
+// SITE_ORIGIN so the build talks to the live API; PRERENDER_API_URL overrides
+// when the build needs a different host (staging, a tunnel).
+const RAW_API = env.PRERENDER_API_URL || env.VITE_API_URL;
+const API_URL = RAW_API
+  ? /^https?:\/\//i.test(RAW_API)
+    ? RAW_API
+    : new URL(RAW_API, `${ORIGIN}/`).href
+  : null;
+
+// Docker sets this so a production image can never ship the footer's
+// "Browse by location" link with no /places/ pages behind it. Local builds
+// stay lenient: a dev build without the API up should still succeed.
+const REQUIRED = /^(1|true)$/i.test(env.REQUIRE_PRERENDER || "");
+
 const FETCH_TIMEOUT_MS = 20000;
 
 const SEO_BLOCK = /<!--\s*seo:start\s*-->[\s\S]*?<!--\s*seo:end\s*-->/;
 
-/** Logs a warning and exits 0 — prerendering is never allowed to fail a build. */
+/**
+ * Abandons prerendering. Fails the build when REQUIRE_PRERENDER is set,
+ * otherwise warns and exits 0.
+ */
 function skip(reason) {
+  if (REQUIRED) {
+    console.error(`[prerender] FAILED: ${reason}`);
+    console.error(
+      "[prerender] REQUIRE_PRERENDER is set, so this build must not ship " +
+        "without photo and /places/ pages.",
+    );
+    process.exit(1);
+  }
   console.warn(`[prerender] Skipped: ${reason}`);
   console.warn("[prerender] Photo pages will use the default index.html tags.");
   process.exit(0);

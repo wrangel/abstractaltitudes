@@ -32,6 +32,8 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: ${VITE_API_URL}
+        SITE_ORIGIN: ${SITE_ORIGIN:-https://abstractaltitudes.com}
+        PRERENDER_API_URL: ${PRERENDER_API_URL:-}
         VITE_MAPBOX_PUBLIC_TOKEN: ${VITE_MAPBOX_PUBLIC_TOKEN}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID}

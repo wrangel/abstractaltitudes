@@ -6,7 +6,6 @@ import App from "./frontend/App";
 import reportWebVitals from "./frontend/reportWebVitals";
 import "./frontend/styles/Global.css";
 
-// Import Inter variable font here
 import "@fontsource-variable/inter";
 
 // Owner opt-out: visiting https://abstractaltitudes.com/#aa-owner sets a
@@ -26,4 +25,9 @@ root.render(
   </React.StrictMode>
 );
 
-reportWebVitals(console.log);
+// Dev-only: this was logging Core Web Vitals to every visitor's console in
+// production. Swap console.log for a beacon to a real endpoint if you ever
+// want field data (Search Console reports CWV independently either way).
+if (import.meta.env.DEV) {
+  reportWebVitals(console.log);
+}

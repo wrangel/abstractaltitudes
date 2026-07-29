@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="canonical" href="https://abstractaltitudes.com/" />
 
     <!-- Adaptive favicons -->
     <link
@@ -17,38 +16,50 @@
       type="image/svg+xml"
       media="(prefers-color-scheme: dark)"
     />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="From lofty heights, we muse on marvels: Showcasing landscapes and cityscapes from unique perspectives above."
-    />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- seo:start -->
+    <!-- Everything between these markers is REPLACED per photo by
+         scripts/prerender-photos.mjs at build time. Edit the defaults here
+         freely, but keep the markers and keep this block self-contained:
+         anything the photo pages must also have (favicons, manifest, the
+         site-level JSON-LD below) belongs outside it. -->
     <title>Abstract Altitudes - Aerial Photography</title>
+    <link rel="canonical" href="https://abstractaltitudes.com/" />
+    <meta
+      name="description"
+      content="Aerial and 360° drone photography: landscapes and cityscapes seen from lofty heights, in immersive panoramas and high-resolution stills."
+    />
 
     <!-- Open Graph / social share preview -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Abstract Altitudes" />
     <meta property="og:title" content="Abstract Altitudes - Aerial Photography" />
     <meta
       property="og:description"
-      content="From lofty heights, we muse on marvels: Showcasing landscapes and cityscapes from unique perspectives above."
+      content="Aerial and 360° drone photography: landscapes and cityscapes seen from lofty heights, in immersive panoramas and high-resolution stills."
     />
     <meta property="og:url" content="https://abstractaltitudes.com/" />
-    <meta property="og:image" content="https://abstractaltitudes.com/logo512.png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <!-- Regenerate with: node scripts/generate-og-image.mjs [photo-filter] -->
+    <meta property="og:image" content="https://abstractaltitudes.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Aerial view of a rocky island surrounded by turquoise sea"
+    />
 
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Abstract Altitudes - Aerial Photography" />
     <meta
       name="twitter:description"
-      content="From lofty heights, we muse on marvels: Showcasing landscapes and cityscapes from unique perspectives above."
+      content="Aerial and 360° drone photography: landscapes and cityscapes seen from lofty heights, in immersive panoramas and high-resolution stills."
     />
-    <meta name="twitter:image" content="https://abstractaltitudes.com/logo512.png" />
+    <meta name="twitter:image" content="https://abstractaltitudes.com/og-image.jpg" />
+    <!-- seo:end -->
 
     <!-- Bing Site Verification Meta Tag -->
     <meta name="msvalidate.01" content="EAB83D86CB896177B56D68D6B59DAC8C" />
@@ -56,10 +67,32 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "Abstract Altitudes",
-        "url": "https://abstractaltitudes.com",
-        "sameAs": ["https://github.com/wrangel/"]
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://abstractaltitudes.com/#website",
+            "url": "https://abstractaltitudes.com/",
+            "name": "Abstract Altitudes",
+            "description": "Aerial and 360° drone photography of landscapes and cityscapes.",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://abstractaltitudes.com/#person" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://abstractaltitudes.com/#person",
+            "name": "Abstract Altitudes",
+            "url": "https://abstractaltitudes.com/",
+            "jobTitle": "Aerial Photographer",
+            "knowsAbout": [
+              "Aerial photography",
+              "Drone photography",
+              "360-degree panorama photography",
+              "Landscape photography",
+              "Cityscape photography"
+            ],
+            "sameAs": ["https://github.com/wrangel/"]
+          }
+        ]
       }
     </script>
   </head>

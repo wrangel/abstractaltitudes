@@ -1,6 +1,7 @@
 // src/backend/metadataHandler.mjs
 
 import logger from "./utils/logger.mjs";
+import { buildItemSlug } from "../shared/slug.mjs";
 
 /**
  * Validates input arrays for the beautify function.
@@ -57,10 +58,20 @@ function processDocument(doc, presignedUrls) {
 
   return {
     id: doc._id.toString(),
+    // Stable, human-readable URL key for this photo. Derived, not stored, so
+    // it stays in sync if a record's place fields are ever corrected.
+    slug: buildItemSlug(doc),
     viewer: doc.type === "pano" ? "pano" : "img",
     drone: doc.drone,
     dateTime: doc.dateTime,
     metadata: formatMetadata(doc),
+    // Structured place fields alongside the formatted display string.
+    // The string is for the metadata popup; these are what alt text,
+    // per-photo <title>s and ImageObject JSON-LD need.
+    location: doc.location,
+    region: doc.region,
+    country: doc.country,
+    altitude: doc.altitude,
     latitude: doc.latitude,
     longitude: doc.longitude,
     thumbnailUrl: urls.thumbnailUrl,

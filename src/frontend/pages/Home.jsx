@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { Helmet } from "react-helmet-async";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
 import styles from "../styles/Home.module.css";
-import { DOMAIN } from "../constants";
-import { useViewportSize } from "../hooks/useViewportSize";
-import PopupViewer from "../components/PopupViewer";
 import { hasWebGL } from "../utils/webglSupport";
 
 const ViewerPanorama = lazy(() => import("../components/ViewerPanorama"));
+// See the note in Grid.jsx: keeps OpenSeadragon out of the initial download.
+const PopupViewer = lazy(() => import("../components/PopupViewer"));
 
 function getSecureRandomIndex(max) {
   const array = new Uint32Array(1);
@@ -32,25 +30,25 @@ const Home = () => {
 
   const [backgroundPano, setBackgroundPano] = useState(null);
   const [backgroundImage, setBackgroundImage] = useState(null);
-  const [backgroundPanoReady, setBackgroundPanoReady] = useState(false);
 
   const [isPortrait, setIsPortrait] = useState(
     window.innerHeight > window.innerWidth,
   );
   const isVeryShort = useWindowHeight(360);
-  const { w, h } = useViewportSize();
 
-  const mediaItems = canUsePano
-    ? items.filter(isValidPanoItem)
-    : items.filter((item) => item.viewer === "img");
+  // Memoized: this array is a dependency of openBackgroundViewer below, so a
+  // fresh array every render would rebuild that callback every render too.
+  const mediaItems = useMemo(
+    () =>
+      canUsePano
+        ? items.filter(isValidPanoItem)
+        : items.filter((item) => item.viewer === "img"),
+    [items, canUsePano],
+  );
 
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(null);
 
-  const handleBackgroundReady = useCallback(
-    () => setBackgroundPanoReady(true),
-    [],
-  );
   const handleBackgroundError = useCallback((err) => {
     console.error("Background pano error:", err);
     setBackgroundPano(null);
@@ -62,7 +60,6 @@ const Home = () => {
       const panoItems = items.filter(isValidPanoItem);
       if (panoItems.length > 0) {
         setBackgroundPano(panoItems[getSecureRandomIndex(panoItems.length)]);
-        setBackgroundPanoReady(false);
       }
     } else {
       const imgItems = items.filter(
@@ -72,7 +69,7 @@ const Home = () => {
         setBackgroundImage(imgItems[getSecureRandomIndex(imgItems.length)]);
       }
     }
-  }, [items]);
+  }, [items, canUsePano]);
 
   useEffect(() => {
     const handleResize = () =>
@@ -114,17 +111,12 @@ const Home = () => {
   // two instances never hold the WebGL context simultaneously.
   const showBackgroundPano = canUsePano && !!backgroundPano;
 
+  // No <title>/<meta> here on purpose: this is the only page, so index.html
+  // is the single source of truth. Per-photo pages should render <title> and
+  // <meta> tags inline — React 19 hoists them into <head> natively, no
+  // helmet library needed.
   return (
     <>
-      <Helmet>
-        <title>Abstract Altitudes</title>
-        <link rel="canonical" href={DOMAIN} />
-        <meta
-          name="description"
-          content="Explore drone-captured aerial imagery. Peaceful skies."
-        />
-      </Helmet>
-
       <div className={styles.backgroundWrapper}>
         {showBackgroundPano ? (
           <Suspense
@@ -136,7 +128,6 @@ const Home = () => {
               panoPath={backgroundPano.panoPath}
               levels={backgroundPano.levels}
               initialViewParameters={backgroundPano.initialViewParameters}
-              onReady={handleBackgroundReady}
               onError={handleBackgroundError}
               unmanaged
             />
@@ -155,19 +146,21 @@ const Home = () => {
       </div>
 
       {popupItem && (
-        <PopupViewer
-          item={popupItem}
-          isOpen={isViewerOpen}
-          onClose={handleViewerClose}
-          onNext={() =>
-            setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
-          }
-          onPrevious={() =>
-            setCurrentIndex((prev) =>
-              prev === 0 ? mediaItems.length - 1 : prev - 1,
-            )
-          }
-        />
+        <Suspense fallback={null}>
+          <PopupViewer
+            item={popupItem}
+            isOpen={isViewerOpen}
+            onClose={handleViewerClose}
+            onNext={() =>
+              setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
+            }
+            onPrevious={() =>
+              setCurrentIndex((prev) =>
+                prev === 0 ? mediaItems.length - 1 : prev - 1,
+              )
+            }
+          />
+        </Suspense>
       )}
 
       <section

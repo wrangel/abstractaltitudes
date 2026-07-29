@@ -26,6 +26,20 @@
 }
 
 /* Contact link */
+/* Footer links are adjacent inline-blocks and JSX drops the newline between
+   them, so they need an explicit gap or they render fused together. */
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.footerLinks .contactLink {
+  margin-bottom: 0;
+}
+
 .contactLink {
   display: inline-block;
   color: var(--text-color);

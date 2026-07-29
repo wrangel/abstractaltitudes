@@ -1,4 +1,5 @@
 // src/frontend/components/PortfolioGrid.jsx
+import { useCallback } from "react";
 import { Masonry } from "masonic";
 import PortfolioItem from "./PortfolioItem";
 import { useViewportSize } from "../hooks/useViewportSize";
@@ -14,8 +15,11 @@ const PortfolioGrid = ({ items, onItemClick }) => {
     ? w / 2 - 24
     : w / 3 - 24;
 
-  const renderItem = ({ data }) => (
-    <PortfolioItem item={data} onItemClick={onItemClick} />
+  // Masonry keys its cell cache off this function's identity, so recreating
+  // it every render made the whole grid re-render on any parent update.
+  const renderItem = useCallback(
+    ({ data }) => <PortfolioItem item={data} onItemClick={onItemClick} />,
+    [onItemClick],
   );
 
   return (

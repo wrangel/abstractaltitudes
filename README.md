@@ -123,6 +123,62 @@ pnpm manage handle-media # ingest new imagery
 pnpm manage:dry handle-media -n # ingest new imagery, but do not upload it neither to AWS nor Mongo db
 ```
 
+## Per-photo pages (SEO)
+
+Each photo is addressable at `/photo/<slug>/`. Opening the viewer pushes that
+URL; Back closes it. Nothing unmounts — the URL and the React tree are
+independent, which is what keeps `ViewerPanorama`'s WebGL context alive.
+
+`pnpm frontend:build` runs `scripts/prerender-photos.mjs` after Vite. It fetches
+`$VITE_API_URL/combined-data` and writes a static
+`build/photo/<slug>/index.html` per photo, with title, description, Open Graph
+tags and `ImageObject` JSON-LD baked in, plus `build/sitemap.xml`. nginx's
+existing `try_files` serves them — no nginx or backend change involved.
+
+It also writes `/places/` hub pages — an index, one per country, and one per
+region — linked from the gallery footer so crawlers have a path down to the
+photo pages. These are standalone static documents that deliberately do **not**
+boot the SPA: React replaces `#root` on mount, which would discard any
+server-rendered markup placed there. A place needs at least
+`MIN_PHOTOS_PER_PAGE` (3) photos to get its own page, so thin doorway pages
+never get generated; grids cap at `MAX_PHOTOS_PER_GRID` (48), with full
+coverage guaranteed by the sitemap. Both knobs live in
+`src/shared/placePages.mjs`.
+
+The social share card (`og:image` — what Slack, WhatsApp, LinkedIn and X show
+when the link is pasted; it never appears on the site itself) is regenerated on
+every build into `build/og-image.jpg` from the **newest non-panorama** photo.
+Panoramas are skipped because an equirectangular frame cropped to a 1.9:1 card
+shows a distorted middle band. Per-photo pages use their own photo instead, so
+this file only backs the site root and the `/places/` hubs.
+
+`public/og-image.jpg` is the committed fallback, used when a build cannot reach
+the API or sharp fails — the build warns and keeps it rather than shipping a
+broken `og:image`. Refresh that fallback with
+`node scripts/generate-og-image.mjs [filter]`.
+
+**Dev note:** `/places/` pages are build artifacts. A Vite dev plugin
+(`servePrerenderedPlaces` in `vite.config.mjs`) serves them from `build/` so the
+footer link works in `pnpm dev` too — but it shows whatever the last
+`pnpm frontend:build` produced, and 404s with instructions if you have not built
+yet. To exercise the real thing end to end, use
+`pnpm exec vite preview --port 3001` (port 3001 is in `CORS_ORIGINS`; the
+default 4173 is not, so the API call would be blocked).
+
+Two things to know:
+
+- **Deploy the backend before rebuilding the frontend.** Slugs and place fields
+  come from the API. Against an older backend the script writes nothing and
+  says so rather than emitting broken pages.
+- **New photos need a frontend rebuild** to get their own page. Until then they
+  still load and work, just with the generic site-wide metadata.
+
+The script never fails a build; if the API is unreachable it warns and skips,
+leaving the checked-in `public/sitemap.xml` as the fallback. Metadata defaults
+live between the `<!-- seo:start -->` / `<!-- seo:end -->` markers in
+`index.html` — that block is what gets replaced per photo, so keep anything the
+photo pages also need (favicons, manifest, site-level JSON-LD) outside it.
+
 ## Media Upload Folder Layout
 
 Place drone media folders inside INPUT_DIRECTORY ($INPUT_DIRECTORY). collectMetadata auto-detects type by file count/pattern:

@@ -135,6 +135,21 @@ independent, which is what keeps `ViewerPanorama`'s WebGL context alive.
 tags and `ImageObject` JSON-LD baked in, plus `build/sitemap.xml`. nginx's
 existing `try_files` serves them — no nginx or backend change involved.
 
+It also writes `/places/` hub pages — an index, one per country, and one per
+region — linked from the gallery footer so crawlers have a path down to the
+photo pages. These are standalone static documents that deliberately do **not**
+boot the SPA: React replaces `#root` on mount, which would discard any
+server-rendered markup placed there. A place needs at least
+`MIN_PHOTOS_PER_PAGE` (3) photos to get its own page, so thin doorway pages
+never get generated; grids cap at `MAX_PHOTOS_PER_GRID` (48), with full
+coverage guaranteed by the sitemap. Both knobs live in
+`src/shared/placePages.mjs`.
+
+The social share card is `public/og-image.jpg`, committed rather than generated
+per build so it stays stable and never depends on the API being reachable.
+Regenerate it with `node scripts/generate-og-image.mjs [filter]` — no argument
+picks the newest photo, an argument matches against slugs.
+
 Two things to know:
 
 - **Deploy the backend before rebuilding the frontend.** Slugs and place fields

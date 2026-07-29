@@ -17,7 +17,6 @@ router.get("/combined-data", async (req, res, next) => {
 
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
-      // Keep this! It's great context for your API logs
       logger.info("[API] Combined-data served from cache");
       return res.status(200).json(cachedData);
     }

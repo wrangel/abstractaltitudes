@@ -6,6 +6,7 @@
 // alongside the build-time prerender.
 
 import { describeItem, formatPlace } from "./describeItem.mjs";
+import { sizedImageUrl } from "./imageUrl.mjs";
 
 /**
  * Escapes text for interpolation into an HTML attribute or text node.
@@ -143,7 +144,11 @@ export function buildPhotoSeoBlock(item, origin) {
   const title = photoTitle(item);
   const description = photoDescription(item);
   const url = photoUrl(item, origin);
-  const image = item.thumbnailUrl || `${origin}/logo512.png`;
+  // Social scrapers want >=1200px wide; the stored thumbnail is ~1600px, so
+  // this trims the card image without dropping below what they ask for.
+  const image = item.thumbnailUrl
+    ? sizedImageUrl(item.thumbnailUrl, 1200)
+    : `${origin}/og-image.jpg`;
   const alt = describeItem(item);
 
   const e = escapeHtml;
@@ -180,9 +185,10 @@ ${toJsonLd(photoJsonLd(item, origin))}
  *
  * @param {Array<Object>} items - Items with slugs.
  * @param {string} origin - Site origin, no trailing slash.
+ * @param {Array<string>} [placeUrls] - Absolute /places/ hub URLs.
  * @returns {string} XML document.
  */
-export function buildSitemap(items, origin) {
+export function buildSitemap(items, origin, placeUrls = []) {
   const e = escapeHtml;
 
   const entries = items
@@ -216,6 +222,15 @@ export function buildSitemap(items, origin) {
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+${placeUrls
+  .map(
+    (url) => `  <url>
+    <loc>${e(url)}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>`,
+  )
+  .join("\n")}
 ${entries}
 </urlset>
 `;

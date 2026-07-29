@@ -61,21 +61,31 @@ app.use(globalLimiter);
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Mirrors nginx/conf.d/default.conf, which is the policy that actually governs
+// the site — in production nginx serves the HTML and this process only answers
+// /api/, where a CSP has nothing to act on. Kept in step so that running the
+// backend standalone (pnpm dev) behaves like production rather than more
+// loosely. Change both together.
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "https:"],
-        fontSrc: ["'self'", "https:", "data:"],
+        connectSrc: ["'self'", "https:", "wss:"],
+        fontSrc: ["'self'", "data:"],
+        frameSrc: ["www.google.com"],
+        frameAncestors: ["'self'"],
         objectSrc: ["'none'"],
+        workerSrc: ["blob:"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
         upgradeInsecureRequests: [],
       },
     },
-    frameguard: { action: "deny" },
+    frameguard: { action: "sameorigin" },
   }),
 );
 

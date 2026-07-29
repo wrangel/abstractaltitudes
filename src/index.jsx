@@ -6,7 +6,6 @@ import App from "./frontend/App";
 import reportWebVitals from "./frontend/reportWebVitals";
 import "./frontend/styles/Global.css";
 
-// Import Inter variable font here
 import "@fontsource-variable/inter";
 
 // Owner opt-out: visiting https://abstractaltitudes.com/#aa-owner sets a

@@ -12,18 +12,17 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // mount and call useItems() at once) issue one network request, not one each.
 let inFlightRequest = null;
 
-// 🔥 Use your backend's datetime field here
-// Assumes every item has item.dateTime (ISO string or similar)
+// Undated items sort last rather than poisoning the comparison with NaN.
 const parseItemDate = (item) => {
   const t = new Date(item.dateTime).getTime();
   return Number.isNaN(t) ? 0 : t;
 };
 
-// Newest → oldest
 const sortItemsByDateDesc = (items) =>
   [...items].sort((a, b) => parseItemDate(b) - parseItemDate(a));
 
-// Shallow identity check; compares by reference and length
+// Element-wise reference comparison: lets callers skip a state update (and the
+// re-render) when a refetch returned the very same objects.
 const isSameArray = (a, b) => {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
@@ -52,7 +51,8 @@ async function fetchAndSortItems() {
     const data = await response.json();
     const arrayData = Array.isArray(data) ? data : [];
 
-    // 🔥 Canonical sort: newest first
+    // Sort once here so every consumer shares one ordering; Grid's next/prev
+    // index arithmetic depends on it.
     const sortedData = sortItemsByDateDesc(arrayData);
 
     cachedItems = [...sortedData];

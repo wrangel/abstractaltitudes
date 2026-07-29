@@ -1,14 +1,21 @@
 // src/frontend/pages/Grid.jsx
 
-import React, { useCallback } from "react";
+import React, { useCallback, lazy, Suspense } from "react";
 import PortfolioGrid from "../components/PortfolioGrid";
-import PopupViewer from "../components/PopupViewer";
 import { useItems } from "../hooks/useItems";
 import { useItemViewer } from "../hooks/useItemViewer";
 import { useClickCounter } from "../hooks/useClickCounter";
 import LoadingOverlay from "../components/LoadingOverlay";
 import ErrorBoundary from "../components/ErrorBoundary";
 import styles from "../styles/Grid.module.css";
+
+// Lazy because this subtree statically imports OpenSeadragon (~333 KB) and
+// Marzipano. It used to sit in a chunk shared by Home and Grid, so every
+// visitor downloaded the deep-zoom viewer whether or not they ever opened a
+// photo. Safe to defer: PopupViewer is only rendered once an item is
+// selected, and stays mounted afterwards — the lazy wrapper resolves once,
+// so the WebGL context preservation below is unaffected.
+const PopupViewer = lazy(() => import("../components/PopupViewer"));
 
 function Grid() {
   const { items, isLoading, error, refetch } = useItems();
@@ -63,12 +70,21 @@ function Grid() {
 
         <footer className={styles.finalFooter}>
           <div className={styles.footerContent}>
-            <a
-              href="mailto:contact@abstractaltitudes.anonaddy.com"
-              className={styles.contactLink}
-            >
-              Get in touch
-            </a>
+            <div className={styles.footerLinks}>
+              <a
+                href="mailto:contact@abstractaltitudes.anonaddy.com"
+                className={styles.contactLink}
+              >
+                Get in touch
+              </a>
+
+              {/* Plain link, not a modal: /places/ is a prerendered static
+                  page outside the SPA. It also gives crawlers a path from
+                  the gallery down to the per-photo pages. */}
+              <a href="/places/" className={styles.contactLink}>
+                Browse by location
+              </a>
+            </div>
 
             <ul className={styles.creditsList}>
               {[
@@ -100,13 +116,15 @@ function Grid() {
       {/* Always mounted once an item has been selected — never conditionally
           removed so ViewerPanorama keeps its WebGL context alive. */}
       {viewerItem && (
-        <PopupViewer
-          item={viewerItem}
-          isOpen={isModalOpen}
-          onClose={handleClosePopup}
-          onNext={handleNextItem}
-          onPrevious={handlePreviousItem}
-        />
+        <Suspense fallback={<LoadingOverlay />}>
+          <PopupViewer
+            item={viewerItem}
+            isOpen={isModalOpen}
+            onClose={handleClosePopup}
+            onNext={handleNextItem}
+            onPrevious={handlePreviousItem}
+          />
+        </Suspense>
       )}
     </>
   );

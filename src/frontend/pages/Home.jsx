@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react
 import { useItems } from "../hooks/useItems";
 import useWindowHeight from "../hooks/useWindowHeight";
 import styles from "../styles/Home.module.css";
-import PopupViewer from "../components/PopupViewer";
 import { hasWebGL } from "../utils/webglSupport";
 
 const ViewerPanorama = lazy(() => import("../components/ViewerPanorama"));
+// See the note in Grid.jsx: keeps OpenSeadragon out of the initial download.
+const PopupViewer = lazy(() => import("../components/PopupViewer"));
 
 function getSecureRandomIndex(max) {
   const array = new Uint32Array(1);
@@ -145,19 +146,21 @@ const Home = () => {
       </div>
 
       {popupItem && (
-        <PopupViewer
-          item={popupItem}
-          isOpen={isViewerOpen}
-          onClose={handleViewerClose}
-          onNext={() =>
-            setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
-          }
-          onPrevious={() =>
-            setCurrentIndex((prev) =>
-              prev === 0 ? mediaItems.length - 1 : prev - 1,
-            )
-          }
-        />
+        <Suspense fallback={null}>
+          <PopupViewer
+            item={popupItem}
+            isOpen={isViewerOpen}
+            onClose={handleViewerClose}
+            onNext={() =>
+              setCurrentIndex((prev) => (prev + 1) % mediaItems.length)
+            }
+            onPrevious={() =>
+              setCurrentIndex((prev) =>
+                prev === 0 ? mediaItems.length - 1 : prev - 1,
+              )
+            }
+          />
+        </Suspense>
       )}
 
       <section

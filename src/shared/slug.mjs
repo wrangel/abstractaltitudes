@@ -1,20 +1,15 @@
 // src/shared/slug.mjs
 //
-// Shared by the backend (which stamps `slug` onto every API item and resolves
-// incoming /photo/<slug> requests) and the frontend (which pushes those URLs
-// as the viewer opens). Both sides MUST derive slugs from this one function —
-// a divergence here means deep links silently stop resolving.
+// Shared by the backend (stamps `slug` onto every API item, and would resolve
+// inbound /photo/<slug> requests) and the frontend (pushes those URLs as the
+// viewer opens). Both sides MUST derive slugs from this one function — a
+// divergence means deep links silently stop resolving.
 
 /**
- * Lowercases, strips diacritics, and reduces to [a-z0-9-].
+ * Lowercases, strips diacritics, reduces to [a-z0-9-].
  *
- * Diacritic folding matters here: place names in this collection are largely
- * European ("Zürich", "Grindelwald", "Vallée de Joux"), and a raw
- * encodeURIComponent would produce percent-escaped URLs that read as garbage
- * in search results.
- *
- * @param {string} value - Arbitrary text.
- * @returns {string} URL-safe slug segment, possibly empty.
+ * Diacritic folding matters: place names here are largely European ("Zürich",
+ * "Vallée de Joux"), and percent-escaped URLs read as garbage in search results.
  */
 export function slugify(value) {
   if (typeof value !== "string") return "";
@@ -27,18 +22,13 @@ export function slugify(value) {
 }
 
 /**
- * Builds the canonical URL slug for a photo.
- *
- * Shape: <location>-<region>-<country>-<name>, e.g.
+ * Canonical URL slug for a photo:
  *   "zermatt-valais-switzerland-pano-20230715-143022"
  *
- * The place words carry the search terms; the trailing `name` (already unique
- * in Mongo, and derived from the capture timestamp) guarantees uniqueness when
- * several photos share a location. Consecutive duplicate words are collapsed
- * so a "Zug, Zug, Switzerland" style record doesn't stutter.
- *
- * @param {Object} doc - Item with name plus optional location/region/country.
- * @returns {string} Slug, or "" when the item has no usable name.
+ * The place words carry the search terms; the trailing `name` (unique in Mongo,
+ * derived from the capture timestamp) keeps it unique when several photos share
+ * a location. Consecutive duplicate words are collapsed. Returns "" for an item
+ * with no usable name, which callers treat as "not addressable".
  */
 export function buildItemSlug(doc) {
   if (!doc) return "";

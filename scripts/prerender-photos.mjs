@@ -1,23 +1,17 @@
 #!/usr/bin/env node
 // scripts/prerender-photos.mjs
 //
-// Runs after `vite build`. Fetches the live combined-data API and writes one
-// static HTML page per photo into build/photo/<slug>/index.html, with the
-// title, description, Open Graph tags and ImageObject JSON-LD baked in, plus
-// a sitemap covering them all.
+// Runs after `vite build`: writes build/photo/<slug>/index.html per photo,
+// the /places/ hub pages, and sitemap.xml. See "Per-photo pages (SEO)" in
+// README.md for the deploy-order constraint and staleness trade-off.
 //
-// Why static files rather than injecting at request time: in production nginx
-// serves the HTML and only proxies /api/ to Express, so a runtime handler
-// would need nginx routing changes AND the frontend build copied into the
-// backend image. Prerendering needs neither — nginx's existing
-// `try_files $uri $uri/ /index.html` picks these up as-is.
+// Static files rather than request-time injection because in production nginx
+// serves the HTML and only proxies /api/ to Express — a runtime handler would
+// need nginx routing changes plus the frontend build copied into the backend
+// image. nginx's existing `try_files $uri $uri/ /index.html` picks these up.
 //
-// Consequence to know about: a photo uploaded after the last frontend build
-// still works, but falls back to the generic index.html metadata until the
-// next build. Rerun `pnpm frontend:build` to give it its own page.
-//
-// Never fails the build. A portfolio that ships without prerendered pages is
-// a temporary SEO regression; a broken deploy is worse.
+// Never fails the build: shipping without prerendered pages is a temporary SEO
+// regression, a broken deploy is worse.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -26,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { loadEnv } from "vite";
 
 import { buildPhotoSeoBlock, buildSitemap } from "../src/shared/photoMeta.mjs";
+import { buildPlacePages } from "../src/shared/placePages.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.join(__dirname, "..");
@@ -133,14 +128,23 @@ async function main() {
     written++;
   }
 
+  const placePages = buildPlacePages(usable, ORIGIN);
+  for (const page of placePages) {
+    const dir = path.join(BUILD_DIR, page.path);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "index.html"), page.html, "utf8");
+  }
+
+  const placeUrls = placePages.map((page) => `${ORIGIN}/${page.path}/`);
   await fs.writeFile(
     path.join(BUILD_DIR, "sitemap.xml"),
-    buildSitemap(usable, ORIGIN),
+    buildSitemap(usable, ORIGIN, placeUrls),
     "utf8",
   );
 
   console.log(
-    `[prerender] Wrote ${written} photo page(s) and a sitemap with ${written + 1} URL(s).`,
+    `[prerender] Wrote ${written} photo page(s), ${placePages.length} place page(s), ` +
+      `and a sitemap with ${written + placeUrls.length + 1} URL(s).`,
   );
 }
 

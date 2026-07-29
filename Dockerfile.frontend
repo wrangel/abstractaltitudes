@@ -25,9 +25,14 @@ ENV VITE_BUNNYCDN_BASE_URL=${VITE_BUNNYCDN_BASE_URL}
 # (browser-relative, proxied by nginx), so it is resolved against SITE_ORIGIN;
 # override with PRERENDER_API_URL to build against a different host. This means
 # the build machine must be able to reach the live API.
-ENV REQUIRE_PRERENDER=1
+# Defaults to 1 but is a build ARG, so an emergency build can opt out without
+# editing this file:  REQUIRE_PRERENDER=0 docker compose build
+# The backend must be deployed and healthy before the frontend is built —
+# the prerender reads its data from the live API.
+ARG REQUIRE_PRERENDER=1
 ARG SITE_ORIGIN
 ARG PRERENDER_API_URL
+ENV REQUIRE_PRERENDER=${REQUIRE_PRERENDER}
 ENV SITE_ORIGIN=${SITE_ORIGIN}
 ENV PRERENDER_API_URL=${PRERENDER_API_URL}
 

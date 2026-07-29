@@ -165,19 +165,41 @@ yet. To exercise the real thing end to end, use
 `pnpm exec vite preview --port 3001` (port 3001 is in `CORS_ORIGINS`; the
 default 4173 is not, so the API call would be blocked).
 
-Two things to know:
+### Where the build gets its data
 
-- **Deploy the backend before rebuilding the frontend.** Slugs and place fields
-  come from the API. Against an older backend the script writes nothing and
-  says so rather than emitting broken pages.
-- **New photos need a frontend rebuild** to get their own page. Until then they
-  still load and work, just with the generic site-wide metadata.
+`data/photos.json` is a **committed snapshot** of the fields the prerender
+needs. The build prefers the live API when it can reach it, and silently falls
+back to the snapshot when it cannot — so builds work offline, during an
+outage, and on a Synology whose router will not hairpin its own domain.
 
-The script never fails a build; if the API is unreachable it warns and skips,
-leaving the checked-in `public/sitemap.xml` as the fallback. Metadata defaults
-live between the `<!-- seo:start -->` / `<!-- seo:end -->` markers in
-`index.html` — that block is what gets replaced per photo, so keep anything the
-photo pages also need (favicons, manifest, site-level JSON-LD) outside it.
+```bash
+pnpm data:refresh   # re-fetch from $VITE_API_URL, then commit the result
+```
+
+Run that after adding photos, otherwise a build that cannot reach the API will
+prerender the previous set. The prerender warns when the snapshot is over 30
+days old, and `git diff` makes staleness visible.
+
+This snapshot exists because the build once fetched live and hard-failed: an
+API outage then blocked building the very fix for that outage, and even a local
+`pnpm test` stack depended on the production host being up.
+
+Other things to know:
+
+- **New photos need `pnpm data:refresh` plus a frontend rebuild** to get their
+  own page. Until then they still load and work, just with the generic
+  site-wide metadata.
+- **Deploy the backend before refreshing the snapshot.** Slugs and place fields
+  come from the API; against an older backend the refresh refuses rather than
+  writing slugless data.
+- `REQUIRE_PRERENDER=0` is an emergency opt-out (`REQUIRE_PRERENDER=0 pnpm prod`)
+  that ships without photo/places pages. Only reachable if the snapshot is
+  missing too.
+
+Metadata defaults live between the `<!-- seo:start -->` / `<!-- seo:end -->`
+markers in `index.html` — that block is what gets replaced per photo, so keep
+anything the photo pages also need (favicons, manifest, site-level JSON-LD)
+outside it.
 
 ## Media Upload Folder Layout
 

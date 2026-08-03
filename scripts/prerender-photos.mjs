@@ -21,6 +21,7 @@ import { loadEnv } from "vite";
 
 import { buildPhotoSeoBlock, buildSitemap } from "../src/shared/photoMeta.mjs";
 import { buildPlacePages } from "../src/shared/placePages.mjs";
+import { buildLicensePage } from "../src/shared/licensePage.mjs";
 import { buildOgImage } from "./lib/ogImage.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -261,7 +262,7 @@ async function main() {
     );
   }
 
-  const placePages = buildPlacePages(usable, ORIGIN);
+  const placePages = [...buildPlacePages(usable, ORIGIN), buildLicensePage(ORIGIN)];
   for (const page of placePages) {
     const dir = path.join(BUILD_DIR, page.path);
     await fs.mkdir(dir, { recursive: true });

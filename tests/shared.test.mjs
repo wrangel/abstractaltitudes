@@ -30,6 +30,10 @@ import {
   resolveLanguage,
   SUPPORTED_LANGUAGES,
 } from "../src/frontend/utils/i18n.mjs";
+import {
+  buildLicensePage,
+  licenseUrl,
+} from "../src/shared/licensePage.mjs";
 
 const ORIGIN = "https://abstractaltitudes.com";
 
@@ -390,4 +394,29 @@ test("language resolution prefers the device list and falls back to English", ()
 
 test("unknown message keys return empty rather than undefined", () => {
   assert.equal(t("nope", "de"), "");
+});
+
+// ---------------------------------------------------------------------------
+// Licensing. Google Search Console reports `license` and `acquireLicensePage`
+// as missing without these, and both must resolve to a page that actually
+// exists — a dangling URL is worse than an absent field.
+// ---------------------------------------------------------------------------
+test("every photo declares licence fields pointing at the licence page", () => {
+  const html = buildPhotoSeoBlock(item(), ORIGIN);
+  const ld = JSON.parse(
+    html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1],
+  );
+  assert.equal(ld.license, `${ORIGIN}/license/`);
+  assert.equal(ld.acquireLicensePage, `${ORIGIN}/license/`);
+});
+
+test("the licence page exists at the URL the metadata advertises", () => {
+  const page = buildLicensePage(ORIGIN);
+  // photoJsonLd points at <origin>/license/, so the file must land at
+  // build/license/index.html — i.e. path "license".
+  assert.equal(page.path, "license");
+  assert.equal(licenseUrl(ORIGIN), `${ORIGIN}/license/`);
+  assert.match(page.html, /<link rel="canonical" href="https:\/\/[^"]*\/license\/"/);
+  assert.match(page.html, /copyright/i, "states the terms");
+  assert.match(page.html, /mailto:/, "offers a way to acquire a licence");
 });

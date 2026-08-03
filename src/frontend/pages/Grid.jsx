@@ -84,6 +84,10 @@ function Grid() {
               <a href="/places/" className={styles.contactLink}>
                 Browse by location
               </a>
+
+              <a href="/license/" className={styles.contactLink}>
+                Licensing
+              </a>
             </div>
 
             <ul className={styles.creditsList}>

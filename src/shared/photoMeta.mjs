@@ -6,22 +6,12 @@
 // alongside the build-time prerender.
 
 import { describeItem, formatPlace } from "./describeItem.mjs";
+import { escapeHtml } from "./escape.mjs";
 import { sizedImageUrl } from "./imageUrl.mjs";
+import { licenseUrl } from "./licensePage.mjs";
 
-/**
- * Escapes text for interpolation into an HTML attribute or text node.
- *
- * @param {*} value - Any value; null/undefined become "".
- * @returns {string} Escaped string.
- */
-export function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+export { escapeHtml };
+
 
 /**
  * Serialises an object for a <script type="application/ld+json"> body.
@@ -136,6 +126,11 @@ function photoJsonLd(item, origin) {
     creditText: "Abstract Altitudes",
     creator: { "@id": `${origin}/#person` },
     copyrightNotice: "Abstract Altitudes",
+    // Both required for Google Images' "Licensable" badge, and reported as
+    // missing by Search Console without them. They must point at a real page
+    // stating the terms — see src/shared/licensePage.mjs.
+    license: licenseUrl(origin),
+    acquireLicensePage: licenseUrl(origin),
   };
 
   if (item.dateTime) data.dateCreated = new Date(item.dateTime).toISOString();

@@ -1,4 +1,8 @@
 name: CI Workflow
+
+# The job name below ("test") is what a branch ruleset asks for under
+# "Require status checks to pass". Renaming the job means updating the rule.
+
 permissions:
   contents: read
 
@@ -13,12 +17,32 @@ on:
       - main
 
 jobs:
-  build:
+  test:
+    name: test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Run a simple command
-        run: echo "Building and testing..."
+      # Reads the pnpm version from the packageManager field in package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+# Deliberately not running frontend:build here: it chains
+# scripts/prerender-photos.mjs, which reads environment through vite's loadEnv
+# and would fail on a runner without those values. Add it once the required
+# variables exist as repository secrets.

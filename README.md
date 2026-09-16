@@ -121,7 +121,7 @@ Two separate concerns, deliberately not one command:
 
 | What                 | How                                                             |
 | -------------------- | --------------------------------------------------------------- |
-| Project dependencies | Dependabot PRs (`.github/dependabot.yml`) — CI runs the tests    |
+| Project dependencies | Renovate PRs (`.github/renovate.json5`) — CI runs the tests      |
 | Homebrew / this Mac  | `./scripts/update-mac.sh` (dry run) · `--apply` to upgrade       |
 
 `pnpm dev -u` used to do both. It deleted `pnpm-lock.yaml` and ran
@@ -130,9 +130,21 @@ Two separate concerns, deliberately not one command:
 unreviewed meant production got whatever was newest that morning. The flag now
 just prints where to go instead.
 
-Majors arrive as individual Dependabot PRs rather than grouped ones. CI does not
-run `frontend:build` (see the note in `ci.yml`), so a major bump to Vite, React
-or the viewers still wants a local `pnpm test` before merging.
+Renovate runs Monday mornings: minor and patch updates arrive as two grouped PRs,
+majors one PR each, GitHub Actions and Docker base images monthly. Security
+fixes skip the schedule. The **Dependency Dashboard** issue lists what is
+pending and anything that failed, so check it if the PRs stop coming. CI does
+not run `frontend:build` (see the note in `ci.yml`), so a major bump to Vite,
+React or the viewers still wants a local `pnpm test` before merging.
+
+Why not Dependabot: it supports pnpm 7–10, and on pnpm 12 every run failed
+without opening a PR. The same upgrade also hid our dependencies from GitHub's
+dependency graph, which is what `pmOnFail: ignore` in `pnpm-workspace.yaml`
+fixes, and CI checks that it stays fixed.
+
+To change pnpm version, edit `packageManager` in `package.json` (Renovate
+proposes this too). The Dockerfiles read it from there. Don't use
+`pnpm self-update`: it rewrites that field as a side effect.
 
 Management helpers:
 

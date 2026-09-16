@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1
 FROM node:slim AS build
 WORKDIR /app
-RUN npm install -g pnpm
 # Copy only necessary files first for caching
 COPY package*.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc* ./
+# Exactly the pnpm in package.json's packageManager. pnpm-workspace.yaml sets
+# pmOnFail: ignore, so pnpm will no longer correct a mismatch by itself.
+RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
 # Cache pnpm store between builds for speed
 RUN --mount=type=cache,target=/root/.pnpm-store \
     pnpm install --frozen-lockfile --ignore-scripts --prod

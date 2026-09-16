@@ -23,7 +23,17 @@ fi
 # ==============================================================================
 set +e # Temporarily disable strict error checking
 
-pnpm self-update --silent > /dev/null 2>&1 || true
+# No `pnpm self-update` here: it rewrote packageManager in package.json as a
+# side effect of starting a dev server, which is how pnpm jumped 11 -> 12
+# unreviewed. Renovate now proposes pnpm bumps as PRs like any other dependency.
+#
+# pnpm-workspace.yaml sets pmOnFail: ignore, so pnpm no longer enforces that pin
+# itself — this line is the local reminder instead.
+WANT_PNPM=$(node -p "require('./package.json').packageManager.split('@')[1]" 2>/dev/null)
+HAVE_PNPM=$(pnpm -v 2>/dev/null)
+if [[ -n "$WANT_PNPM" && "$HAVE_PNPM" != "$WANT_PNPM" ]]; then
+  echo -e "${YELLOW}⚠️  pnpm $HAVE_PNPM installed, project pins $WANT_PNPM. Fine for dev; to match: npm i -g pnpm@$WANT_PNPM${NC}"
+fi
 
 echo -e "${GREEN}✅ Ensuring dependencies are up to date...${NC}"
 pnpm install --ignore-scripts

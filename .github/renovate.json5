@@ -1,0 +1,91 @@
+// Dependency updates. Replaces .github/dependabot.yml, which cannot run on
+// pnpm 11+: Dependabot supports pnpm 7-10, and after the move to pnpm 12 every
+// run failed — security updates included — without opening a PR or an issue.
+//
+// Why a PR at all, rather than `pnpm up` locally: Dockerfile.* and ci.yml
+// install with --frozen-lockfile, so pnpm-lock.yaml is the contract for what
+// ships. It should change through a reviewed PR that CI has run against.
+// Homebrew stays a local chore — see scripts/update-mac.sh.
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    // Includes the Dependency Dashboard issue. That is the point of it here:
+    // Dependabot failed silently for a week; Renovate lists errors, pending
+    // updates and rate-limited PRs in one issue you can glance at.
+    "config:recommended",
+    // Waits until an npm release is 3 days old. Buys time for a hijacked
+    // package to be spotted and unpublished before it lands in the lockfile.
+    // Security fixes are exempt and raised as soon as they are known.
+    "security:minimumReleaseAgeNpm",
+  ],
+  timezone: "Europe/Zurich",
+  schedule: ["before 6am on monday"],
+  prConcurrentLimit: 5,
+
+  // Security PRs ignore the schedule and prConcurrentLimit above. Two sources:
+  // GitHub's Dependabot alerts (covers transitive dependencies, needs the
+  // dependency graph to parse pnpm-lock.yaml — see pmOnFail in
+  // pnpm-workspace.yaml), and OSV (direct dependencies only, but independent
+  // of GitHub, so one failing does not blind both).
+  vulnerabilityAlerts: {
+    labels: ["security"],
+  },
+  osvVulnerabilityAlerts: true,
+
+  packageRules: [
+    // Minor and patch bundled into two PRs a week — low noise, low risk.
+    {
+      matchManagers: ["npm"],
+      matchDepTypes: ["dependencies"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "production dependencies (minor and patch)",
+      commitMessagePrefix: "deps:",
+    },
+    {
+      matchManagers: ["npm"],
+      matchDepTypes: ["devDependencies"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "development dependencies (minor and patch)",
+      commitMessagePrefix: "deps-dev:",
+    },
+    // Majors are deliberately left out of the groups above, so each arrives as
+    // its own PR and gets read rather than rubber-stamped. A vite 8→9 or
+    // React 19→20 is exactly the change that breaks the prerender or the
+    // viewers, and CI does not build the frontend (see ci.yml) — so those want
+    // a local `pnpm test` before merging.
+    {
+      matchManagers: ["npm"],
+      matchUpdateTypes: ["major"],
+      commitMessagePrefix: "deps:",
+      labels: ["major"],
+    },
+    // pnpm itself, from packageManager in package.json. Always its own PR: the
+    // 11→12 move is what changed the lockfile format and broke Dependabot.
+    // The Dockerfiles read this field, so bumping it is the only edit needed.
+    {
+      matchDepTypes: ["packageManager"],
+      commitMessagePrefix: "deps-dev:",
+    },
+
+    {
+      matchManagers: ["github-actions"],
+      schedule: ["before 6am on the first day of the month"],
+      groupName: "GitHub Actions",
+      commitMessagePrefix: "ci:",
+    },
+    // node and nginx base images in Dockerfile.*. Monthly and grouped; the
+    // images workflow builds and smoke-tests them on the PR.
+    {
+      matchManagers: ["dockerfile"],
+      schedule: ["before 6am on the first day of the month"],
+      groupName: "Docker base images",
+      commitMessagePrefix: "ci:",
+    },
+    // Our own images in docker-compose.yml. :2.1 is moved by images.yml on
+    // every merge; there is nothing for Renovate to propose.
+    {
+      matchPackageNames: ["wrangel/abstractaltitudes-*"],
+      enabled: false,
+    },
+  ],
+}

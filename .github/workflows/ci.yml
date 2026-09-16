@@ -26,7 +26,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Reads the pnpm version from the packageManager field in package.json.
+      # Installs exactly the pnpm version in package.json's packageManager field.
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
 
@@ -36,8 +36,21 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # See pmOnFail in pnpm-workspace.yaml. A second YAML document makes
+      # GitHub's dependency graph — and every security alert built on it —
+      # silently see only pnpm itself.
+      - name: Lockfile is a single YAML document
+        run: |
+          if grep -q '^---$' pnpm-lock.yaml; then
+            echo "::error file=pnpm-lock.yaml::pnpm-lock.yaml has a second YAML document; GitHub's dependency graph cannot read past it. Check pmOnFail in pnpm-workspace.yaml, strip the pnpm document, re-run pnpm install."
+            exit 1
+          fi
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Lockfile still a single YAML document after install
+        run: "! grep -q '^---$' pnpm-lock.yaml"
 
       - name: Unit tests
         run: pnpm test:unit

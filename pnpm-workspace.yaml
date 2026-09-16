@@ -1,3 +1,17 @@
+# Keeps pnpm-lock.yaml a single YAML document.
+#
+# From pnpm 11, the default (`download`) prepends a document pinning pnpm's own
+# binaries. GitHub's dependency graph reads only that first document, so after
+# the move to pnpm 12 it saw ten @pnpm/exe packages and none of ours: Dependabot
+# alerts went silent (0 open meant "cannot see", not "clean") and so did the
+# GitHub-alert half of Renovate's security PRs.
+#
+# `ignore` also stops pnpm switching itself to the packageManager version, so
+# that pin is enforced elsewhere: pnpm/action-setup in CI, the Dockerfiles
+# (install exactly that version), Renovate (reads the field), and a warning in
+# scripts/dev-deploy.sh. ci.yml fails if a second document ever reappears.
+pmOnFail: ignore
+
 allowBuilds:
   sharp: true
 

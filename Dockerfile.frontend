@@ -40,7 +40,7 @@ ENV PRERENDER_API_URL=${PRERENDER_API_URL}
 
 RUN pnpm run frontend:build
 
-FROM nginx:1.28-alpine
+FROM nginx:1.31-alpine
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/build /usr/share/nginx/html
 # Copy custom nginx main config

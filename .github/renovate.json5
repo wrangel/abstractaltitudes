@@ -22,6 +22,36 @@
   schedule: ["before 6am on monday"],
   prConcurrentLimit: 5,
 
+  // Open no branch or PR until the 3-day release age has passed.
+  //
+  // Not just tidiness: pnpm 12 has its own supply-chain policy and refuses a
+  // frozen-lockfile install containing anything under 24 hours old. With the
+  // default prCreation, Renovate opened PRs straight away with a pending
+  // stability check, so `test` and `build` failed on ERR_PNPM_MINIMUM_RELEASE_
+  // AGE_VIOLATION (#138, #139) and nothing re-ran them afterwards.
+  //
+  // internalChecksAsSuccess is needed because ci.yml and images.yml run on
+  // pull_request, not on pushes to renovate/* branches. Without it the branch
+  // has no checks to finish, and "not-pending" can hold the PR back forever.
+  //
+  // Security PRs skip the 3-day wait but not pnpm's 24 hours: a fix released
+  // today goes red until tomorrow. Re-run the failed jobs then.
+  prCreation: "not-pending",
+  internalChecksFilter: "strict",
+  internalChecksAsSuccess: true,
+
+  // Merge when `test` and `build` (required on main) are green. Renovate does
+  // the merge itself on its next run rather than through GitHub's auto-merge,
+  // which is switched off for this repository. Squash, because main requires
+  // linear history. Majors are opted out in packageRules below.
+  //
+  // Merging publishes :2.1 to Docker Hub (images.yml). Production changes only
+  // when prod-deploy.sh runs on the NAS.
+  automerge: true,
+  automergeType: "pr",
+  platformAutomerge: false,
+  automergeStrategy: "squash",
+
   // Security PRs ignore the schedule and prConcurrentLimit above. Two sources:
   // GitHub's Dependabot alerts (covers transitive dependencies, needs the
   // dependency graph to parse pnpm-lock.yaml — see pmOnFail in
@@ -49,15 +79,17 @@
       commitMessagePrefix: "deps-dev:",
     },
     // Majors are deliberately left out of the groups above, so each arrives as
-    // its own PR and gets read rather than rubber-stamped. A vite 8→9 or
-    // React 19→20 is exactly the change that breaks the prerender or the
-    // viewers, and CI does not build the frontend (see ci.yml) — so those want
-    // a local `pnpm test` before merging.
+    // its own PR and gets read rather than rubber-stamped — and they are not
+    // automerged. `build` compiles, prerenders and checks that pages answer
+    // 200, but nothing opens a viewer in a browser. A vite 8→9 or React 19→20,
+    // or a marzipano/openseadragon major, is exactly the change that passes
+    // that and still breaks panoramas — so `pnpm test` and a look first.
     {
       matchManagers: ["npm"],
       matchUpdateTypes: ["major"],
       commitMessagePrefix: "deps:",
       labels: ["major"],
+      automerge: false,
     },
     // pnpm itself, from packageManager in package.json. Always its own PR: the
     // 11→12 move is what changed the lockfile format and broke Dependabot.

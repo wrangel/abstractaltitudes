@@ -22,23 +22,23 @@
   schedule: ["before 6am on monday"],
   prConcurrentLimit: 5,
 
-  // Open no branch or PR until the 3-day release age has passed.
+  // Never propose a version younger than the 3-day release age above.
   //
   // Not just tidiness: pnpm 12 has its own supply-chain policy and refuses a
-  // frozen-lockfile install containing anything under 24 hours old. With the
-  // default prCreation, Renovate opened PRs straight away with a pending
-  // stability check, so `test` and `build` failed on ERR_PNPM_MINIMUM_RELEASE_
-  // AGE_VIOLATION (#138, #139) and nothing re-ran them afterwards.
+  // frozen-lockfile install containing anything under 24 hours old. The
+  // default ("flexible") still proposes a too-young version when every newer
+  // version is too young — which is every day for @aws-sdk/* — so `test` and
+  // `build` failed on ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION (#138, #139).
+  // "strict" skips those updates until a version has ripened.
   //
-  // internalChecksAsSuccess is needed because ci.yml and images.yml run on
-  // pull_request, not on pushes to renovate/* branches. Without it the branch
-  // has no checks to finish, and "not-pending" can hold the PR back forever.
+  // Do not add prCreation: "not-pending" here. It defers PR creation to a
+  // later run, and with the weekly schedule below that run falls outside the
+  // Monday window: on 2026-09-21 Renovate created both branches at 00:36 and
+  // then never opened the PRs, pushing every update a week down the road.
   //
   // Security PRs skip the 3-day wait but not pnpm's 24 hours: a fix released
   // today goes red until tomorrow. Re-run the failed jobs then.
-  prCreation: "not-pending",
   internalChecksFilter: "strict",
-  internalChecksAsSuccess: true,
 
   // Merge when `test` and `build` (required on main) are green. Renovate does
   // the merge itself on its next run rather than through GitHub's auto-merge,

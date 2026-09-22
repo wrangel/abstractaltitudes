@@ -132,8 +132,8 @@ just prints where to go instead.
 
 Renovate runs Monday mornings: minor and patch updates arrive as two grouped PRs,
 majors one PR each, GitHub Actions and Docker base images monthly. Security
-fixes skip the schedule. PRs open only once a release is 3 days old, and
-Renovate merges them itself when `test` and `build` pass — except npm majors,
+fixes skip the schedule. Only versions at least 3 days old are proposed, and
+Renovate merges the PR itself when `test` and `build` pass — except npm majors,
 which wait for you. The **Dependency Dashboard** issue lists what is
 pending and anything that failed, so check it if the PRs stop coming. CI does
 not run `frontend:build` (see the note in `ci.yml`), so a major bump to Vite,

@@ -12,6 +12,7 @@ import {
   mailtoUrl,
   SUPPORT_URL,
   SUPPORT_LABEL,
+  PROJECTS,
 } from "../../shared/links.mjs";
 
 // Lazy because this subtree statically imports OpenSeadragon (~333 KB) and
@@ -125,6 +126,24 @@ function Grid() {
                 </li>
               ))}
             </ul>
+            {/* Separate from the credits above: those are the tools behind
+                the photographs, these are other things I have built. */}
+            <ul className={styles.creditsList}>
+              <li className={styles.creditsLabel}>Also by me</li>
+              {PROJECTS.map(({ href, label, note }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={note}
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+
             <p className={styles.copyright}>© 2026 Abstract Altitudes</p>
           </div>
         </footer>

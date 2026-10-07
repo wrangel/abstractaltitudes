@@ -85,6 +85,14 @@
   color: var(--primary-color);
 }
 
+/* Leading word of the "Also by me" row — a label, not a link, so it is dimmer
+   than the entries it introduces. */
+.creditsLabel {
+  font-size: 0.9rem;
+  font-weight: 300;
+  opacity: 0.4;
+}
+
 .copyright {
   font-size: 0.8rem;
   opacity: 0.4;

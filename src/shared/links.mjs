@@ -21,3 +21,24 @@ export function mailtoUrl(subject) {
 /** Tip jar. Licensing enquiries go to the email above, not here. */
 export const SUPPORT_URL = "https://buymeacoffee.com/wrangel";
 export const SUPPORT_LABEL = "Buy me a coffee";
+
+/**
+ * Other things I have built. Shown in the gallery footer and mirrored into the
+ * Person `sameAs` in index.html, which is what ties the projects to the same
+ * entity in a search engine's graph — keep the two lists in step.
+ *
+ * These point at the repositories because that is where the projects live; a
+ * hosted app would be a better link, so swap the href if one gets deployed.
+ */
+export const PROJECTS = [
+  {
+    href: "https://github.com/wrangel/krankenkasse",
+    label: "Krankenkasse",
+    note: "which Swiss health-insurance deductible is cheapest, from the BAG data",
+  },
+  {
+    href: "https://github.com/wrangel/smoothexif",
+    label: "smoothexif",
+    note: "makes photo filenames, EXIF and Finder dates agree",
+  },
+];

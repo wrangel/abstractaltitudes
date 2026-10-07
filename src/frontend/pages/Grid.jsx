@@ -8,6 +8,11 @@ import { useClickCounter } from "../hooks/useClickCounter";
 import LoadingOverlay from "../components/LoadingOverlay";
 import ErrorBoundary from "../components/ErrorBoundary";
 import styles from "../styles/Grid.module.css";
+import {
+  mailtoUrl,
+  SUPPORT_URL,
+  SUPPORT_LABEL,
+} from "../../shared/links.mjs";
 
 // Lazy because this subtree statically imports OpenSeadragon (~333 KB) and
 // Marzipano. It used to sit in a chunk shared by Home and Grid, so every
@@ -71,10 +76,7 @@ function Grid() {
         <footer className={styles.finalFooter}>
           <div className={styles.footerContent}>
             <div className={styles.footerLinks}>
-              <a
-                href="mailto:contact@abstractaltitudes.anonaddy.com"
-                className={styles.contactLink}
-              >
+              <a href={mailtoUrl()} className={styles.contactLink}>
                 Get in touch
               </a>
 
@@ -87,6 +89,17 @@ function Grid() {
 
               <a href="/license/" className={styles.contactLink}>
                 Licensing
+              </a>
+
+              {/* External, so it opens away from the gallery — closing a tab
+                  is cheaper than losing the viewer's place in the grid. */}
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.contactLink}
+              >
+                {SUPPORT_LABEL}
               </a>
             </div>
 

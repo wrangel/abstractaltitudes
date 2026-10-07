@@ -13,8 +13,9 @@
 // `license`/`acquireLicensePage` values in photoMeta.mjs together.
 
 import { layout, breadcrumbJsonLd, breadcrumbHtml } from "./staticPage.mjs";
+import { CONTACT_EMAIL, mailtoUrl } from "./links.mjs";
 
-export const CONTACT_EMAIL = "contact@abstractaltitudes.anonaddy.com";
+export { CONTACT_EMAIL };
 
 /** Absolute URL of the licence page — used by the ImageObject JSON-LD. */
 export function licenseUrl(origin) {
@@ -49,7 +50,7 @@ export function buildLicensePage(origin) {
 
       <h2>Licensing and prints</h2>
       <p>Licences are available for editorial, commercial and personal use, and prints can be arranged. Tell me which image you have in mind, where it would appear, and for how long, and you will get a straight answer on availability and price.</p>
-      <p><a href="mailto:${CONTACT_EMAIL}?subject=Image%20licensing%20enquiry">${CONTACT_EMAIL}</a></p>
+      <p><a href="${mailtoUrl("Image licensing enquiry")}">${CONTACT_EMAIL}</a></p>
 
       <h2>Attribution</h2>
       <p>Where a licence is granted, please credit <strong>Abstract Altitudes</strong> and, where the medium allows, link back to <a href="/">abstractaltitudes.com</a>.</p>

@@ -312,8 +312,11 @@ test("place pages link internally with relative paths only", () => {
       // regression this test exists for — hub pages pointing at the production
       // origin, which breaks them on localhost and in preview.
       if (/^https?:\/\//.test(href)) {
-        assert.ok(
-          !href.startsWith(ORIGIN),
+        // Compare parsed origins, not string prefixes: ORIGIN as a prefix also
+        // matches https://abstractaltitudes.com.example.net.
+        assert.notEqual(
+          new URL(href).origin,
+          ORIGIN,
           `${page.path} links to ${href}; internal links must be host-relative`,
         );
         continue;

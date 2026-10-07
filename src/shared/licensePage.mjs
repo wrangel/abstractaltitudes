@@ -13,7 +13,12 @@
 // `license`/`acquireLicensePage` values in photoMeta.mjs together.
 
 import { layout, breadcrumbJsonLd, breadcrumbHtml } from "./staticPage.mjs";
-import { CONTACT_EMAIL, mailtoUrl } from "./links.mjs";
+import {
+  CONTACT_EMAIL,
+  mailtoUrl,
+  SUPPORT_URL,
+  SUPPORT_LABEL,
+} from "./links.mjs";
 
 export { CONTACT_EMAIL };
 
@@ -51,6 +56,9 @@ export function buildLicensePage(origin) {
       <h2>Licensing and prints</h2>
       <p>Licences are available for editorial, commercial and personal use, and prints can be arranged. Tell me which image you have in mind, where it would appear, and for how long, and you will get a straight answer on availability and price.</p>
       <p><a href="${mailtoUrl("Image licensing enquiry")}">${CONTACT_EMAIL}</a></p>
+
+      <h2>No licence needed to say thanks</h2>
+      <p>If a photograph simply gave you something — a place you recognised, or one you now want to see — you can <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_LABEL}</a>. It buys no usage rights and implies no licence; it is a thank-you, and it is read as one.</p>
 
       <h2>Attribution</h2>
       <p>Where a licence is granted, please credit <strong>Abstract Altitudes</strong> and, where the medium allows, link back to <a href="/">abstractaltitudes.com</a>.</p>

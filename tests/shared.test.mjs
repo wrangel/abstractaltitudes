@@ -307,6 +307,20 @@ test("place pages link internally with relative paths only", () => {
     );
     assert.ok(anchors.length > 0, `${page.path} has links`);
     for (const href of anchors) {
+      // Links off the site (the footer's tip jar) are absolute by necessity.
+      // What must never be absolute is a link back into this site: that is the
+      // regression this test exists for — hub pages pointing at the production
+      // origin, which breaks them on localhost and in preview.
+      if (/^https?:\/\//.test(href)) {
+        // Compare parsed origins, not string prefixes: ORIGIN as a prefix also
+        // matches https://abstractaltitudes.com.example.net.
+        assert.notEqual(
+          new URL(href).origin,
+          ORIGIN,
+          `${page.path} links to ${href}; internal links must be host-relative`,
+        );
+        continue;
+      }
       assert.ok(
         href.startsWith("/"),
         `${page.path} links to ${href}; internal links must be host-relative`,

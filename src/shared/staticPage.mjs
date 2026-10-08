@@ -7,6 +7,7 @@
 // arriving cold from a search result.
 
 import { escapeHtml } from "./escape.mjs";
+import { SUPPORT_URL, SUPPORT_LABEL } from "./links.mjs";
 
 const e = escapeHtml;
 
@@ -71,7 +72,7 @@ ${jsonLd.replace(/</g, "\\u003c")}
   <body>
     <div class="wrap">
 ${body}
-      <footer><a href="/">← Back to Abstract Altitudes</a></footer>
+      <footer><a href="/">← Back to Abstract Altitudes</a> · <a href="${SUPPORT_URL}" target="_blank" rel="noopener noreferrer">${SUPPORT_LABEL}</a></footer>
     </div>
   </body>
 </html>

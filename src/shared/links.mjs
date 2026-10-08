@@ -27,18 +27,13 @@ export const SUPPORT_LABEL = "Buy me a coffee";
  * Person `sameAs` in index.html, which is what ties the projects to the same
  * entity in a search engine's graph — keep the two lists in step.
  *
- * A hosted app is linked where one exists; the rest point at their repository.
+ * Hosted apps only — a repository is not something a gallery visitor wants.
  */
 export const PROJECTS = [
   {
-    // Apex only — www.viaprima.ch does not answer.
+    // The canonical address; the source lives at wrangel/krankenkasse.
     href: "https://viaprima.ch",
     label: "viaprima",
     note: "Swiss health insurance: which deductible is cheapest, from the official BAG premium data",
-  },
-  {
-    href: "https://github.com/wrangel/smoothexif",
-    label: "smoothexif",
-    note: "makes photo filenames, EXIF and Finder dates agree",
   },
 ];

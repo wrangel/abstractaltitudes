@@ -122,7 +122,15 @@ Two separate concerns, deliberately not one command:
 | What                 | How                                                             |
 | -------------------- | --------------------------------------------------------------- |
 | Project dependencies | Renovate PRs (`.github/renovate.json5`) — CI runs the tests      |
-| Homebrew / this Mac  | `./scripts/update-mac.sh` (dry run) · `--apply` to upgrade       |
+| Homebrew / this Mac  | A weekly launchd agent, outside this repo (see below)            |
+
+Homebrew used to be upgraded by `./scripts/update-mac.sh` here. That script is
+gone: a machine chore does not belong in a project repository, where it ends up
+on the NAS, in Docker build context and in every clone. It now lives at
+`~/SynologyDrive/Matthias/Programming/automation/homebrew-update.sh` on the Mac
+and runs itself Mondays at 09:00 via `com.matthias.homebrew-update.plist`,
+logging to `~/Library/Logs/homebrew-update.log`. Pass `--dry-run` to see what
+would change without upgrading.
 
 `pnpm dev -u` used to do both. It deleted `pnpm-lock.yaml` and ran
 `pnpm up --latest`, which mattered because `Dockerfile.*` and CI install with

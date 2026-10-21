@@ -5,7 +5,7 @@
 // Why a PR at all, rather than `pnpm up` locally: Dockerfile.* and ci.yml
 // install with --frozen-lockfile, so pnpm-lock.yaml is the contract for what
 // ships. It should change through a reviewed PR that CI has run against.
-// Homebrew stays a local chore — see scripts/update-mac.sh.
+// Homebrew stays a local chore, handled by a launchd agent on the Mac.
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [

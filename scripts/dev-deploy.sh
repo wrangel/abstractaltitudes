@@ -47,15 +47,16 @@ pnpm audit --prod --silent || true
 #   • Dockerfile.* and ci.yml install with --frozen-lockfile, so the lockfile
 #     decides what ships. Regenerating it unreviewed meant production got
 #     whatever was newest that morning.
-#   • Dependency updates now arrive as Dependabot PRs (.github/dependabot.yml)
+#   • Dependency updates now arrive as Renovate PRs (.github/renovate.json5)
 #     that CI has actually run the tests against.
 #   • Homebrew is per-machine maintenance, not part of starting a dev server —
 #     upgrading it here could swap ImageMagick out from under the uploader
-#     mid-session. Use scripts/update-mac.sh instead.
+#     mid-session. A launchd agent on the Mac does it weekly instead.
 if [[ "$1" == "-u" ]]; then
   echo -e "${YELLOW}ℹ️  -u no longer upgrades anything.${NC}"
-  echo -e "${YELLOW}   Dependencies → Dependabot PRs on GitHub.${NC}"
-  echo -e "${YELLOW}   Homebrew     → ./scripts/update-mac.sh${NC}"
+  echo -e "${YELLOW}   Dependencies → Renovate PRs on GitHub.${NC}"
+  echo -e "${YELLOW}   Homebrew     → weekly launchd agent, or run it now:${NC}"
+  echo -e "${YELLOW}                  ~/SynologyDrive/Matthias/Programming/automation/homebrew-update.sh${NC}"
 fi
 
 set -e # Re-enable strict error checking for static analysis and servers

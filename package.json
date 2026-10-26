@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@12.14.0",
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
     "frontend:dev": "vite",
     "frontend:build": "vite build && node scripts/prerender-photos.mjs",

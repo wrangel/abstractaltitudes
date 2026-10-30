@@ -4,6 +4,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { Island } from "../models/islandModel.mjs";
 import logger from "../utils/logger.mjs";
+import { clientKey } from "../utils/clientKey.mjs";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ const router = express.Router();
 const clickLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20,
+  keyGenerator: clientKey, // without it, 20/min was shared by every visitor
   standardHeaders: true,
   legacyHeaders: false,
 });

@@ -7,6 +7,7 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import logger from "./utils/logger.mjs";
+import { clientKey } from "./utils/clientKey.mjs";
 import {
   connectWithRetry,
   closeDB,
@@ -57,6 +58,7 @@ const corsOptions = {
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000, // Slightly higher for static assets
+  keyGenerator: clientKey, // per visitor, not per proxy hop — see clientKey.mjs
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -110,6 +112,7 @@ app.use(compression({ level: 6, threshold: 1024 }));
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000,
+  keyGenerator: clientKey,
   message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,

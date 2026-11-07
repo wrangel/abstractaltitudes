@@ -29,8 +29,8 @@ Capturing aerial imagery through drone flights, showcasing landscapes & cityscap
 - **Frontend**: React 19 + Vite
 - **Backend**: Node.js 26 + Express
 - **DB**: MongoDB Atlas (collection `abstractaltitudes`)
-- **Object Storage**: AWS S3 bucket (originals/archival)
-- **CDN / Delivery**: BunnyCDN (thumbnails, images, pano tiles)
+- **Object Storage**: Cloudflare R2 bucket, served at `media.abstractaltitudes.com` (S3-compatible API)
+- **CDN / Delivery**: BunnyCDN pulls from R2 (thumbnails, images, pano tiles; resizing via `?width=`)
 - **Image Processing**: Sharp
 - **Reverse Geocoding**: Mapbox
 - **Containerisation**: Docker / Docker Compose
@@ -38,7 +38,7 @@ Capturing aerial imagery through drone flights, showcasing landscapes & cityscap
 ## Prerequisites
 
 1. MongoDB Atlas cluster + database with a collection named `abstractaltitudes`
-2. AWS S3 bucket (and IAM keys with `PutObject`, `DeleteObject`, `ListBucket`)
+2. Cloudflare R2 bucket + an R2 API token (*Object Read & Write*, scoped to that bucket)
 3. Mapbox account (https://mapbox.com) – enable **Geocoding API**
 4. Google Cloud account – enable **Maps JavaScript API** (key reserved for future use)
 5. Node ≥ 26 & pnpm ≥ 11
@@ -47,7 +47,7 @@ Capturing aerial imagery through drone flights, showcasing landscapes & cityscap
 ## Environment Variables
 
 The table below shows every key you must supply.  
-Put them in `.env` (local dev) **and** `env.production` (build time) unless the **Scope** column says otherwise.
+Put them in `.env` (local dev) **and** `env.production` (build time) unless the **Scope** column says otherwise. Storage keys are needed only by the `pnpm manage` scripts on the Mac — production never talks to the bucket.
 
 | Variable                   | Example / Hint                    | Scope         | Purpose                                                |
 | -------------------------- | --------------------------------- | ------------- | ------------------------------------------------------ |
@@ -55,10 +55,10 @@ Put them in `.env` (local dev) **and** `env.production` (build time) unless the 
 | `MONGODB_DB`               | `abstractaltitudes`               | both          | database name                                          |
 | `MONGODB_DB_USER`          | `dbUser`                          | both          | Atlas DB user                                          |
 | `MONGODB_DB_PASSWORD`      | `superSecretPw`                   | both          | Atlas DB password                                      |
-| `AWS_BUCKET`               | `my-drone-assets`                 | both          | S3 bucket for originals & derivatives                  |
-| `AWS_ACCESS_KEY_ID`        | `AKIA…`                           | both          | IAM key with `PutObject`, `DeleteObject`, `ListBucket` |
-| `AWS_SECRET_ACCESS_KEY`    | `wJalrXUtnFEMI/K7MDENG/bPxRfiCY…` | both          | IAM secret                                             |
-| `AWS_DEFAULT_REGION`       | `eu-central-1`                    | both          | bucket region                                          |
+| `R2_ENDPOINT`              | `https://<account-id>.r2.cloudflarestorage.com` | `.env` only | R2's S3-compatible endpoint                      |
+| `R2_BUCKET`                | `abstractaltitudes-media`         | `.env` only   | bucket Bunny pulls from                                |
+| `R2_ACCESS_KEY_ID`         | from the R2 API token             | `.env` only   | Object Read & Write, this bucket only                  |
+| `R2_SECRET_ACCESS_KEY`     | from the R2 API token             | `.env` only   | its secret                                             |
 | `MAPBOX_SECRET_TOKEN`      | `sk.eyJ1Ijoi……`                   | **prod only** | server-side reverse-geocoding                          |
 | `VITE_MAPBOX_PUBLIC_TOKEN` | `pk.eyJ1Ijoi……`                   | both          | browser-side tiles & fonts                             |
 | `VITE_GOOGLE_MAPS_API_KEY` | `AIzaSyA……`                       | both          | Google services (reserved)                             |
@@ -159,9 +159,9 @@ proposes this too). The Dockerfiles read it from there. Don't use
 Management helpers:
 
 ```bash
-pnpm manage keep-books   # sync DB ↔ S3 metadata
+pnpm manage keep-books   # sync DB ↔ storage (removes bucket folders with no DB entry)
 pnpm manage handle-media # ingest new imagery
-pnpm manage:dry handle-media -n # ingest new imagery, but do not upload it neither to AWS nor Mongo db
+pnpm manage:dry handle-media -n # ingest new imagery, but upload nothing to storage or MongoDB
 ```
 
 ## Per-photo pages (SEO)
@@ -272,7 +272,7 @@ Before running pnpm manage handle-media, ensure your INPUT_DIRECTORY contains fo
 | wide_angle | 10 JPGs    | 1 DJI*.JPG + 9 PANO*.JPG                   | 9 PANO→original/, DJI→wa\_\*.webp |
 | pano       | 5+ files   | DJI JPGs + equirectangular + Marzipano ZIP | Pano viewer files                 |
 
-The uploader walks these folders, uploads originals to S3, writes metadata to MongoDB and generates the multiple sizes required by the gallery.
+The uploader walks these folders, uploads them to R2, writes metadata to MongoDB and generates the multiple sizes required by the gallery.
 
 ## Contributing
 

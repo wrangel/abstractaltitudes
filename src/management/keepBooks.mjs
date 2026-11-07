@@ -1,16 +1,15 @@
 // src/backend/management/keepBooks.mjs
 
 import {
-  S3Client,
   ListObjectsV2Command,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
+import { storageClient as s3Client, STORAGE_BUCKET } from "./storage.mjs";
 import logger from "../backend/utils/logger.mjs";
 import { Island } from "../backend/models/islandModel.mjs";
 import { executeMongoQuery } from "../backend/utils/mongoUtils.mjs";
 import { connectDB, closeDB } from "../backend/utils/mongodbConnection.mjs";
 
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
 /**
  * List top-level folder prefixes in an S3 bucket.
@@ -81,7 +80,7 @@ async function main() {
     await connectDB();
     logger.info("MongoDB connected");
 
-    const s3Folders = await listTopLevelFolders(process.env.AWS_BUCKET);
+    const s3Folders = await listTopLevelFolders(STORAGE_BUCKET);
     const mongoDocs = await executeMongoQuery(
       () => Island.find().lean(),
       "Island"
@@ -104,7 +103,7 @@ async function main() {
       );
     } else {
       logger.warn(`Deleting orphaned S3 folders: ${s3Only.join(", ")}`);
-      await deleteS3Folders(process.env.AWS_BUCKET, s3Only);
+      await deleteS3Folders(STORAGE_BUCKET, s3Only);
       logger.info(`Deleted ${s3Only.length} orphaned S3 folders.`);
     }
   } catch (error) {

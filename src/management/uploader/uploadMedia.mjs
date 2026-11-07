@@ -4,10 +4,16 @@ import fs from "fs/promises";
 import path from "path";
 import { Upload } from "@aws-sdk/lib-storage";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { s3Client } from "../../backend/utils/awsUtils.mjs";
+import {
+  storageClient as s3Client,
+  STORAGE_BUCKET,
+  contentTypeFor,
+} from "../storage.mjs";
 import logger from "../../backend/utils/logger.mjs";
 
-const BUCKET_NAME = process.env.AWS_BUCKET;
+// Cloudflare R2 since 2026-11, reached through the S3 API — see ../storage.mjs.
+// The "S3" in names below is the protocol, not the provider.
+const BUCKET_NAME = STORAGE_BUCKET;
 
 /**
  * Checks if any object exists in S3 with the given prefix (folder).
@@ -58,8 +64,11 @@ async function uploadDirectoryToS3(localDir, s3Prefix) {
           Bucket: BUCKET_NAME,
           Key: s3Key,
           Body: fileStream,
-          StorageClass: "INTELLIGENT_TIERING",
-          ServerSideEncryption: "AES256",
+          // Set here rather than left to Bunny's guess from the extension.
+          // No StorageClass or ServerSideEncryption: those were AWS-specific
+          // (INTELLIGENT_TIERING, AES256). R2 has one class for this use and
+          // always encrypts at rest.
+          ContentType: contentTypeFor(s3Key),
         },
         queueSize: 4,
         partSize: 5 * 1024 * 1024,

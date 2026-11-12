@@ -123,6 +123,25 @@ jobs:
           n=$(curl -s http://localhost:8080/sitemap.xml | grep -c "<loc>")
           echo "sitemap URLs: $n"
           [ "$n" -gt 100 ] || fail "sitemap has only $n URLs — expected the full set"
+
+          # Cache headers (nginx/conf.d/default.conf): hashed assets forever,
+          # other static files briefly, the crawler policy never, and the
+          # security headers on all of them.
+          hdr() { curl -s -D - -o /dev/null "http://localhost:8080$1" | tr -d '\r' | grep -i "^$2:" | cut -d' ' -f2-; }
+          asset=$(curl -s http://localhost:8080/ | grep -oE '/assets/[^"]+\.js' | head -1)
+          [ -n "$asset" ] || fail "no /assets/*.js referenced from /"
+          case "$(hdr "$asset" cache-control)" in *max-age=315360000*) ;; *) fail "$asset is not cached long-term";; esac
+          case "$(hdr /og-image.jpg cache-control)" in max-age=3600) ;; *) fail "og-image.jpg must be cached for 1h, got: $(hdr /og-image.jpg cache-control)";; esac
+          case "$(hdr /robots.txt cache-control)" in no-cache) ;; *) fail "robots.txt must not be cached";; esac
+          case "$(hdr /sitemap.xml cache-control)" in no-cache) ;; *) fail "sitemap.xml must not be cached";; esac
+          for f in "$asset" /og-image.jpg /robots.txt; do
+            [ -n "$(hdr "$f" content-security-policy)" ] || fail "$f lost the security headers"
+          done
+          # A slashless place URL must redirect, not be mistaken for a file.
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/places/switzerland)
+          [ "$code" = "301" ] || fail "/places/switzerland answered $code, expected 301"
+          loc=$(hdr /places/switzerland location)
+          [ "$loc" = "/places/switzerland/" ] || fail "redirect must be relative, got: $loc"
           docker rm -f smoke
 
       # Only now, once the image has proven it serves the prerendered pages.

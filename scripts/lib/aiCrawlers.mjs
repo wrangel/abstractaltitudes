@@ -149,12 +149,26 @@ export function suggest(bot) {
   return "probably block — AI, agent or unknown crawler";
 }
 
+/**
+ * Text safe inside a Markdown table cell. User agents are written by whoever
+ * sends the request, so a crafted one must not be able to close the cell,
+ * the code span or the table: backslashes first, then pipes; backticks and
+ * angle brackets are dropped; line breaks become spaces.
+ */
+export function mdCell(text) {
+  return String(text ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/[`<>]/g, "");
+}
+
 /** Markdown report for the GitHub issue body. */
 export function renderReport(unreviewed, date, days) {
   const rows = unreviewed.map(
     (b) =>
-      `| **${b.name}** | ${b.operator || "—"} | ${b.category} | ${b.requests} | ${suggest(b)} |\n` +
-      `| | | <sub>\`${b.userAgent.slice(0, 160).replace(/\|/g, "\\|")}\`</sub> | | |`,
+      `| **${mdCell(b.name)}** | ${mdCell(b.operator) || "—"} | ${mdCell(b.category)} | ${b.requests} | ${suggest(b)} |\n` +
+      `| | | <sub>\`${mdCell(b.userAgent.slice(0, 160))}\`</sub> | | |`,
   );
   return `In the last ${days} days, **${unreviewed.length}** crawler(s) visited abstractaltitudes.com without a decision in \`config/ai-crawlers.json\` (checked ${date}).
 

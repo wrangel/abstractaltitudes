@@ -123,3 +123,17 @@ test("findUnreviewed reports only undecided bots, merged, skipping tooling and b
   const out = findUnreviewed(rows, decisions, directory);
   assert.deepEqual(out.map((b) => [b.name, b.requests]), [["NewAIBot", 10]]);
 });
+
+test("report cells cannot be broken out of by a crafted user agent", async () => {
+  const { mdCell, renderReport } = await import("../scripts/lib/aiCrawlers.mjs");
+  assert.equal(mdCell("a|b"), "a\\|b");
+  assert.equal(mdCell("a\\|b"), "a\\\\\\|b"); // backslash escaped before the pipe
+  assert.equal(mdCell("x`y<z>\nw"), "xyz w");
+  const report = renderReport(
+    [{ name: "Evil|Bot", operator: "", category: "unverified", requests: 1, userAgent: "x\\| injected | `code` <b>" }],
+    "2026-11-12",
+    7,
+  );
+  const line = report.split("\n").find((l) => l.includes("injected"));
+  assert.equal(line.split(/(?<!\\)\|/).length, 7, "the user-agent row keeps exactly its six cells");
+});

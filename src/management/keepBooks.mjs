@@ -4,7 +4,7 @@ import {
   ListObjectsV2Command,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
-import { storageClient as s3Client, STORAGE_BUCKET } from "./storage.mjs";
+import { storageClient, STORAGE_BUCKET } from "./storage.mjs";
 import logger from "../backend/utils/logger.mjs";
 import { Island } from "../backend/models/islandModel.mjs";
 import { executeMongoQuery } from "../backend/utils/mongoUtils.mjs";
@@ -12,7 +12,7 @@ import { connectDB, closeDB } from "../backend/utils/mongodbConnection.mjs";
 
 
 /**
- * List top-level folder prefixes in an S3 bucket.
+ * List top-level folders in the bucket.
  * @param {string} bucketName
  * @returns {Promise<string[]>} Array of top-level folder names (prefixes without trailing slash).
  */
@@ -21,26 +21,26 @@ async function listTopLevelFolders(bucketName) {
     Bucket: bucketName,
     Delimiter: "/", // group objects by top-level "folders"
   });
-  const response = await s3Client.send(command);
+  const response = await storageClient.send(command);
   const prefixes = response.CommonPrefixes || [];
   return prefixes.map((p) => p.Prefix.replace(/\/$/, ""));
 }
 
 /**
- * Delete all objects under the given folder prefixes in an S3 bucket.
+ * Delete all objects under the given top-level folders in the bucket.
  * Handles paging if folder contains many objects.
  *
  * @param {string} bucketName
  * @param {string[]} folders - folder prefixes to delete.
  */
-async function deleteS3Folders(bucketName, folders) {
+async function deleteFolders(bucketName, folders) {
   if (folders.length === 0) {
-    logger.info("No S3 folders to delete.");
+    logger.info("No bucket folders to delete.");
     return;
   }
 
   for (const folder of folders) {
-    logger.info(`Deleting S3 folder and all contents: ${folder}/`);
+    logger.info(`Deleting bucket folder and all contents: ${folder}/`);
 
     let continuationToken = undefined;
     do {
@@ -49,7 +49,7 @@ async function deleteS3Folders(bucketName, folders) {
         Prefix: folder + "/",
         ContinuationToken: continuationToken,
       });
-      const listResponse = await s3Client.send(listCommand);
+      const listResponse = await storageClient.send(listCommand);
 
       continuationToken = listResponse.IsTruncated
         ? listResponse.NextContinuationToken
@@ -64,7 +64,7 @@ async function deleteS3Folders(bucketName, folders) {
           },
         };
         const deleteCommand = new DeleteObjectsCommand(deleteParams);
-        await s3Client.send(deleteCommand);
+        await storageClient.send(deleteCommand);
       }
     } while (continuationToken);
   }
@@ -72,42 +72,42 @@ async function deleteS3Folders(bucketName, folders) {
 
 /**
  * Main function:
- * Sync S3 folder prefixes with MongoDB Island documents.
- * Deletes orphaned S3 folders that don't have a Mongo document.
+ * Sync the bucket's top-level folders with MongoDB Island documents.
+ * Deletes orphaned bucket folders that don't have a Mongo document.
  */
 async function main() {
   try {
     await connectDB();
     logger.info("MongoDB connected");
 
-    const s3Folders = await listTopLevelFolders(STORAGE_BUCKET);
+    const bucketFolders = await listTopLevelFolders(STORAGE_BUCKET);
     const mongoDocs = await executeMongoQuery(
       () => Island.find().lean(),
       "Island"
     );
 
-    const s3Set = new Set(s3Folders);
+    const bucketSet = new Set(bucketFolders);
     const mongoSet = new Set(mongoDocs.map((doc) => doc.name));
 
-    const s3Only = s3Folders.filter((folder) => !mongoSet.has(folder));
+    const bucketOnly = bucketFolders.filter((folder) => !mongoSet.has(folder));
     const mongoOnly = mongoDocs
-      .filter((doc) => !s3Set.has(doc.name))
+      .filter((doc) => !bucketSet.has(doc.name))
       .map((doc) => doc.name);
 
-    logger.info("Folders only in S3 (no matching Mongo document):", s3Only);
-    logger.info("Documents only in Mongo (no matching S3 folder):", mongoOnly);
+    logger.info("Folders only in the bucket (no matching Mongo document):", bucketOnly);
+    logger.info("Documents only in Mongo (no matching bucket folder):", mongoOnly);
 
-    if (s3Only.length === 0) {
+    if (bucketOnly.length === 0) {
       logger.info(
-        "No orphaned S3 folders to delete; all match Mongo documents."
+        "No orphaned bucket folders to delete; all match Mongo documents."
       );
     } else {
-      logger.warn(`Deleting orphaned S3 folders: ${s3Only.join(", ")}`);
-      await deleteS3Folders(STORAGE_BUCKET, s3Only);
-      logger.info(`Deleted ${s3Only.length} orphaned S3 folders.`);
+      logger.warn(`Deleting orphaned bucket folders: ${bucketOnly.join(", ")}`);
+      await deleteFolders(STORAGE_BUCKET, bucketOnly);
+      logger.info(`Deleted ${bucketOnly.length} orphaned bucket folders.`);
     }
   } catch (error) {
-    logger.error("Error deleting orphaned S3 folders:", { error });
+    logger.error("Error deleting orphaned bucket folders:", { error });
   } finally {
     await closeDB();
     logger.info("MongoDB connection closed");

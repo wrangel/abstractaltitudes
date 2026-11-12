@@ -92,7 +92,7 @@ export async function orchestrate() {
 
         logger.info(`Completed processing for folder: ${mediaDirPath}`);
 
-        // Upload media files to S3
+        // Upload media files to R2
         if (!DRY_RUN) await uploadMedia(newFolderPath, newName);
 
         // Archive media files

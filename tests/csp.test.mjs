@@ -39,10 +39,8 @@ test("nginx and helmet CSPs list the same sources", () => {
   }
 });
 
-test("the Web Analytics beacon is allowed, and nothing broader than it", () => {
-  const scripts = nginxDirective("script-src");
-  assert.ok(scripts.includes("https://static.cloudflareinsights.com"));
-  for (const loose of ["'unsafe-inline'", "'unsafe-eval'", "https:", "*"]) {
-    assert.ok(!scripts.includes(loose), `script-src must not allow ${loose}`);
-  }
+test("script-src is exactly the site itself plus the Web Analytics beacon", () => {
+  // Exact list, not "contains": anything added here — another host, https:,
+  // 'unsafe-inline' — must be a deliberate change to this test too.
+  assert.deepEqual(nginxDirective("script-src").sort(), ["'self'", "https://static.cloudflareinsights.com"].sort());
 });

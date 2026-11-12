@@ -10,6 +10,7 @@ import {
   contentTypeFor,
 } from "../storage.mjs";
 import logger from "../../backend/utils/logger.mjs";
+import { shouldStamp, stampImageRights, captureYear } from "../imageRights.mjs";
 
 // Cloudflare R2 since 2026-11, reached through the S3 API — see ../storage.mjs.
 // The "S3" in names below is the protocol, not the provider.
@@ -55,6 +56,15 @@ async function uploadDirectoryToS3(localDir, s3Prefix) {
     if (entry.isDirectory()) {
       await uploadDirectoryToS3(fullPath, s3Key);
     } else if (entry.isFile()) {
+      // Thumbnails and panorama previews carry the copyright and licence
+      // terms inside the file — see ../imageRights.mjs. Stamped here, the one
+      // step every image passes through, rather than in each of the three
+      // handlers that create them.
+      if (shouldStamp(s3Key)) {
+        await stampImageRights(fullPath, captureYear(s3Key));
+        logger.info(`Embedded rights metadata in ${s3Key}`);
+      }
+
       logger.info(`Uploading ${fullPath} as s3://${BUCKET_NAME}/${s3Key}`);
       const fileStream = (await import("fs")).createReadStream(fullPath);
 

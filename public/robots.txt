@@ -50,6 +50,28 @@ User-agent: omgili
 User-agent: img2dataset
 User-agent: PetalBot
 User-agent: Baiduspider
+User-agent: CloudVertexBot
+User-agent: Google-Agent
+User-agent: NotebookLM
+User-agent: cohere
+User-agent: MistralAI-Index
+User-agent: Terracotta
+User-agent: Novellum
+User-agent: CloudflareBrowserRenderingCrawler
+User-agent: Amzn-SearchBot
+User-agent: Meta-WebIndexer
+User-agent: MoonshotBot
+User-agent: KimiBot
+User-agent: Kimi-SearchBot
+User-agent: DeepSeekBot
+User-agent: Qwenbot
+User-agent: GrokBot
+User-agent: ChatGLM-Spider
+User-agent: Reflectionbot
+User-agent: ElevenlabsCrawler
+User-agent: ExaSearchBot
+User-agent: YouBot
+User-agent: ImageMetaBot
 Disallow: /
 
 # Everyone else, including Googlebot, Bingbot, Applebot, DuckDuckBot,

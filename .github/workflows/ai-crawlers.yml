@@ -1,0 +1,57 @@
+name: AI crawler watch
+
+# Weekly: are there crawlers in Cloudflare's bot directory with no decision in
+# config/ai-crawlers.json? If so, open (or refresh) one issue labelled
+# ai-crawlers; once everything is decided again, close it. Nothing is blocked
+# automatically — see the header of scripts/check-ai-crawlers.mjs for why.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC, beside Renovate's window
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      # No dependencies: the script uses Node's built-in fetch only.
+      - name: Compare Radar's bot directory with config/ai-crawlers.json
+        id: check
+        env:
+          CLOUDFLARE_RADAR_TOKEN: ${{ secrets.CLOUDFLARE_RADAR_TOKEN }}
+          REPORT_FILE: report.md
+        run: node scripts/check-ai-crawlers.mjs
+
+      - name: Open, refresh or close the review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW: ${{ steps.check.outputs.new }}
+        run: |
+          gh label create ai-crawlers --color FBCA04 \
+            --description "Crawlers awaiting an allow/block decision" --force >/dev/null
+          open=$(gh issue list --label ai-crawlers --state open --json number --jq '.[0].number // empty')
+          if [ "$NEW" = "true" ]; then
+            if [ -n "$open" ]; then
+              gh issue edit "$open" --body-file report.md
+              echo "Refreshed issue #$open"
+            else
+              gh issue create --title "New crawlers to review (AI Crawl Control)" \
+                --label ai-crawlers --body-file report.md
+            fi
+          elif [ -n "$open" ]; then
+            gh issue close "$open" --comment "Every crawler in Cloudflare's directory has a decision again. Closing."
+            echo "Closed issue #$open"
+          else
+            echo "Nothing new."
+          fi

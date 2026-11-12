@@ -156,6 +156,20 @@ To change pnpm version, edit `packageManager` in `package.json` (Renovate
 proposes this too). The Dockerfiles read it from there. Don't use
 `pnpm self-update`: it rewrites that field as a side effect.
 
+### AI crawlers
+
+Search engines and archives may crawl; AI training, AI search and AI assistants
+may not. The decisions live in `config/ai-crawlers.json` and are enforced in
+three places that tests keep in step: `public/robots.txt`, Cloudflare
+**AI Crawl Control → Security** (crawlers Cloudflare lists), and a Cloudflare
+WAF custom rule for the ones it doesn't (`node scripts/check-ai-crawlers.mjs --waf`
+prints its expression). Don't switch Cloudflare's category-wide *Training: Block*
+back on: it blocks Googlebot too.
+
+`.github/workflows/ai-crawlers.yml` runs weekly and opens an issue labelled
+`ai-crawlers` when a bot visits that has no decision yet. It needs the repo secret
+`CLOUDFLARE_RADAR_TOKEN` (Zone → Analytics → Read, User → User Details → Read).
+
 Management helpers:
 
 ```bash

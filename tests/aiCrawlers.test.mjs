@@ -15,7 +15,10 @@ import {
   decisionFor,
   decisionTokens,
   findUnreviewed,
-  wafExpression,
+  blockListExpression,
+  unverifiedBotExpression,
+  unverifiedExceptions,
+  BOT_WORDS,
 } from "../scripts/lib/aiCrawlers.mjs";
 
 const decisions = JSON.parse(
@@ -92,7 +95,7 @@ test("every blockable token is disallowed in robots.txt", () => {
 });
 
 test("the firewall expression covers every block token and fits Cloudflare's limit", () => {
-  const expr = wafExpression(decisions);
+  const expr = blockListExpression(decisions);
   assert.ok(expr.length < 4096, `expression is ${expr.length} characters`);
   for (const t of blockTokens) assert.ok(expr.includes(`contains "${t}"`), `missing ${t}`);
 });
@@ -135,5 +138,69 @@ test("report cells cannot be broken out of by a crafted user agent", async () =>
     7,
   );
   const line = report.split("\n").find((l) => l.includes("injected"));
-  assert.equal(line.split(/(?<!\\)\|/).length, 7, "the user-agent row keeps exactly its six cells");
+  // Seven columns → eight segments around the unescaped pipes.
+  assert.equal(line.split(/(?<!\\)\|/).length, 8, "the user-agent row keeps exactly its seven cells");
+});
+
+// --- Rule "Block unverified bots" -----------------------------------------
+
+/** What Cloudflare does with the rule, for a request with this user agent. */
+function blockedByUnverifiedRule(ua, { verified, host = "abstractaltitudes.com", path = "/" }) {
+  const u = ua.toLowerCase();
+  if (host !== "abstractaltitudes.com" || verified) return false;
+  if (path === "/robots.txt" || path.startsWith("/.well-known/")) return false;
+  if (!BOT_WORDS.some((w) => u.includes(w))) return false;
+  return !unverifiedExceptions(decisions).some((t) => u.includes(t.toLowerCase()));
+}
+
+const VERIFIED = new Set(decisions.verifiedByCloudflare.map((t) => t.toLowerCase()));
+const isVerifiedEngine = (ua) => [...VERIFIED].some((t) => ua.toLowerCase().includes(t));
+
+test("unverified-bot rule: real search engines, archives and previews get through", () => {
+  for (const [who, ua] of Object.entries(MUST_PASS)) {
+    // Cloudflare marks the big engines verified only from their own addresses.
+    const verified = isVerifiedEngine(ua);
+    assert.equal(blockedByUnverifiedRule(ua, { verified }), false, `${who} would be blocked`);
+  }
+});
+
+test("unverified-bot rule: fake Googlebot, new crawlers and scanners are blocked", () => {
+  const fakes = [
+    MUST_PASS["Googlebot Smartphone"], // right name, wrong origin
+    "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "Mozilla/5.0 (compatible; DeepSeekBot/1.0; +https://www.deepseek.com/bot)",
+    "SomeNewCrawler/0.1",
+    "Mozilla/5.0 (compatible; FontScanBot/2.0)",
+  ];
+  for (const ua of fakes) assert.equal(blockedByUnverifiedRule(ua, { verified: false }), true, ua);
+});
+
+test("unverified-bot rule leaves browsers, robots.txt, certificates and media alone", () => {
+  const browser = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15";
+  assert.equal(blockedByUnverifiedRule(browser, { verified: false }), false);
+  const crawler = "SomeNewCrawler/0.1";
+  assert.equal(blockedByUnverifiedRule(crawler, { verified: false, path: "/robots.txt" }), false);
+  assert.equal(blockedByUnverifiedRule(crawler, { verified: false, path: "/.well-known/acme-challenge/x" }), false);
+  assert.equal(blockedByUnverifiedRule(crawler, { verified: false, host: "media.abstractaltitudes.com" }), false);
+});
+
+test("the big search engines are never exceptions, so their names cannot be faked", () => {
+  const exceptions = unverifiedExceptions(decisions).map((t) => t.toLowerCase());
+  for (const t of VERIFIED) assert.ok(!exceptions.includes(t), `${t} must not be an exception`);
+  const allow = Object.keys(decisions.allow).map((t) => t.toLowerCase());
+  for (const t of VERIFIED) assert.ok(allow.includes(t), `${t} is verified but not allowed`);
+});
+
+test("the unverified-bot expression is what the simulation assumes", () => {
+  const expr = unverifiedBotExpression(decisions);
+  assert.ok(expr.startsWith('(http.host eq "abstractaltitudes.com"'));
+  assert.ok(!expr.includes("media."));
+  assert.ok(expr.includes("not cf.client.bot"));
+  assert.ok(expr.includes('http.request.uri.path ne "/robots.txt"'));
+  assert.ok(expr.includes('not starts_with(http.request.uri.path, "/.well-known/")'));
+  for (const w of BOT_WORDS) assert.ok(expr.includes(`contains "${w}"`), w);
+  for (const t of unverifiedExceptions(decisions)) assert.ok(expr.includes(`contains "${t.toLowerCase()}"`), t);
+  for (const t of VERIFIED) assert.ok(!expr.includes(`"${t}"`), `${t} leaked into the exceptions`);
+  assert.ok(expr.length < 4096, `${expr.length} characters`);
+  assert.equal((expr.match(/\(/g) || []).length, (expr.match(/\)/g) || []).length, "parentheses balance");
 });

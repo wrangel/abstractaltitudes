@@ -160,11 +160,20 @@ proposes this too). The Dockerfiles read it from there. Don't use
 
 Search engines and archives may crawl; AI training, AI search and AI assistants
 may not. The decisions live in `config/ai-crawlers.json` and are enforced in
-three places that tests keep in step: `public/robots.txt`, Cloudflare
-**AI Crawl Control → Security** (crawlers Cloudflare lists), and a Cloudflare
-WAF custom rule for the ones it doesn't (`node scripts/check-ai-crawlers.mjs --waf`
-prints its expression). Don't switch Cloudflare's category-wide *Training: Block*
-back on: it blocks Googlebot too.
+places that tests keep in step: `public/robots.txt`, Cloudflare
+**AI Crawl Control → Security** (crawlers Cloudflare lists), and two Cloudflare
+WAF custom rules whose expressions `node scripts/check-ai-crawlers.mjs --waf` prints:
+
+1. **Block unverified bots** — zero trust, as on viaprima.ch: anything calling
+   itself a bot that Cloudflare has not verified by origin (`cf.client.bot`) is
+   blocked, so new crawlers and fake Googlebots need no list. Exceptions are the
+   allowed crawlers Cloudflare does not verify (archives, Bravebot, link
+   previews). Scoped to `abstractaltitudes.com`, never `media.`.
+2. **Block AI crawlers not in AI Crawl Control** — the block list, for verified
+   AI bots that rule 1 lets through.
+
+Don't switch Cloudflare's category-wide *Training: Block* back on: it blocks
+Googlebot too.
 
 `.github/workflows/ai-crawlers.yml` runs weekly and opens an issue labelled
 `ai-crawlers` when a bot visits that has no decision yet. It needs the repo secret

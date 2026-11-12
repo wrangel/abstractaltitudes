@@ -134,6 +134,11 @@ export function findUnreviewed(rows, decisions, directory = []) {
       category: entryCategories.join(", ") || category || "unverified",
       requests: (prev?.requests ?? 0) + count,
       userAgent: prev?.userAgent ?? ua,
+      // Analytics only fills verifiedBotCategory for bots Cloudflare has
+      // verified by origin. Unverified ones are already stopped by the
+      // "Block unverified bots" rule, so they need a decision only if they
+      // should be let in.
+      verified: Boolean(category) || Boolean(prev?.verified),
     });
   }
   return [...merged.values()].sort((a, b) => b.requests - a.requests);
@@ -167,32 +172,74 @@ export function mdCell(text) {
 export function renderReport(unreviewed, date, days) {
   const rows = unreviewed.map(
     (b) =>
-      `| **${mdCell(b.name)}** | ${mdCell(b.operator) || "—"} | ${mdCell(b.category)} | ${b.requests} | ${suggest(b)} |\n` +
-      `| | | <sub>\`${mdCell(b.userAgent.slice(0, 160))}\`</sub> | | |`,
+      `| **${mdCell(b.name)}** | ${mdCell(b.operator) || "—"} | ${mdCell(b.category)} | ${b.requests} | ${b.verified ? "**allowed** (verified)" : "blocked (unverified)"} | ${suggest(b)} |\n` +
+      `| | | <sub>\`${mdCell(b.userAgent.slice(0, 160))}\`</sub> | | | |`,
   );
   return `In the last ${days} days, **${unreviewed.length}** crawler(s) visited abstractaltitudes.com without a decision in \`config/ai-crawlers.json\` (checked ${date}).
 
-| Crawler | Operator | Category | Requests | Suggestion |
-| --- | --- | --- | ---: | --- |
+| Crawler | Operator | Category | Requests | Right now | Suggestion |
+| --- | --- | --- | ---: | --- | --- |
 ${rows.join("\n")}
 
+**"Right now"** — unverified crawlers are already stopped by the rule *Block unverified bots*; the question for them is only whether one should be **let in** (typically a new search engine). Verified ones get through until decided.
+
 **For each one:**
-1. To block: add its user-agent token to the Cloudflare custom rule **"Block AI crawlers not in AI Crawl Control"** (Security → WAF → Custom rules) — or, if it appears in AI Crawl Control → Security, switch *Block Crawler* on there instead.
-2. If blocked: add the token to the AI group in \`public/robots.txt\` too.
-3. Add the token to \`allow\`, \`block\` or \`ignore\` in \`config/ai-crawlers.json\`. This issue closes itself on the next run once nothing is unreviewed.
+1. Add its token to \`allow\`, \`block\` or \`ignore\` in \`config/ai-crawlers.json\`. The tests then require \`public/robots.txt\` to match.
+2. Run \`node scripts/check-ai-crawlers.mjs --waf\` and paste the two expressions into the Cloudflare rules of the same names (Security → WAF → Custom rules). For a verified bot listed in AI Crawl Control, its switch there works too.
+3. This issue closes itself on the next run once nothing is unreviewed.
 
 Rule of thumb: allow search engines and archives; block everything that trains, answers or acts for AI. Never block link-preview fetchers or certificate checks.`;
 }
 
+/** Host the firewall rules apply to. Never media.: Bunny pulls images there. */
+export const SITE_HOST = "abstractaltitudes.com";
+
+/** Words by which a client declares itself a crawler. */
+export const BOT_WORDS = ["bot", "crawl", "spider", "scrap"];
+
+const quote = (t) => `"${t.toLowerCase().replace(/["\\]/g, "")}"`;
+const uaContains = (t) => `lower(http.user_agent) contains ${quote(t)}`;
+
 /**
- * Expression for the Cloudflare WAF custom rule that blocks every `block`
- * token by user agent. Covers crawlers missing from AI Crawl Control's list
- * (DeepSeekBot, Qwenbot, …) and duplicates the ones in it, which is harmless
- * and keeps one place authoritative. Paste into Security → WAF → Custom rules
- * → "Block AI crawlers not in AI Crawl Control" → Edit expression.
+ * Rule "Block AI crawlers not in AI Crawl Control": every `block` token by
+ * user agent. Needed for *verified* AI bots, which the unverified-bot rule
+ * lets through; duplicates AI Crawl Control harmlessly so one place stays
+ * authoritative.
  */
-export function wafExpression(decisions) {
+export function blockListExpression(decisions) {
   return Object.keys(decisions.block ?? {})
-    .map((t) => `(lower(http.user_agent) contains "${t.toLowerCase().replace(/["\\]/g, "")}")`)
+    .map((t) => `(${uaContains(t)})`)
     .join(" or ");
+}
+
+/**
+ * Tokens let through the unverified-bot rule: allowed crawlers that Cloudflare
+ * does not verify (archives, Bravebot, link previews). The big search engines
+ * are left out on purpose — Cloudflare verifies them by origin, and exempting
+ * their *names* would let anyone pass as Googlebot.
+ */
+export function unverifiedExceptions(decisions) {
+  const verified = new Set((decisions.verifiedByCloudflare ?? []).map((t) => t.toLowerCase()));
+  return Object.keys(decisions.allow ?? {}).filter((t) => !verified.has(t.toLowerCase()));
+}
+
+/**
+ * Rule "Block unverified bots" (zero trust, as on viaprima.ch): anything that
+ * calls itself a bot but is not one Cloudflare has verified by origin
+ * (cf.client.bot) is blocked — new crawlers and fake Googlebots alike, with no
+ * list to keep current. Scoped to the site host so Bunny's pulls from media.
+ * can never be caught; robots.txt stays readable so polite crawlers can learn
+ * the policy; /.well-known/ stays open for certificate validation.
+ */
+export function unverifiedBotExpression(decisions) {
+  const words = BOT_WORDS.map(uaContains).join(" or ");
+  const exceptions = unverifiedExceptions(decisions).map(uaContains).join(" or ");
+  return [
+    `(http.host eq "${SITE_HOST}"`,
+    ` and not cf.client.bot`,
+    ` and (${words})`,
+    exceptions ? ` and not (${exceptions})` : "",
+    ` and http.request.uri.path ne "/robots.txt"`,
+    ` and not starts_with(http.request.uri.path, "/.well-known/"))`,
+  ].join("");
 }

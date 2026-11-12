@@ -1,5 +1,5 @@
 {
-  "_about": "Crawler decisions, reviewed one by one on 2026-11-12 (AI Crawl Control list) and from the first weekly check (visitors outside that list). Keys are user-agent tokens, matched case-insensitively as substrings — the same names public/robots.txt uses. Enforcement lives in Cloudflare (AI Crawl Control → Security) and robots.txt; this file is what scripts/check-ai-crawlers.mjs compares visitors against. 'ignore' = not part of the AI policy (SEO, monitoring, link previews).",
+  "_about": "Crawler decisions, reviewed one by one on 2026-11-12 (AI Crawl Control list) and from the first weekly check (visitors outside that list). Keys are user-agent tokens, matched case-insensitively as substrings — the same names public/robots.txt uses. Enforcement lives in Cloudflare (AI Crawl Control → Security) and robots.txt; this file is what scripts/check-ai-crawlers.mjs compares visitors against. 'ignore' = not part of the AI policy (SEO, monitoring, link previews). 'verifiedByCloudflare' = allowed crawlers Cloudflare verifies by origin (cf.client.bot); they are deliberately NOT exceptions in the 'Block unverified bots' rule, so a fake Googlebot is still blocked.",
   "allow": {
     "Googlebot": "Google Search. Gemini training opted out via Google-Extended in robots.txt",
     "bingbot": "Bing, and through it DuckDuckGo, Ecosia, Yahoo, Qwant",
@@ -7,8 +7,21 @@
     "DuckDuckBot": "DuckDuckGo's own crawler",
     "archive.org_bot": "Wayback Machine; doubles as independent proof of publication date",
     "Arquivo-web-crawler": "Portuguese national web archive; owner's call, allowed",
-    "Bravebot": "Brave Search — independent index; also feeds AI answers, same trade-off as Bing"
+    "Bravebot": "Brave Search — independent index; also feeds AI answers, same trade-off as Bing",
+    "facebookexternalhit": "link previews on Facebook, Instagram, WhatsApp — must never be blocked",
+    "Twitterbot": "link previews on X",
+    "LinkedInBot": "link previews",
+    "Slackbot": "link previews",
+    "Discordbot": "link previews",
+    "TelegramBot": "link previews",
+    "WhatsApp": "link previews"
   },
+  "verifiedByCloudflare": [
+    "Googlebot",
+    "bingbot",
+    "Applebot",
+    "DuckDuckBot"
+  ],
   "block": {
     "GPTBot": "OpenAI training",
     "OAI-SearchBot": "ChatGPT search index",
@@ -61,13 +74,6 @@
     "ImageMetaBot": "image classification — harvests photo content and metadata"
   },
   "ignore": {
-    "facebookexternalhit": "link previews on Facebook, Instagram, WhatsApp — must never be blocked",
-    "Twitterbot": "link previews on X",
-    "LinkedInBot": "link previews",
-    "Slackbot": "link previews",
-    "Discordbot": "link previews",
-    "TelegramBot": "link previews",
-    "WhatsApp": "link previews",
     "AhrefsBot": "SEO tool, not AI",
     "SemrushBot": "SEO tool, not AI",
     "FontScanBot": "font detection",

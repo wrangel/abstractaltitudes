@@ -25,19 +25,27 @@
 // $GITHUB_OUTPUT in Actions.
 
 import { readFile, writeFile, appendFile } from "node:fs/promises";
-import { findUnreviewed, renderReport, wafExpression } from "./lib/aiCrawlers.mjs";
+import {
+  findUnreviewed,
+  renderReport,
+  blockListExpression,
+  unverifiedBotExpression,
+} from "./lib/aiCrawlers.mjs";
 
 const ZONE = "abstractaltitudes.com";
 const DAYS = 7;
 const API = "https://api.cloudflare.com/client/v4";
 
-// `--waf` prints the firewall-rule expression for the current block list and
+// `--waf` prints both firewall-rule expressions for the current decisions and
 // exits; no token needed. Re-paste it whenever config/ai-crawlers.json changes.
 if (process.argv.includes("--waf")) {
   const decisions = JSON.parse(
     await readFile(new URL("../config/ai-crawlers.json", import.meta.url), "utf8"),
   );
-  console.log(wafExpression(decisions));
+  console.log("# Rule 1 — Block unverified bots\n");
+  console.log(unverifiedBotExpression(decisions));
+  console.log("\n# Rule 2 — Block AI crawlers not in AI Crawl Control\n");
+  console.log(blockListExpression(decisions));
   process.exit(0);
 }
 

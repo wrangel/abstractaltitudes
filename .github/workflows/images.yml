@@ -124,6 +124,14 @@ jobs:
           echo "sitemap URLs: $n"
           [ "$n" -gt 100 ] || fail "sitemap has only $n URLs — expected the full set"
 
+          # Photo pages carry their own visible content (src/shared/photoBody.mjs),
+          # not just "enable JavaScript" — what crawlers and link previews see.
+          photo=$(curl -s http://localhost:8080/sitemap.xml | grep -oE '/photo/[^<]+/' | head -1)
+          page=$(curl -s "http://localhost:8080$photo")
+          echo "$page" | grep -q '<h1' || fail "$photo has no <h1> — photo body not prerendered"
+          echo "$page" | grep -q 'class="prerendered-photo"' || fail "$photo lacks its prerendered content"
+          echo "$page" | grep -q 'You need to enable JavaScript' && fail "$photo still shows the generic noscript notice"
+
           # Cache headers (nginx/conf.d/default.conf): hashed assets forever,
           # other static files briefly, the crawler policy never, and the
           # security headers on all of them.

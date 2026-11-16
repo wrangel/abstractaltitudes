@@ -21,6 +21,7 @@ import { loadEnv } from "vite";
 
 import { buildPhotoSeoBlock, buildSitemap } from "../src/shared/photoMeta.mjs";
 import { buildPlacePages } from "../src/shared/placePages.mjs";
+import { buildPhotoBody, placeLinks } from "../src/shared/photoBody.mjs";
 import { buildLicensePage } from "../src/shared/licensePage.mjs";
 import { buildOgImage } from "./lib/ogImage.mjs";
 
@@ -63,6 +64,9 @@ const REQUIRED = /^(1|true)$/i.test(env.REQUIRE_PRERENDER || "");
 const FETCH_TIMEOUT_MS = 20000;
 
 const SEO_BLOCK = /<!--\s*seo:start\s*-->[\s\S]*?<!--\s*seo:end\s*-->/;
+// The app's mount point. Photo pages get their visible content written in
+// here (see src/shared/photoBody.mjs); React's createRoot replaces it.
+const ROOT_DIV = '<div id="root"></div>';
 
 /**
  * Abandons prerendering. Fails the build when REQUIRE_PRERENDER is set,
@@ -204,6 +208,9 @@ async function main() {
   if (!SEO_BLOCK.test(indexHtml)) {
     skip("no <!-- seo:start --> / <!-- seo:end --> markers in build/index.html");
   }
+  if (!indexHtml.includes(ROOT_DIV)) {
+    skip(`no empty ${ROOT_DIV} in build/index.html to write photo content into`);
+  }
 
   const items = await loadItems();
   if (!items) {
@@ -223,6 +230,11 @@ async function main() {
     );
   }
 
+  // Built before the photo pages so those link only to place pages that
+  // exist (small places get none — see MIN_PHOTOS_PER_PAGE).
+  const placePages = [...buildPlacePages(usable, ORIGIN), buildLicensePage(ORIGIN)];
+  const placePaths = new Set(placePages.map((page) => `/${page.path}/`));
+
   const seen = new Map();
   let written = 0;
 
@@ -237,9 +249,20 @@ async function main() {
     }
     seen.set(item.slug, item.id);
 
-    const html = indexHtml.replace(SEO_BLOCK, () =>
-      buildPhotoSeoBlock(item, ORIGIN),
-    );
+    const i = usable.indexOf(item);
+    const body = buildPhotoBody(item, {
+      places: placeLinks(item, placePaths),
+      previous: usable[i - 1],
+      next: usable[i + 1],
+    });
+    const html = indexHtml
+      .replace(SEO_BLOCK, () => buildPhotoSeoBlock(item, ORIGIN))
+      .replace(ROOT_DIV, () => `<div id="root">${body}</div>`)
+      // The page has content now; the generic notice would only confuse.
+      .replace(
+        /<noscript>You need to enable JavaScript to run this app\.<\/noscript>/,
+        "",
+      );
     const dir = path.join(BUILD_DIR, "photo", item.slug);
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, "index.html"), html, "utf8");
@@ -262,7 +285,6 @@ async function main() {
     );
   }
 
-  const placePages = [...buildPlacePages(usable, ORIGIN), buildLicensePage(ORIGIN)];
   for (const page of placePages) {
     const dir = path.join(BUILD_DIR, page.path);
     await fs.mkdir(dir, { recursive: true });

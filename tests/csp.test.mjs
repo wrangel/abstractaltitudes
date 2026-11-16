@@ -9,7 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const nginx = readFileSync(new URL("../nginx/conf.d/default.conf", import.meta.url), "utf8");
+const nginx = readFileSync(new URL("../nginx/templates/default.conf.template", import.meta.url), "utf8");
 const server = readFileSync(new URL("../src/backend/server.mjs", import.meta.url), "utf8");
 
 const header = nginx.match(/add_header Content-Security-Policy "([^"]+)"/)[1];

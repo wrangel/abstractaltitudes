@@ -1,0 +1,49 @@
+# Production on the Synology NAS — used by scripts/prod-deploy.sh.
+# docker-compose.yml stays the file for building and for local `pnpm test`.
+#
+# Why a separate file: host networking. On this NAS the project's Docker bridge
+# network has come back broken after a deploy three times (2026-07-29, 10-08,
+# 11-16): no DNS out of the containers (MongoDB unresolvable) and no traffic
+# between them (nginx -> backend timed out, gallery on "Failed to load items").
+# The Cloudflare tunnel's container has always run with network_mode: host and
+# never had the problem. Here both services do the same, so there is no bridge
+# to break: nginx reaches the backend at 127.0.0.1, and lookups use the NAS's
+# own, working DNS.
+#
+# Both bind 127.0.0.1 only. With the bridge, Docker published 3000 and 8081 on
+# every interface — the API was reachable from the whole home network. Now only
+# local processes can connect: nginx to the backend, the tunnel to nginx
+# (route abstractaltitudes.com -> http://localhost:3000).
+#
+# Docker Desktop on a Mac handles host networking differently (opt-in, and not
+# the same network), which is why this is not simply the default.
+
+services:
+  backend:
+    platform: linux/amd64
+    image: wrangel/abstractaltitudes-backend:2.1
+    network_mode: host
+    env_file:
+      - env.production
+    environment:
+      - NODE_ENV=production
+      - PORT=8081
+      - HOST=127.0.0.1
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
+
+  frontend:
+    platform: linux/amd64
+    image: wrangel/abstractaltitudes-frontend:2.1
+    network_mode: host
+    environment:
+      - NGINX_LISTEN=127.0.0.1:3000
+      - BACKEND_UPSTREAM=127.0.0.1:8081
+    restart: unless-stopped
+    depends_on:
+      - backend

@@ -156,6 +156,25 @@ To change pnpm version, edit `packageManager` in `package.json` (Renovate
 proposes this too). The Dockerfiles read it from there. Don't use
 `pnpm self-update`: it rewrites that field as a side effect.
 
+### Production on the NAS
+
+`.github/workflows/images.yml` builds and pushes the images on every merge to
+`main`; the Synology NAS only pulls and restarts them with
+`scripts/prod-deploy.sh` (kept out of git, synced to the NAS by Synology Drive).
+
+The NAS runs **`docker-compose.nas.yml`**, not `docker-compose.yml`: both
+containers use the host network and listen on `127.0.0.1` only (nginx on 3000,
+the backend on 8081), and the Cloudflare tunnel reaches nginx at
+`localhost:3000`. The project's Docker bridge network broke three times after a
+deploy (no DNS out of the containers, no traffic between them), which host
+networking rules out. `docker-compose.yml` stays the file for building and for
+local `pnpm test`; the nginx image takes its listen and backend addresses from
+`NGINX_LISTEN` / `BACKEND_UPSTREAM` (defaults `80` and `backend:8081`), so one
+image serves both. CI runs the image both ways.
+
+An hourly workflow (`.github/workflows/uptime.yml`) opens an issue labelled
+`outage` if the gallery stops working for visitors.
+
 ### AI crawlers
 
 Search engines and archives may crawl; AI training, AI search and AI assistants

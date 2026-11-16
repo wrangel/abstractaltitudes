@@ -45,7 +45,13 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/build /usr/share/nginx/html
 # Copy custom nginx main config
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
-# Copy site config (default.conf)
-COPY nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+# Site config as a template: the entrypoint renders it to conf.d/default.conf at
+# start, filling in where nginx listens and where the backend is. Defaults suit
+# docker-compose.yml and CI; docker-compose.nas.yml overrides both.
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY nginx/templates/default.conf.template /etc/nginx/templates/default.conf.template
+ENV NGINX_LISTEN=80 \
+    BACKEND_UPSTREAM=backend:8081 \
+    NGINX_ENVSUBST_FILTER="^(NGINX_LISTEN|BACKEND_UPSTREAM)$"
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

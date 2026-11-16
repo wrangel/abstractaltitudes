@@ -71,7 +71,11 @@
     "ElevenlabsCrawler": "ElevenLabs",
     "ExaSearchBot": "Exa — search API built for AI",
     "YouBot": "You.com — AI search and agents",
-    "ImageMetaBot": "image classification — harvests photo content and metadata"
+    "ImageMetaBot": "image classification — harvests photo content and metadata",
+    "RiverBot": "river.ai — AI crawler, verified by Cloudflare (weekly check 2026-11-16)",
+    "QlyzeBot": "qlyze.io — unknown purpose (weekly check 2026-11-16)",
+    "MomentLeadsBot": "sales-lead scraper (weekly check 2026-11-16)",
+    "ApcosysBot": "apcosys.net — unknown purpose (weekly check 2026-11-16)"
   },
   "ignore": {
     "AhrefsBot": "SEO tool, not AI",
@@ -84,6 +88,7 @@
     "BRIPHEOBUS": "brand protection (Brimondo)",
     "RecordedFuture": "threat intelligence",
     "ips-agent": "network scanner",
-    "TurnitinBot": "plagiarism checker"
+    "TurnitinBot": "plagiarism checker",
+    "domains-crawler": "ads.txt survey, one request per domain (weekly check 2026-11-16)"
   }
 }

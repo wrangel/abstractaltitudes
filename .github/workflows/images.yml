@@ -63,6 +63,8 @@ jobs:
           context: .
           file: Dockerfile.backend
           platforms: linux/amd64
+          # Loaded too, for the NAS-setup smoke test below.
+          load: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.BACKEND_IMAGE }}:${{ env.RELEASE_TAG }}
@@ -132,7 +134,7 @@ jobs:
           echo "$page" | grep -q 'class="prerendered-photo"' || fail "$photo lacks its prerendered content"
           echo "$page" | grep -q 'You need to enable JavaScript' && fail "$photo still shows the generic noscript notice"
 
-          # Cache headers (nginx/conf.d/default.conf): hashed assets forever,
+          # Cache headers (nginx/templates/default.conf.template): hashed assets forever,
           # other static files briefly, the crawler policy never, and the
           # security headers on all of them.
           hdr() { curl -s -D - -o /dev/null "http://localhost:8080$1" | tr -d '\r' | grep -i "^$2:" | cut -d' ' -f2-; }
@@ -151,6 +153,49 @@ jobs:
           loc=$(hdr /places/switzerland location)
           [ "$loc" = "/places/switzerland/" ] || fail "redirect must be relative, got: $loc"
           docker rm -f smoke
+
+      # The production setup on the NAS (docker-compose.nas.yml): both
+      # containers on the host network, nginx on 127.0.0.1:3000 reaching the
+      # backend at 127.0.0.1:8081 — the configuration that replaced the Docker
+      # bridge after it broke three times. Proven here before it reaches the NAS.
+      - name: Smoke-test the NAS setup (host network)
+        run: |
+          fail() { echo "::error::$1"; docker logs nas-frontend; docker logs nas-backend; exit 1; }
+          # Dummy settings: the server starts and answers without a database.
+          docker run -d --name nas-backend --network host \
+            -e NODE_ENV=production -e PORT=8081 -e HOST=127.0.0.1 \
+            -e MONGODB_DB_USER=x -e MONGODB_DB_PASSWORD=x -e MONGODB_SERVER=127.0.0.1:1 \
+            -e MONGODB_DB=x -e CORS_ORIGINS=http://localhost \
+            -e VITE_BUNNYCDN_BASE_URL=https://example.invalid \
+            "${BACKEND_IMAGE}:sha-${{ steps.sha.outputs.short }}"
+          docker run -d --name nas-frontend --network host \
+            -e NGINX_LISTEN=127.0.0.1:3000 -e BACKEND_UPSTREAM=127.0.0.1:8081 \
+            "${FRONTEND_IMAGE}:sha-${{ steps.sha.outputs.short }}"
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:3000/ >/dev/null && break
+            sleep 1
+          done
+
+          conf=$(docker exec nas-frontend cat /etc/nginx/conf.d/default.conf)
+          echo "$conf" | grep -q 'listen 127.0.0.1:3000;' || fail "template did not set the listen address"
+          echo "$conf" | grep -q 'proxy_pass http://127.0.0.1:8081/api/;' || fail "template did not set the backend address"
+          echo "$conf" | grep -q 'proxy_set_header Host $host;' || fail "envsubst replaced nginx's own variables"
+
+          curl -sf http://127.0.0.1:3000/ >/dev/null || fail "nginx does not serve on 127.0.0.1:3000"
+          # Through nginx to the backend: without a database the backend itself
+          # answers 503 with its rate-limit headers. nginx alone would give
+          # 502/504 and no such header.
+          hdr=$(curl -s -D - -o /dev/null http://127.0.0.1:3000/api/combined-data | tr -d '\r')
+          echo "$hdr" | grep -qi '^ratelimit-limit:' || fail "nginx cannot reach the backend over the host network: $(echo "$hdr" | head -1)"
+
+          # Neither may be reachable from outside the machine.
+          ip=$(hostname -I | awk '{print $1}')
+          for port in 3000 8081; do
+            if curl -s -o /dev/null --max-time 3 "http://$ip:$port/"; then
+              fail "port $port answers on $ip — must be bound to 127.0.0.1 only"
+            fi
+          done
+          docker rm -f nas-frontend nas-backend
 
       # Only now, once the image has proven it serves the prerendered pages.
       - name: Push frontend

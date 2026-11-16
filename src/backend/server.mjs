@@ -155,7 +155,13 @@ mongoose.set("strictQuery", false);
 // Listen first, connect second. The database is not a precondition for being
 // able to answer /healthz and /ready, and gating app.listen() on it meant one
 // failed connect took the whole process down before it could report anything.
-const server = app.listen(PORT, () => logger.info(`Server on port ${PORT}`));
+// HOST unset: all interfaces, as a container on a bridge network needs. On the
+// NAS (docker-compose.nas.yml, host network) it is 127.0.0.1, so the API is
+// reachable only through nginx and the tunnel, not from the home network.
+const HOST = process.env.HOST || undefined;
+const server = app.listen(PORT, HOST, () =>
+  logger.info(`Server on ${HOST ?? "all interfaces"}, port ${PORT}`),
+);
 
 // Fire and forget: retries with backoff internally and never rejects.
 connectWithRetry();

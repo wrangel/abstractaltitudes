@@ -72,6 +72,10 @@ User-agent: ElevenlabsCrawler
 User-agent: ExaSearchBot
 User-agent: YouBot
 User-agent: ImageMetaBot
+User-agent: RiverBot
+User-agent: QlyzeBot
+User-agent: MomentLeadsBot
+User-agent: ApcosysBot
 Disallow: /
 
 # Everyone else, including Googlebot, Bingbot, Applebot, DuckDuckBot,

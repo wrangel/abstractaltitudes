@@ -1,0 +1,91 @@
+name: Uptime
+
+# Hourly: does the gallery actually work for a visitor? Not just the homepage,
+# which nginx serves as a file even when the backend is unreachable, but the
+# API the gallery loads its photos from. On failure, open (or refresh) one issue
+# labelled "outage" — GitHub emails it; when the site works again, close it.
+#
+# Why: the NAS's Docker network has broken three times (2026-07-29, -10-08,
+# -11-16), each time leaving the gallery on "Failed to load items" until
+# someone happened to notice. prod-deploy.sh now heals it during deploys; this
+# catches everything else.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check homepage and gallery API (3 attempts, 1 minute apart)
+        id: check
+        run: |
+          probe() {
+            home=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://abstractaltitudes.com/ || echo 000)
+            body=$(curl -s --max-time 25 -w '\n%{http_code}' https://abstractaltitudes.com/api/combined-data || printf '\n000')
+            api=$(echo "$body" | tail -1)
+            items=$(echo "$body" | sed '$d' | grep -o '"slug"' | wc -l | tr -d ' ')
+            echo "$(date -u +%H:%M:%SZ)  homepage=$home  api=$api  items=$items"
+            [ "$home" = 200 ] && [ "$api" = 200 ] && [ "$items" -ge 50 ]
+          }
+          # One success is enough; only three failures in a row (~2 minutes)
+          # count as an outage, so a single slow response raises no alarm.
+          : > attempts.txt
+          for i in 1 2 3; do
+            if line=$(probe); then
+              echo "$line" | tee -a attempts.txt
+              echo "ok=true" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "$line" | tee -a attempts.txt
+            if [ "$i" -lt 3 ]; then sleep 60; fi
+          done
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+
+      - name: Open, refresh or close the outage issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OK: ${{ steps.check.outputs.ok }}
+        run: |
+          gh label create outage --color D73A4A --description "abstractaltitudes.com not working for visitors" --force >/dev/null
+          open=$(gh issue list --label outage --state open --json number --jq '.[0].number // empty')
+          if [ "$OK" = "true" ]; then
+            if [ -n "$open" ]; then
+              gh issue close "$open" --comment "Working again ($(date -u +'%Y-%m-%d %H:%M UTC')): homepage and gallery API answer normally."
+              echo "Closed #$open"
+            else
+              echo "All good."
+            fi
+            exit 0
+          fi
+          {
+            echo "The site is not working for visitors (checked $(date -u +'%Y-%m-%d %H:%M UTC'), 3 attempts):"
+            echo
+            echo '```'; cat attempts.txt; echo '```'
+            echo
+            echo "**Most likely** (\`api=504\` with \`homepage=200\`): the NAS's Docker network broke again — nginx cannot reach the backend. On the NAS:"
+            echo
+            echo '```'
+            echo 'sudo synopkg restart ContainerManager'
+            echo '# about a minute later:'
+            echo 'sudo bash /volume1/homes/Matthias/Drive/Programming/abstractaltitudes/scripts/prod-deploy.sh'
+            echo '```'
+            echo
+            echo "\`homepage=000\` everywhere means the NAS, the tunnel or Cloudflare is unreachable instead. This issue closes itself once the site works again."
+          } > body.md
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file body.md >/dev/null; echo "Commented on #$open"
+          else
+            gh issue create --title "Site outage: gallery not loading" --label outage --body-file body.md
+          fi
+          exit 1

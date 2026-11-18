@@ -204,6 +204,25 @@ gunzip -c backups/db/atlas-2026-11-23.json.gz | docker exec -i \
 gathered since the backup are lost. CI tests export, guard, pruning and restore
 against a real MongoDB on every build.
 
+### Atlas access list (dynamic home IP)
+
+Atlas admits only the home IP, which is dynamic. `scripts/atlas-ip-sync.sh`
+runs hourly on the NAS (DSM Task Scheduler, root) and keeps the access-list
+entry commented **"Home (NAS + Mac)"** on the current IP: when the IP changes it
+adds the new one, waits until Atlas reports it active, then removes the old
+one. Other entries are never touched, and the new IP must be confirmed by two
+independent services first. Logic: `src/backend/tools/atlasAccess.mjs`.
+
+It uses an Atlas **service account** with only *Project Network Access Manager*
+on this project; its credentials are in `env.atlas` (gitignored, next to
+`env.production`, so the backend server never sees them):
+
+```
+ATLAS_PROJECT_ID=…
+ATLAS_CLIENT_ID=…
+ATLAS_CLIENT_SECRET=…
+```
+
 ### AI crawlers
 
 Search engines and archives may crawl; AI training, AI search and AI assistants

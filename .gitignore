@@ -52,3 +52,5 @@ project_code_dump.md
 
 # Knip report output
 knip-report.json
+# Database backups made on the NAS (scripts/backup-db.sh); synced via Synology Drive, never committed.
+backups/

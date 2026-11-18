@@ -197,6 +197,87 @@ jobs:
           done
           docker rm -f nas-frontend nas-backend
 
+      # The weekly database backup (scripts/backup-db.sh, src/backend/tools/)
+      # against a real MongoDB, through the actual NAS script: export, the
+      # empty-backup guard, pruning, a restore that refuses to overwrite, a
+      # restore into a second database compared field by field — types and the
+      # unique index included — and --replace.
+      - name: Test the database backup and restore
+        run: |
+          IMG="${BACKEND_IMAGE}:sha-${{ steps.sha.outputs.short }}"
+          C=abstractaltitudes-backend-1   # the name backup-db.sh expects
+          fail() { echo "::error::$1"; docker logs "$C" 2>&1 | tail -20; exit 1; }
+          sh256() { sha256sum "$1" | cut -d' ' -f1; }
+
+          docker run -d --name mongo --network host mongo:8 --bind_ip 127.0.0.1
+          for i in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec mongo mongosh --quiet gallery --eval '
+            db.islands.createIndex({ name: 1 }, { unique: true });
+            db.islands.insertMany([
+              { name: "a", clicks: NumberInt(3), altitude: 120.5, dateTime: ISODate("2024-05-01T10:00:00Z") },
+              { name: "b", clicks: NumberInt(0), altitude: 80, dateTime: ISODate("2025-01-02T03:04:05Z") },
+              { name: "c", clicks: NumberInt(7), altitude: 1.25, dateTime: ISODate("2026-11-18T00:00:00Z") },
+            ]);'
+
+          # The backend container as on the NAS; MONGODB_URI points the tools at
+          # the test database. The server itself just keeps retrying its dummy one.
+          docker run -d --name "$C" --network host \
+            -e NODE_ENV=production -e PORT=18081 -e HOST=127.0.0.1 \
+            -e MONGODB_DB_USER=x -e MONGODB_DB_PASSWORD=x -e MONGODB_SERVER=127.0.0.1:1 \
+            -e MONGODB_DB=x -e CORS_ORIGINS=http://localhost \
+            -e VITE_BUNNYCDN_BASE_URL=https://example.invalid \
+            -e MONGODB_URI=mongodb://127.0.0.1:27017/gallery \
+            "$IMG"
+
+          proj="$RUNNER_TEMP/proj"
+          dir="$proj/backups/db"
+          mkdir -p "$dir"
+          # Two older backups: with KEEP=2 exactly the oldest must go.
+          touch -d 2026-01-01 "$dir/atlas-2026-01-01.json.gz"
+          touch -d 2026-01-08 "$dir/atlas-2026-01-08.json.gz"
+          PROJECT_DIR="$proj" MIN_DOCS=3 KEEP=2 bash scripts/backup-db.sh || fail "backup script failed"
+          f="$dir/atlas-$(date +%Y-%m-%d).json.gz"
+          [ -s "$f" ] || fail "no backup file written"
+          [ -e "$dir/atlas-2026-01-01.json.gz" ] && fail "oldest backup was not pruned"
+          [ -e "$dir/atlas-2026-01-08.json.gz" ] || fail "pruned more than KEEP allows"
+          gunzip -c "$f" | grep -q '"\$oid"' || fail "backup is not canonical Extended JSON"
+
+          # A database that looks empty must not overwrite a good backup.
+          before=$(sh256 "$f")
+          if PROJECT_DIR="$proj" MIN_DOCS=99 bash scripts/backup-db.sh; then
+            fail "accepted a backup with fewer than MIN_DOCS documents"
+          fi
+          [ "$(sh256 "$f")" = "$before" ] || fail "a failed backup changed the existing file"
+          ls "$dir" | grep -q partial && fail "a failed backup left a .partial file"
+
+          # Restoring over live data needs --replace.
+          if gunzip -c "$f" | docker exec -i "$C" node src/backend/tools/restoreDb.mjs; then
+            fail "restore overwrote a non-empty collection without --replace"
+          fi
+
+          # Restore into a second database and compare exactly.
+          gunzip -c "$f" | docker exec -i -e MONGODB_URI=mongodb://127.0.0.1:27017/restored "$C" \
+            node src/backend/tools/restoreDb.mjs || fail "restore into an empty database failed"
+          docker exec mongo mongosh --quiet --eval '
+            const docs = (name) => EJSON.stringify(
+              db.getSiblingDB(name).islands.find().sort({ _id: 1 }).toArray(), { relaxed: false });
+            if (docs("gallery") !== docs("restored")) { print("documents differ"); quit(1); }
+            const ix = db.getSiblingDB("restored").islands.getIndexes().find((i) => i.name === "name_1");
+            if (!ix || !ix.unique) { print("unique index missing"); quit(1); }
+            print("restored copy is identical");' || fail "restored data differs from the original"
+
+          # --replace overwrites.
+          docker exec mongo mongosh --quiet restored --eval 'db.islands.insertOne({ name: "z" })'
+          gunzip -c "$f" | docker exec -i -e MONGODB_URI=mongodb://127.0.0.1:27017/restored "$C" \
+            node src/backend/tools/restoreDb.mjs --replace || fail "restore --replace failed"
+          n=$(docker exec mongo mongosh --quiet restored --eval 'db.islands.countDocuments()')
+          [ "$n" = "3" ] || fail "--replace left $n documents, expected 3"
+
+          docker rm -f "$C" mongo
+
       # Only now, once the image has proven it serves the prerendered pages.
       - name: Push frontend
         if: github.event_name != 'pull_request'

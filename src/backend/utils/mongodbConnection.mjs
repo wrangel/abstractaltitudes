@@ -5,22 +5,15 @@ import net from "node:net";
 
 import mongoose from "mongoose";
 import logger from "../utils/logger.mjs";
+import { buildMongoUri } from "./mongoUri.mjs";
 
 const INITIAL_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 60000;
 const SERVER_SELECTION_TIMEOUT_MS = 10000;
 
-// MONGODB_SERVER holds the shard host list, so connecting needs DNS for each
-// host. That makes a broken resolver inside the container look identical to
-// an Atlas access-list rejection — Atlas returns the same "not whitelisted"
-// hint either way. Check DNS first when this starts failing.
-function buildUri() {
-  return `mongodb://${process.env.MONGODB_DB_USER}:${encodeURIComponent(
-    process.env.MONGODB_DB_PASSWORD,
-  )}@${process.env.MONGODB_SERVER}/${
-    process.env.MONGODB_DB
-  }?tls=true&authSource=admin&retryWrites=true&w=majority`;
-}
+// Connection string: see mongoUri.mjs (kept separate so tools can use it
+// without pulling in the logger).
+const buildUri = () => buildMongoUri();
 
 /**
  * Connects once, throwing on failure.

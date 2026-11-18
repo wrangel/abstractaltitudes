@@ -175,6 +175,35 @@ image serves both. CI runs the image both ways.
 An hourly workflow (`.github/workflows/uptime.yml`) opens an issue labelled
 `outage` if the gallery stops working for visitors.
 
+### Database backups
+
+The database is on MongoDB Atlas's free tier, which keeps **no backups**, and
+Atlas admits only the home IP. So the NAS backs it up: DSM Task Scheduler runs
+`scripts/backup-db.sh` weekly as root. It exports every collection from inside
+the backend container (`src/backend/tools/exportDb.mjs`) to
+`backups/db/atlas-YYYY-MM-DD.json.gz` in this project folder and keeps the
+newest 12. Synology Drive copies them to the Mac, and Time Machine from there.
+`backups/` is gitignored. A database with fewer than 50 documents is treated as
+a failure, so a broken export never replaces a good backup.
+
+The file is canonical Extended JSON — readable in a text editor, and exact on
+restore (ObjectIds, dates and number types survive). To restore, on the NAS:
+
+```bash
+# 1. Look first: restore into a separate database, inspect it in Atlas.
+gunzip -c backups/db/atlas-2026-11-23.json.gz | docker exec -i \
+  -e MONGODB_URI='mongodb://USER:PASSWORD@HOSTS/restore_check?tls=true&authSource=admin' \
+  abstractaltitudes-backend-1 node src/backend/tools/restoreDb.mjs
+
+# 2. The real thing. Without --replace it refuses to touch non-empty collections.
+gunzip -c backups/db/atlas-2026-11-23.json.gz | docker exec -i \
+  abstractaltitudes-backend-1 node src/backend/tools/restoreDb.mjs --replace
+```
+
+`--replace` drops each collection in the backup and restores it — click counts
+gathered since the backup are lost. CI tests export, guard, pruning and restore
+against a real MongoDB on every build.
+
 ### AI crawlers
 
 Search engines and archives may crawl; AI training, AI search and AI assistants

@@ -276,6 +276,11 @@ jobs:
           n=$(docker exec mongo mongosh --quiet restored --eval 'db.islands.countDocuments()')
           [ "$n" = "3" ] || fail "--replace left $n documents, expected 3"
 
+          # The Atlas access-list sync ships in the same image. Without
+          # credentials it must refuse cleanly (its logic is unit-tested).
+          out=$(docker exec "$C" node src/backend/tools/atlasAccessSync.mjs 2>&1) && fail "atlas sync ran without credentials"
+          echo "$out" | grep -q "must be set" || fail "atlas sync failed unexpectedly: $out"
+
           docker rm -f "$C" mongo
 
       # Only now, once the image has proven it serves the prerendered pages.

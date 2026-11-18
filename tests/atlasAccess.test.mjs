@@ -202,7 +202,9 @@ test("sync: unconfirmed IP stops before touching Atlas", async () => {
     syncAccessList({ fetch, ...creds }),
     /could not confirm/,
   );
-  assert.ok(!fetch.calls.some((c) => c.url.includes("cloud.mongodb.com")));
+  assert.ok(
+    !fetch.calls.some((c) => new URL(c.url).hostname === "cloud.mongodb.com"),
+  );
 });
 
 test("sync: missing credentials are reported, not guessed", async () => {

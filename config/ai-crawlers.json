@@ -75,7 +75,11 @@
     "RiverBot": "river.ai — AI crawler, verified by Cloudflare (weekly check 2026-11-16)",
     "QlyzeBot": "qlyze.io — unknown purpose (weekly check 2026-11-16)",
     "MomentLeadsBot": "sales-lead scraper (weekly check 2026-11-16)",
-    "ApcosysBot": "apcosys.net — unknown purpose (weekly check 2026-11-16)"
+    "ApcosysBot": "apcosys.net — unknown purpose (weekly check 2026-11-16)",
+    "ShapBot": "Parallel — web search API for AI agents (weekly check 2026-11-23)",
+    "YandexBot": "Yandex search; negligible reach for this site, no known clean AI opt-out — same call as Baidu (weekly check 2026-11-23)",
+    "domains-distillery": "validus.ai — domain data for an AI company (weekly check 2026-11-23)",
+    "NuffstoresShoppingBot": "shopping price scraper (weekly check 2026-11-23)"
   },
   "ignore": {
     "AhrefsBot": "SEO tool, not AI",
@@ -89,6 +93,8 @@
     "RecordedFuture": "threat intelligence",
     "ips-agent": "network scanner",
     "TurnitinBot": "plagiarism checker",
-    "domains-crawler": "ads.txt survey, one request per domain (weekly check 2026-11-16)"
+    "domains-crawler": "ads.txt survey, one request per domain (weekly check 2026-11-16)",
+    "wfcensusBot": "web census statistics, not AI; stays blocked as unverified (weekly check 2026-11-23)",
+    "NMMapper-ReconBot": "security reconnaissance scanner, not AI; stays blocked as unverified (weekly check 2026-11-23)"
   }
 }

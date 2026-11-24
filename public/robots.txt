@@ -76,6 +76,10 @@ User-agent: RiverBot
 User-agent: QlyzeBot
 User-agent: MomentLeadsBot
 User-agent: ApcosysBot
+User-agent: ShapBot
+User-agent: YandexBot
+User-agent: domains-distillery
+User-agent: NuffstoresShoppingBot
 Disallow: /
 
 # Everyone else, including Googlebot, Bingbot, Applebot, DuckDuckBot,
